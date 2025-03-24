@@ -1,13 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { MainLayout } from "@/components/MainLayout";
+import { SearchInput } from "@/components/SearchInput";
+import { VideoCard } from "@/components/VideoCard";
+import { TrainingCard } from "@/components/TrainingCard";
+import { LeaderboardCard } from "@/components/LeaderboardCard";
+import { AnnouncementCard } from "@/components/AnnouncementCard";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <MainLayout userName="Vraj" greeting="Good evening">
+      <div className="max-w-7xl mx-auto animate-slide-up">
+        <div className="mb-8">
+          <SearchInput />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <VideoCard 
+              title="New HL Interest Rates" 
+              description="please make sure to watch this video about change in the HL interest rates. Connect with John Doe if any doubts" 
+              thumbnailUrl="/lovable-uploads/022f9b48-bc94-41b5-b63b-b1c88d0b94b0.png" 
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <TrainingCard />
+          </div>
+          <div className="lg:col-span-1">
+            <LeaderboardCard />
+          </div>
+        </div>
+        
+        <div className="mt-6">
+          <AnnouncementCard />
+        </div>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 
