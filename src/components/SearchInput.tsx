@@ -1,13 +1,24 @@
 
 import { useState } from "react";
 import { Search, Paperclip, Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export function SearchInput() {
   const [query, setQuery] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (query.trim()) {
+      // Navigate to chat page with query as state
+      navigate("/chat", { state: { query: query.trim() } });
+      setQuery("");
+    }
+  };
 
   return (
     <div className="rounded-xl border bg-card shadow-subtle p-4 animate-fade-in">
-      <div className="flex items-center gap-3">
+      <form onSubmit={handleSubmit} className="flex items-center gap-3">
         <div className="bg-primary/10 p-2 rounded-full">
           <Search className="h-5 w-5 text-primary flex-shrink-0" />
         </div>
@@ -18,16 +29,20 @@ export function SearchInput() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button className="rounded-full p-1.5 hover:bg-secondary transition-colors">
+        <button 
+          type="button" 
+          className="rounded-full p-1.5 hover:bg-secondary transition-colors"
+        >
           <Paperclip className="h-5 w-5 text-muted-foreground" />
         </button>
         <button 
+          type="submit"
           className="rounded-full bg-primary p-2.5 text-primary-foreground hover:bg-primary/90 transition-colors"
           disabled={!query.trim()}
         >
           <Send className="h-5 w-5" />
         </button>
-      </div>
+      </form>
     </div>
   );
 }
