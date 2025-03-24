@@ -63,6 +63,19 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				glean: {
+					50: '#f0f4ff',
+					100: '#dbe4ff',
+					200: '#bccaff',
+					300: '#91a7ff',
+					400: '#637bfd',
+					500: '#4057f4',
+					600: '#2c3ae7',
+					700: '#2330d1',
+					800: '#222aa7',
+					900: '#232983',
+					950: '#171b4d',
+				},
 				navy: {
 					50: '#f0f2f8',
 					100: '#d9dff0',

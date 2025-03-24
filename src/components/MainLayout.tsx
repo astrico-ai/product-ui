@@ -15,7 +15,7 @@ export function MainLayout({ children, userName, greeting }: MainLayoutProps) {
       <Sidebar />
       <div className="flex-1 pl-[70px] xl:pl-[240px]">
         <Header userName={userName} greeting={greeting} />
-        <main className="p-4 md:p-6">
+        <main className="p-5 md:p-8">
           {children}
         </main>
       </div>
