@@ -1,66 +1,93 @@
-
-import { Home, MessageSquare, BookOpen, BarChart2, FileText } from "lucide-react";
+import { Home, GraduationCap, LayoutDashboard, Database, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
-export function Sidebar() {
+interface SidebarProps {
+  isCollapsed: boolean;
+  setIsCollapsed: (value: boolean) => void;
+}
+
+const navigation = [
+  { name: 'Home', href: '/', icon: Home },
+  { name: 'Training', href: '/training', icon: GraduationCap },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Sources', href: '/sources', icon: Database },
+];
+
+export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const location = useLocation();
-  
-  const navigation = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Chat', href: '/chat', icon: MessageSquare },
-    { name: 'AI Training', href: '/training', icon: BookOpen },
-    { name: 'Dashboard', href: '/dashboard', icon: BarChart2 },
-    { name: 'Sources', href: '/sources', icon: FileText },
-  ];
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-[70px] xl:w-[240px] bg-sidebar z-30 flex flex-col overflow-hidden transition-all duration-300">
-      <div className="flex h-16 items-center justify-center xl:justify-start xl:px-6 border-b border-sidebar-border">
-        <div className="hidden xl:flex items-center gap-2">
+    <div className={cn(
+      "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-background transition-all duration-300",
+      isCollapsed ? "w-16" : "w-60"
+    )}>
+      <div className="flex h-16 items-center justify-between px-4 border-b">
+        <div className={cn(
+          "flex items-center gap-2 transition-opacity duration-200",
+          isCollapsed && "opacity-0 pointer-events-none"
+        )}>
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold">S</span>
           </div>
-          <span className="text-sidebar-foreground font-semibold">SleekSearch</span>
+          <span className="font-semibold">SleekSearch</span>
         </div>
-        <div className="xl:hidden">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold">S</span>
-          </div>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="h-8 w-8"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-5 w-5" />
+          ) : (
+            <ChevronLeft className="h-5 w-5" />
+          )}
+        </Button>
       </div>
-      
-      <nav className="flex-1 pt-5 px-2">
-        <ul className="space-y-1">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <li key={item.name}>
-                <Link 
-                  to={item.href} 
-                  className={`sidebar-link ${isActive ? 'active' : ''}`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="hidden xl:block">{item.name}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+
+      <nav className="flex-1 p-2">
+        <TooltipProvider delayDuration={0}>
+          <div className="space-y-1">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Tooltip key={item.name}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors text-[15px]",
+                        isActive 
+                          ? "bg-[#3551f31a] text-[#3551f3]" 
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                        !isCollapsed && "justify-start",
+                        isCollapsed && "justify-center"
+                      )}
+                    >
+                      <item.icon className={cn(
+                        "h-5 w-5",
+                        isActive && "text-[#3551f3]"
+                      )} />
+                      {!isCollapsed && <span>{item.name}</span>}
+                    </Link>
+                  </TooltipTrigger>
+                  {isCollapsed && (
+                    <TooltipContent side="right">
+                      <p className={cn(
+                        "text-[15px]",
+                        isActive && "text-[#3551f3]"
+                      )}>{item.name}</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              );
+            })}
+          </div>
+        </TooltipProvider>
       </nav>
-      
-      <div className="p-4 hidden xl:block">
-        <div className="rounded-lg bg-sidebar-accent p-3">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-primary-foreground text-sm font-medium">VP</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-sidebar-foreground">Vraj Patel</p>
-              <p className="text-xs text-sidebar-foreground/70">Premium Plan</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
+    </div>
   );
 }
