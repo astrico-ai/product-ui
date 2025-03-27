@@ -34,6 +34,11 @@ interface GroupedSessions {
   previousMonth: ChatSession[];
 }
 
+interface LocationState {
+  initialQuery?: string;
+  fromSearch?: boolean;
+}
+
 export default function ChatPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
@@ -43,88 +48,105 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [pendingResponse, setPendingResponse] = useState<string | null>(null);
   const [showVisualization, setShowVisualization] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedSessions = localStorage.getItem("chatSessions");
-    const dummyData: ChatSession[] = [
-      {
-        id: "1",
-        title: "AI Trends Discussion",
-        messages: [{
-          role: "user",
-          content: "What are the latest trends in AI?",
-          timestamp: Date.now()
-        }, {
-          role: "assistant",
-          content: "Some key AI trends include large language models, multimodal AI, and AI governance.",
-          timestamp: Date.now()
-        }],
-        createdAt: Date.now(),
-      },
-      {
-        id: "2",
-        title: "Python Programming Help",
-        messages: [{
-          role: "user",
-          content: "How do I use Python decorators?",
-          timestamp: Date.now() - 2 * 3600000
-        }],
-        createdAt: Date.now() - 2 * 3600000,
-      },
-      {
-        id: "3",
-        title: "Database Query Optimization",
-        messages: [{
-          role: "user",
-          content: "Best practices for SQL query optimization?",
-          timestamp: Date.now() - 86400000
-        }],
-        createdAt: Date.now() - 86400000,
-      },
-      {
-        id: "4",
-        title: "React Components Discussion",
-        messages: [{
-          role: "user",
-          content: "How to implement custom hooks?",
-          timestamp: Date.now() - 90000000
-        }],
-        createdAt: Date.now() - 90000000,
-      },
-      {
-        id: "5",
-        title: "Cloud Architecture Planning",
-        messages: [{
-          role: "user",
-          content: "Microservices vs Monolithic",
-          timestamp: Date.now() - 4 * 86400000
-        }],
-        createdAt: Date.now() - 4 * 86400000,
-      },
-      {
-        id: "6",
-        title: "Machine Learning Fundamentals",
-        messages: [{
-          role: "user",
-          content: "Explain neural networks",
-          timestamp: Date.now() - 20 * 86400000
-        }],
-        createdAt: Date.now() - 20 * 86400000,
-      },
-    ];
+    try {
+      const savedSessions = localStorage.getItem("chatSessions");
+      const dummyData: ChatSession[] = [
+        {
+          id: "1",
+          title: "AI Trends Discussion",
+          messages: [{
+            role: "user",
+            content: "What are the latest trends in AI?",
+            timestamp: Date.now()
+          }, {
+            role: "assistant",
+            content: "Some key AI trends include large language models, multimodal AI, and AI governance.",
+            timestamp: Date.now()
+          }],
+          createdAt: Date.now(),
+        },
+        {
+          id: "2",
+          title: "Python Programming Help",
+          messages: [{
+            role: "user",
+            content: "How do I use Python decorators?",
+            timestamp: Date.now() - 2 * 3600000
+          }],
+          createdAt: Date.now() - 2 * 3600000,
+        },
+        {
+          id: "3",
+          title: "Database Query Optimization",
+          messages: [{
+            role: "user",
+            content: "Best practices for SQL query optimization?",
+            timestamp: Date.now() - 86400000
+          }],
+          createdAt: Date.now() - 86400000,
+        },
+        {
+          id: "4",
+          title: "React Components Discussion",
+          messages: [{
+            role: "user",
+            content: "How to implement custom hooks?",
+            timestamp: Date.now() - 90000000
+          }],
+          createdAt: Date.now() - 90000000,
+        },
+        {
+          id: "5",
+          title: "Cloud Architecture Planning",
+          messages: [{
+            role: "user",
+            content: "Microservices vs Monolithic",
+            timestamp: Date.now() - 4 * 86400000
+          }],
+          createdAt: Date.now() - 4 * 86400000,
+        },
+        {
+          id: "6",
+          title: "Machine Learning Fundamentals",
+          messages: [{
+            role: "user",
+            content: "Explain neural networks",
+            timestamp: Date.now() - 20 * 86400000
+          }],
+          createdAt: Date.now() - 20 * 86400000,
+        },
+      ];
 
-    if (!savedSessions || JSON.parse(savedSessions).length === 0) {
-      setSessions(dummyData);
-      localStorage.setItem("chatSessions", JSON.stringify(dummyData));
-    } else {
-      setSessions(JSON.parse(savedSessions));
-    }
+      if (!savedSessions || JSON.parse(savedSessions).length === 0) {
+        setSessions(dummyData);
+        localStorage.setItem("chatSessions", JSON.stringify(dummyData));
+      } else {
+        setSessions(JSON.parse(savedSessions));
+      }
 
-    const state = location.state as { initialQuery?: string; fromSearch?: boolean };
-    if (state?.initialQuery && state?.fromSearch) {
-      createNewChat(state.initialQuery);
+      const state = location.state as LocationState;
+      if (state?.initialQuery && state?.fromSearch) {
+        createNewChat(state.initialQuery);
+      }
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+      setError('Failed to load chat sessions');
+      setSessions([]);
     }
   }, []);
+
+  // Save sessions to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem("chatSessions", JSON.stringify(sessions));
+    } catch (error) {
+      console.error('Error saving sessions:', error);
+      setError('Failed to save chat sessions');
+    }
+  }, [sessions]);
 
   const handleNewChat = () => {
     // Clear current session to show welcome screen
@@ -135,8 +157,8 @@ export default function ChatPage() {
     setIsLoading(true);
     setPendingResponse(null);
     setShowVisualization(false);
+    setError(null);
     
-    // Create new session immediately with user's message
     const newSession: ChatSession = {
       id: Date.now().toString(),
       title: query,
@@ -150,18 +172,14 @@ export default function ChatPage() {
       createdAt: Date.now()
     };
 
-    // Update sessions and set current session
-    setSessions(prev => {
-      const updated = [newSession, ...prev];
-      localStorage.setItem("chatSessions", JSON.stringify(updated));
-      return updated;
-    });
+    // Update sessions
+    setSessions(prev => [newSession, ...prev]);
     setCurrentSession(newSession);
     
     try {
       // Simulate API call with sample response
-      const response = await new Promise<string>((resolve) => {
-        setTimeout(() => {
+      const response = await new Promise<string>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
           resolve(`Based on the analysis of your Customer Acquisition Cost (CAC) data across different marketing channels over the past 6 months, here are the key insights:
 
 1. LinkedIn consistently shows the highest CAC, ranging from $63-70, indicating it's the most expensive channel but might be justified for B2B targeting.
@@ -170,12 +188,16 @@ export default function ChatPage() {
 
 Below is a detailed breakdown of CAC metrics across all channels:`);
         }, 2000);
+
+        // Cleanup timeout if component unmounts
+        return () => clearTimeout(timeoutId);
       });
       
       setPendingResponse(response);
       
     } catch (error) {
       console.error("Error:", error);
+      setError('Failed to generate response');
       setIsLoading(false);
     }
   };
@@ -338,10 +360,10 @@ Below is a detailed breakdown of CAC metrics across all channels:`);
   );
 
   const chatContent = (
-    <div className="flex h-[calc(100vh-4rem)] bg-background relative">
+    <div className="flex h-[calc(100vh-5rem)] bg-background relative">
       {/* Chat History Sidebar */}
       <div className={cn(
-        "fixed top-16 left-16 bottom-0 bg-background border-r transition-all duration-300 ease-in-out z-30",
+        "border-r bg-background transition-all duration-300 ease-in-out z-30 flex flex-col h-full",
         isChatSidebarCollapsed ? "w-[70px]" : "w-[260px]"
       )}>
         <div className="flex h-14 items-center justify-between px-4 border-b">
@@ -382,16 +404,18 @@ Below is a detailed breakdown of CAC metrics across all channels:`);
           </Button>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-10rem)]">
+        <ScrollArea className="flex-1">
           <div className="space-y-4 p-2">
             {Object.entries(groupSessionsByDate(sessions)).map(([period, groupedSessions]) => (
               groupedSessions.length > 0 && (
                 <div key={period} className="space-y-1">
-                  <h3 className="px-2 text-sm font-medium text-muted-foreground capitalize">
-                    {period === "previousWeek" ? "Previous 7 Days" :
-                     period === "previousMonth" ? "Previous 30 Days" :
-                     period}
-                  </h3>
+                  {!isChatSidebarCollapsed && (
+                    <h3 className="px-2 text-sm font-medium text-muted-foreground capitalize">
+                      {period === "previousWeek" ? "Previous 7 Days" :
+                       period === "previousMonth" ? "Previous 30 Days" :
+                       period}
+                    </h3>
+                  )}
                   {groupedSessions.map((session) => (
                     <TooltipProvider key={session.id} delayDuration={0}>
                       <Tooltip>
@@ -443,11 +467,8 @@ Below is a detailed breakdown of CAC metrics across all channels:`);
       </div>
 
       {/* Main Chat Area */}
-      <div className={cn(
-        "flex-1 transition-all duration-300",
-        isChatSidebarCollapsed ? "ml-[calc(4rem+70px)]" : "ml-[calc(4rem+260px)]"
-      )}>
-          {currentSession ? (
+      <div className="flex-1">
+        {currentSession ? (
           <div className="flex flex-col h-full">
             <ScrollArea className="flex-1 px-4">
               <div className="max-w-4xl mx-auto py-4 space-y-6">

@@ -1,4 +1,3 @@
-
 import { Play, Download, Users } from "lucide-react";
 
 interface VideoCardProps {

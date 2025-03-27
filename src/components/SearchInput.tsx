@@ -1,43 +1,53 @@
-import { useState, useEffect } from "react";
-import { Search, Paperclip, Send } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Paperclip, Send, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PaperclipIcon, SearchIcon } from "lucide-react";
 
 interface SearchInputProps {
   onSearch?: (query: string) => void;
   autoFocus?: boolean;
 }
 
-export function SearchInput({ onSearch, autoFocus }: SearchInputProps) {
+export function SearchInput({ onSearch, autoFocus = false }: SearchInputProps) {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
     
-    if (onSearch) {
-      onSearch(query.trim());
-    } else {
-      // Default behavior - navigate to chat page
-      navigate("/chat", { 
-        state: { 
-          initialQuery: query.trim(),
-          fromSearch: true 
-        } 
-      });
+    setIsLoading(true);
+    try {
+      if (onSearch) {
+        await onSearch(query.trim());
+      } else {
+        // Default behavior - navigate to chat page
+        await navigate("/chat", { 
+          state: { 
+            initialQuery: query.trim(),
+            fromSearch: true 
+          } 
+        });
+      }
+      setQuery("");
+    } catch (error) {
+      console.error('Error submitting query:', error);
+    } finally {
+      setIsLoading(false);
     }
-    setQuery("");
   };
 
   useEffect(() => {
     if (autoFocus) {
-      const timer = setTimeout(() => {
-        const input = document.querySelector<HTMLInputElement>('input[type="text"]');
-        if (input) {
-          input.focus();
-        }
-      }, 100);
-      return () => clearTimeout(timer);
+      try {
+        inputRef.current?.focus();
+      } catch (error) {
+        console.error('Error focusing input:', error);
+      }
     }
   }, [autoFocus]);
 
@@ -47,26 +57,37 @@ export function SearchInput({ onSearch, autoFocus }: SearchInputProps) {
         <div className="bg-primary/10 p-2 rounded-full">
           <Search className="h-5 w-5 text-primary flex-shrink-0" />
         </div>
-        <input
+        <Input
+          ref={inputRef}
           type="text"
           placeholder="Search for information, documents, people, and more..."
-          className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none text-lg"
+          className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none text-lg pr-24"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search input"
         />
-        <button 
-          type="button" 
-          className="rounded-full p-1.5 hover:bg-secondary transition-colors"
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          aria-label="Attach file"
         >
-          <Paperclip className="h-5 w-5 text-muted-foreground" />
-        </button>
-        <button 
+          <PaperclipIcon className="h-4 w-4" />
+        </Button>
+        <Button
           type="submit"
-          className="rounded-full bg-primary p-2.5 text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-          disabled={!query.trim()}
+          size="icon"
+          className="h-8 w-8"
+          disabled={!query.trim() || isLoading}
+          aria-label="Submit search"
         >
-          <Send className="h-5 w-5" />
-        </button>
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
+        </Button>
       </form>
     </div>
   );

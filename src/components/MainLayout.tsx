@@ -31,30 +31,32 @@ export function MainLayout({
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
       <main className={cn(
         "transition-all duration-300 ease-in-out",
-        isCollapsed ? "pl-16" : "pl-60"
+        isCollapsed ? "pl-20" : "pl-64"
       )}>
-        <div className="flex items-center justify-between h-16 px-4 border-b">
-          <h1 className="text-xl font-semibold">
+        <div className="flex items-center justify-between h-20 px-6 border-b">
+          <h1 className="text-xl font-medium text-foreground">
             {greeting}, {userName}
           </h1>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
               <Bell className="h-5 w-5" />
             </Button>
             <Link to="/chat">
-              <Button variant="ghost" size="icon" className="text-muted-foreground">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
                 <MessageSquare className="h-5 w-5" />
               </Button>
             </Link>
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
               <Settings className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
               <HelpCircle className="h-5 w-5" />
             </Button>
           </div>
         </div>
-        {children}
+        <div className="px-6 py-8">
+          {children}
+        </div>
       </main>
     </div>
   );

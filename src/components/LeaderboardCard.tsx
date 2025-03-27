@@ -1,4 +1,3 @@
-
 import { Trophy } from "lucide-react";
 
 interface LeaderboardItemProps {
