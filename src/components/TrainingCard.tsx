@@ -1,4 +1,3 @@
-
 import { Check, X, Download } from "lucide-react";
 
 interface TrainingItemProps {
@@ -36,16 +35,22 @@ const TrainingItem = ({ title, isCompleted, isFailed }: TrainingItemProps) => {
 
 export function TrainingCard() {
   return (
-    <div className="rounded-xl border bg-card shadow-subtle overflow-hidden animate-fade-in">
-      <div className="p-5 border-b">
-        <h3 className="text-lg font-semibold">AI Training Module</h3>
-        <p className="text-muted-foreground text-sm mt-1">Enhance your skill with these essential training topics</p>
-      </div>
-      <div className="p-4">
-        <TrainingItem title="Negotiating Two-Wheeler Interest Rates" isCompleted />
-        <TrainingItem title="Handling Angry Customers for Tractor Loans" isFailed />
-        <TrainingItem title="Building Trust with Rural Customers" isCompleted />
-        <TrainingItem title="Effective Loan Recovery Strategies" isCompleted />
+    <div className="rounded-lg border p-4">
+      <h3 className="font-semibold mb-2">Training Resources</h3>
+      <p className="text-sm text-gray-600">Access your training materials and courses here.</p>
+      <div className="mt-4">
+        <TrainingItem 
+          title="Customer Service Excellence" 
+          isCompleted={true}
+        />
+        <TrainingItem 
+          title="Product Knowledge" 
+          isFailed={true}
+        />
+        <TrainingItem 
+          title="Sales Techniques" 
+          isCompleted={true}
+        />
       </div>
     </div>
   );

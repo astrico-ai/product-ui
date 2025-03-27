@@ -1,259 +1,646 @@
-
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { MainLayout } from "@/components/MainLayout";
-import { ChatSidebar } from "@/components/ChatSidebar";
-import { ChatInterface } from "@/components/ChatInterface";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Plus, Send, Trash2, MessageSquare, ThumbsUp, ThumbsDown, Copy, Share2, Paperclip, ChevronRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { useLocation } from "react-router-dom";
+import { SearchInput } from "@/components/SearchInput";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MainLayout } from "@/components/MainLayout";
+import { LoadingSteps } from "@/components/LoadingSteps";
+import { DataVisualization } from "@/components/DataVisualization";
+import { TypewriterText } from "@/components/TypewriterText";
 
-// Types for chat messages
-export interface ChatMessage {
-  id: string;
+interface ChatMessage {
+  role: "user" | "assistant";
   content: string;
-  type: "user" | "assistant";
-  timestamp: Date;
+  timestamp: number;
+  feedback?: "up" | "down";
 }
 
-export interface ChatSession {
+interface ChatSession {
   id: string;
   title: string;
-  lastMessage: Date;
   messages: ChatMessage[];
+  createdAt: number;
 }
 
-const ChatPage = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingSteps, setLoadingSteps] = useState<string[]>([]);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+// Add new interface for grouped sessions
+interface GroupedSessions {
+  today: ChatSession[];
+  yesterday: ChatSession[];
+  previousWeek: ChatSession[];
+  previousMonth: ChatSession[];
+}
+
+interface LocationState {
+  initialQuery?: string;
+  fromSearch?: boolean;
+}
+
+export default function ChatPage() {
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
+  const [input, setInput] = useState("");
+  const [isChatSidebarCollapsed, setIsChatSidebarCollapsed] = useState(false);
+  const location = useLocation();
+  const [isLoading, setIsLoading] = useState(false);
+  const [pendingResponse, setPendingResponse] = useState<string | null>(null);
+  const [showVisualization, setShowVisualization] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Loading states
-  const steps = [
-    "Understanding your query...",
-    "Scanning SOP documents for key insights...",
-    "Analyzing video content for relevant context...",
-    "Compiling structured recommendations...",
-    "Generating response and next best actions..."
-  ];
+  useEffect(() => {
+    try {
+      const savedSessions = localStorage.getItem("chatSessions");
+      const dummyData: ChatSession[] = [
+        {
+          id: "1",
+          title: "AI Trends Discussion",
+          messages: [{
+            role: "user",
+            content: "What are the latest trends in AI?",
+            timestamp: Date.now()
+          }, {
+            role: "assistant",
+            content: "Some key AI trends include large language models, multimodal AI, and AI governance.",
+            timestamp: Date.now()
+          }],
+          createdAt: Date.now(),
+        },
+        {
+          id: "2",
+          title: "Python Programming Help",
+          messages: [{
+            role: "user",
+            content: "How do I use Python decorators?",
+            timestamp: Date.now() - 2 * 3600000
+          }],
+          createdAt: Date.now() - 2 * 3600000,
+        },
+        {
+          id: "3",
+          title: "Database Query Optimization",
+          messages: [{
+            role: "user",
+            content: "Best practices for SQL query optimization?",
+            timestamp: Date.now() - 86400000
+          }],
+          createdAt: Date.now() - 86400000,
+        },
+        {
+          id: "4",
+          title: "React Components Discussion",
+          messages: [{
+            role: "user",
+            content: "How to implement custom hooks?",
+            timestamp: Date.now() - 90000000
+          }],
+          createdAt: Date.now() - 90000000,
+        },
+        {
+          id: "5",
+          title: "Cloud Architecture Planning",
+          messages: [{
+            role: "user",
+            content: "Microservices vs Monolithic",
+            timestamp: Date.now() - 4 * 86400000
+          }],
+          createdAt: Date.now() - 4 * 86400000,
+        },
+        {
+          id: "6",
+          title: "Machine Learning Fundamentals",
+          messages: [{
+            role: "user",
+            content: "Explain neural networks",
+            timestamp: Date.now() - 20 * 86400000
+          }],
+          createdAt: Date.now() - 20 * 86400000,
+        },
+      ];
 
-  // Function to generate a unique ID
-  const generateId = () => {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+      if (!savedSessions || JSON.parse(savedSessions).length === 0) {
+        setSessions(dummyData);
+        localStorage.setItem("chatSessions", JSON.stringify(dummyData));
+      } else {
+        setSessions(JSON.parse(savedSessions));
+      }
+
+      const state = location.state as LocationState;
+      if (state?.initialQuery && state?.fromSearch) {
+        createNewChat(state.initialQuery);
+      }
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+      setError('Failed to load chat sessions');
+      setSessions([]);
+    }
+  }, []);
+
+  // Save sessions to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem("chatSessions", JSON.stringify(sessions));
+    } catch (error) {
+      console.error('Error saving sessions:', error);
+      setError('Failed to save chat sessions');
+    }
+  }, [sessions]);
+
+  const handleNewChat = () => {
+    // Clear current session to show welcome screen
+    setCurrentSession(null);
   };
 
-  // Create a new chat session
-  const createNewChat = (initialQuery?: string) => {
-    const newSession: ChatSession = {
-      id: generateId(),
-      title: initialQuery?.substring(0, 30) || "New conversation",
-      lastMessage: new Date(),
-      messages: initialQuery ? [
-        {
-          id: generateId(),
-          content: initialQuery,
-          type: "user",
-          timestamp: new Date()
-        }
-      ] : []
-    };
+  const createNewChat = async (query: string) => {
+    setIsLoading(true);
+    setPendingResponse(null);
+    setShowVisualization(false);
+    setError(null);
     
-    setChatSessions(prev => [newSession, ...prev]);
+    const newSession: ChatSession = {
+      id: Date.now().toString(),
+      title: query,
+      messages: [
+        {
+          role: "user",
+          content: query,
+          timestamp: Date.now()
+        }
+      ],
+      createdAt: Date.now()
+    };
+
+    // Update sessions
+    setSessions(prev => [newSession, ...prev]);
     setCurrentSession(newSession);
     
-    if (initialQuery) {
-      simulateResponse(newSession.id, initialQuery);
+    try {
+      // Simulate API call with sample response
+      const response = await new Promise<string>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          resolve(`Based on the analysis of your Customer Acquisition Cost (CAC) data across different marketing channels over the past 6 months, here are the key insights:
+
+1. LinkedIn consistently shows the highest CAC, ranging from $63-70, indicating it's the most expensive channel but might be justified for B2B targeting.
+2. Facebook maintains the lowest CAC, averaging around $39, making it the most cost-effective channel.
+3. YouTube and Google show moderate CAC values with slight fluctuations, suggesting stable performance.
+
+Below is a detailed breakdown of CAC metrics across all channels:`);
+        }, 2000);
+
+        // Cleanup timeout if component unmounts
+        return () => clearTimeout(timeoutId);
+      });
+      
+      setPendingResponse(response);
+      
+    } catch (error) {
+      console.error("Error:", error);
+      setError('Failed to generate response');
+      setIsLoading(false);
     }
   };
 
-  // Simulate fetching a response
-  const simulateResponse = (sessionId: string, query: string) => {
-    setIsLoading(true);
-    setLoadingSteps(steps);
-    setCurrentStep(0);
-    
-    // Simulate the steps with increasing delays
-    const intervalTime = 800;
-    const stepInterval = setInterval(() => {
-      setCurrentStep(prev => {
-        if (prev >= steps.length - 1) {
-          clearInterval(stepInterval);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, intervalTime);
-    
-    // After all steps, add the response to the chat
-    setTimeout(() => {
-      setChatSessions(prev => {
-        return prev.map(session => {
-          if (session.id === sessionId) {
-            const updatedMessages = [...session.messages];
-            
-            // Sample responses based on query content
-            let responseText = "";
-            if (query.toLowerCase().includes("car loan")) {
-              responseText = "There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.\n\n" +
-                "💠 General documents are:\n\n" +
-                "1. Application Form\n" +
-                "2. Performa Invoice\n" +
-                "3. Passport size photo\n" +
-                "4. KYC proof\n\n" +
-                "📋 Apart from these, you'll also need:\n\n" +
-                "1. Audited balance sheet for last two years\n" +
-                "2. Shareholding pattern\n" +
-                "3. Bank statements for the last 6 months";
-            } else if (query.toLowerCase().includes("tool") || query.toLowerCase().includes("available")) {
-              responseText = "We have several tools available for enterprise knowledge management:\n\n" +
-                "1. Document Search - Search across all company documents\n" +
-                "2. Video Indexing - Find specific moments in company videos\n" +
-                "3. Knowledge Graph - See relationships between people and documents\n" +
-                "4. Automated Tagging - AI-powered document organization";
-            } else {
-              responseText = "I've searched our knowledge base and compiled the following information based on your query.\n\n" +
-                "The most relevant resources I found are:\n" +
-                "1. Company handbook (Section 3.2)\n" +
-                "2. Recent team presentation from July 15th\n" +
-                "3. Product documentation\n\n" +
-                "Would you like me to provide more specific details from any of these sources?";
-            }
-            
-            updatedMessages.push({
-              id: generateId(),
-              content: responseText,
-              type: "assistant",
-              timestamp: new Date()
-            });
-            
-            return {
-              ...session,
-              messages: updatedMessages,
-              lastMessage: new Date()
-            };
-          }
-          return session;
-        });
-      });
+  const handleLoadingComplete = () => {
+    if (pendingResponse && currentSession) {
+      const newMessage: ChatMessage = {
+        role: "assistant",
+        content: pendingResponse,
+        timestamp: Date.now(),
+      };
+      
+      const updatedSession = {
+        ...currentSession,
+        messages: [...currentSession.messages, newMessage],
+      };
+      
+      setCurrentSession(updatedSession);
+      setSessions(prev =>
+        prev.map(s => (s.id === updatedSession.id ? updatedSession : s))
+      );
+      
+      localStorage.setItem("chatSessions", JSON.stringify(
+        sessions.map(s => (s.id === updatedSession.id ? updatedSession : s))
+      ));
       
       setIsLoading(false);
-    }, steps.length * intervalTime + 1000);
+      setPendingResponse(null);
+    }
   };
 
-  // Handle sending a new message
-  const handleSendMessage = (message: string) => {
-    if (!message.trim()) return;
-    
-    if (!currentSession) {
-      createNewChat(message);
-      return;
+  const deleteSession = (sessionId: string) => {
+    const updatedSessions = sessions.filter((s) => s.id !== sessionId);
+    setSessions(updatedSessions);
+    if (currentSession?.id === sessionId) {
+      setCurrentSession(null);
     }
+    localStorage.setItem("chatSessions", JSON.stringify(updatedSessions));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    const chatContent = input;
+    setInput("");
     
-    // Add user message to current session
-    setChatSessions(prev => {
-      return prev.map(session => {
-        if (session.id === currentSession.id) {
-          const updatedMessages = [...session.messages, {
-            id: generateId(),
-            content: message,
-            type: "user",
-            timestamp: new Date()
-          }];
-          
-          return {
-            ...session,
+    if (currentSession) {
+      setIsLoading(true);
+      
+      // Add user message immediately
+      const userMessage: ChatMessage = {
+        role: "user",
+        content: chatContent,
+        timestamp: Date.now(),
+      };
+
+      const updatedSession = {
+        ...currentSession,
+        messages: [...currentSession.messages, userMessage],
+      };
+
+      setCurrentSession(updatedSession);
+      setSessions(prev => 
+        prev.map(s => s.id === currentSession.id ? updatedSession : s)
+      );
+
+      // Simulate API delay with loading steps
+      await new Promise(resolve => setTimeout(resolve, 4500));
+      
+      // Add AI response after loading
+      const aiMessage: ChatMessage = {
+        role: "assistant",
+        content: "Here's what I found based on your query...\n\nSources: Salesforce, Freshdesk",
+        timestamp: Date.now(),
+      };
+
+      const finalSession = {
+        ...updatedSession,
+        messages: [...updatedSession.messages, aiMessage],
+      };
+
+      setCurrentSession(finalSession);
+      setSessions(prev => 
+        prev.map(s => s.id === currentSession.id ? finalSession : s)
+      );
+      localStorage.setItem("chatSessions", JSON.stringify(
+        sessions.map(s => s.id === currentSession.id ? finalSession : s)
+      ));
+      
+      setIsLoading(false);
+    } else {
+      // Create new chat
+      await createNewChat(chatContent);
+    }
+  };
+
+  const handleFeedback = (messageIndex: number, feedback: "up" | "down") => {
+    if (!currentSession) return;
+    
+    const updatedMessages = [...currentSession.messages];
+    updatedMessages[messageIndex] = {
+      ...updatedMessages[messageIndex],
+      feedback,
+    };
+
+    const updatedSession = {
+      ...currentSession,
             messages: updatedMessages,
-            lastMessage: new Date()
-          };
-        }
-        return session;
-      });
-    });
-    
-    // Simulate response
-    simulateResponse(currentSession.id, message);
+    };
+
+    setCurrentSession(updatedSession);
+    setSessions(sessions.map((s) => (s.id === currentSession.id ? updatedSession : s)));
+    localStorage.setItem("chatSessions", JSON.stringify(sessions.map((s) => (s.id === currentSession.id ? updatedSession : s))));
   };
 
-  // Handle click on chat session
-  const handleSessionClick = (sessionId: string) => {
-    const session = chatSessions.find(s => s.id === sessionId);
-    if (session) {
-      setCurrentSession(session);
-    }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
   };
 
-  // New chat button handler
-  const handleNewChat = () => {
-    createNewChat();
-    toast({
-      title: "New chat created",
-      description: "Enter your query in the search box below",
-    });
+  // Function to group sessions by date
+  const groupSessionsByDate = (sessions: ChatSession[]): GroupedSessions => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterday = today - 86400000;
+    const weekAgo = today - 7 * 86400000;
+    const monthAgo = today - 30 * 86400000;
+
+    return {
+      today: sessions.filter(s => s.createdAt >= today),
+      yesterday: sessions.filter(s => s.createdAt >= yesterday && s.createdAt < today),
+      previousWeek: sessions.filter(s => s.createdAt >= weekAgo && s.createdAt < yesterday),
+      previousMonth: sessions.filter(s => s.createdAt >= monthAgo && s.createdAt < weekAgo),
+    };
   };
 
-  // Process query from the search if coming from home page
-  useEffect(() => {
-    if (location.state?.query) {
-      const query = location.state.query;
-      setSearchQuery(query);
-      
-      // Check if we have any existing sessions
-      if (chatSessions.length === 0) {
-        createNewChat(query);
-      } else {
-        handleSendMessage(query);
-      }
-      
-      // Clear the location state to prevent reprocessing on navigation
-      navigate(location.pathname, { replace: true });
-    } else if (!currentSession && chatSessions.length > 0) {
-      // Set the first session as current if none is selected
-      setCurrentSession(chatSessions[0]);
-    }
-  }, [location.state, chatSessions.length]);
-
-  return (
-    <MainLayout userName="Vraj" greeting="Good evening">
-      <div className="flex h-[calc(100vh-120px)]">
-        <ChatSidebar 
-          sessions={chatSessions}
-          currentSessionId={currentSession?.id || ""}
-          onSessionClick={handleSessionClick}
-          onNewChat={handleNewChat}
-        />
-        
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {currentSession ? (
-            <ChatInterface 
-              messages={currentSession.messages}
-              isLoading={isLoading}
-              loadingSteps={loadingSteps}
-              currentStep={currentStep}
-              onSendMessage={handleSendMessage}
-            />
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8">
-              <h2 className="text-2xl font-bold text-glean-800 mb-4">Start a new conversation</h2>
-              <p className="text-muted-foreground mb-8 text-center max-w-md">
-                Search for information across your enterprise knowledge base by typing a query.
-              </p>
-              <Button onClick={handleNewChat} size="lg" className="gap-2">
-                <PlusCircle className="h-5 w-5" />
-                New Chat
-              </Button>
-            </div>
-          )}
+  const WelcomeScreen = () => (
+    <div className="flex flex-col items-center justify-center h-full max-w-3xl mx-auto px-4">
+      <div className="w-full space-y-8">
+        <div className="space-y-2 text-center">
+          <h1 className="text-5xl font-bold tracking-tight text-foreground animate-fade-in">
+            Hello, Sanuj
+          </h1>
+          <p className="text-lg text-muted-foreground animate-fade-in-up">
+            Ask me anything or search through your knowledge base
+          </p>
+        </div>
+        <div className="w-full animate-fade-in-up [--tw-animate-delay:200ms]">
+          <SearchInput 
+            onSearch={(query) => {
+              if (query.trim()) {
+                createNewChat(query);
+              }
+            }}
+            autoFocus
+          />
         </div>
       </div>
+    </div>
+  );
+
+  const chatContent = (
+    <div className="flex h-[calc(100vh-5rem)] bg-background relative">
+      {/* Chat History Sidebar */}
+      <div className={cn(
+        "border-r bg-background transition-all duration-300 ease-in-out z-30 flex flex-col h-full",
+        isChatSidebarCollapsed ? "w-[70px]" : "w-[260px]"
+      )}>
+        <div className="flex h-14 items-center justify-between px-4 border-b">
+          <div className={cn(
+            "flex items-center gap-2 transition-opacity duration-200",
+            isChatSidebarCollapsed && "opacity-0 pointer-events-none"
+          )}>
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold">C</span>
+            </div>
+            <span className="font-semibold">Chats</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setIsChatSidebarCollapsed(!isChatSidebarCollapsed)}
+          >
+            {isChatSidebarCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
+        <div className="p-3">
+          <Button
+            variant="default"
+            className={cn(
+              "w-full bg-primary transition-all duration-200",
+              isChatSidebarCollapsed ? "justify-center px-0" : "justify-start gap-2"
+            )}
+            onClick={handleNewChat}
+          >
+            <Plus className="h-4 w-4" />
+            {!isChatSidebarCollapsed && "New Chat"}
+          </Button>
+        </div>
+
+        <ScrollArea className="flex-1">
+          <div className="space-y-4 p-2">
+            {Object.entries(groupSessionsByDate(sessions)).map(([period, groupedSessions]) => (
+              groupedSessions.length > 0 && (
+                <div key={period} className="space-y-1">
+                  {!isChatSidebarCollapsed && (
+                    <h3 className="px-2 text-sm font-medium text-muted-foreground capitalize">
+                      {period === "previousWeek" ? "Previous 7 Days" :
+                       period === "previousMonth" ? "Previous 30 Days" :
+                       period}
+                    </h3>
+                  )}
+                  {groupedSessions.map((session) => (
+                    <TooltipProvider key={session.id} delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className={cn(
+                            "group flex items-center rounded-lg cursor-pointer hover:bg-accent transition-colors px-2",
+                            currentSession?.id === session.id && "bg-accent"
+                          )}>
+                            <Button
+                              variant="ghost"
+                              className={cn(
+                                "flex-1 justify-start h-9 px-2",
+                                isChatSidebarCollapsed && "justify-center"
+                              )}
+                              onClick={() => setCurrentSession(session)}
+                            >
+                              {!isChatSidebarCollapsed && (
+                                <span className="truncate">{session.title}</span>
+                              )}
+                            </Button>
+                            {!isChatSidebarCollapsed && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteSession(session.id);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        {isChatSidebarCollapsed && (
+                          <TooltipContent side="right">
+                            <p>{session.title}</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              )
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1">
+        {currentSession ? (
+          <div className="flex flex-col h-full">
+            <ScrollArea className="flex-1 px-4">
+              <div className="max-w-4xl mx-auto py-4 space-y-6">
+                {currentSession.messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "flex w-full",
+                      message.role === "user" ? "justify-end" : "justify-start"
+                    )}
+                  >
+                    <div className={cn(
+                      "max-w-[85%] px-4 py-3",
+                      message.role === "user" && "bg-primary/10 rounded-lg"
+                    )}>
+                      {message.role === "user" ? (
+                        <p className="text-foreground whitespace-pre-wrap">
+                          {message.content}
+                        </p>
+                      ) : (
+                        <>
+                          <TypewriterText 
+                            content={message.content} 
+                            speed={10}
+                            onComplete={() => {
+                              if (message === currentSession?.messages[currentSession.messages.length - 1]) {
+                                setShowVisualization(true);
+                              }
+                            }}
+                          />
+                          {showVisualization && (
+                            <>
+                              {message === currentSession?.messages[currentSession.messages.length - 1] && 
+                               showVisualization && <DataVisualization />}
+                              
+                              <div className="flex items-center gap-2 mt-4 text-muted-foreground">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 hover:text-primary"
+                                        onClick={() => handleFeedback(index, "up")}
+                                      >
+                                        <ThumbsUp className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Helpful</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 hover:text-primary"
+                                        onClick={() => handleFeedback(index, "down")}
+                                      >
+                                        <ThumbsDown className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Not helpful</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 hover:text-primary"
+                                        onClick={() => copyToClipboard(message.content)}
+                                      >
+                                        <Copy className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Copy to clipboard</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 hover:text-primary"
+                                      >
+                                        <Share2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Share</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                              
+                              {message === currentSession?.messages[currentSession.messages.length - 1] && (
+                                <div className="flex gap-2 mt-2 flex-wrap">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-full text-sm text-[#0000ff] hover:text-[#0000ff] bg-[#0000ff17] hover:bg-[#0000ff17] border-0"
+                                    onClick={() => {
+                                      const query = "Can you explain the CAC trends for LinkedIn in more detail?";
+                                      setInput(query);
+                                      handleSubmit(new Event('submit') as any);
+                                    }}
+                                  >
+                                    Explain LinkedIn CAC trends
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-full text-sm text-[#0000ff] hover:text-[#0000ff] bg-[#0000ff17] hover:bg-[#0000ff17] border-0"
+                                    onClick={() => {
+                                      const query = "What strategies would you recommend to optimize CAC across channels?";
+                                      setInput(query);
+                                      handleSubmit(new Event('submit') as any);
+                                    }}
+                                  >
+                                    Recommend optimization strategies
+                                  </Button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="mt-4">
+                    <LoadingSteps onComplete={handleLoadingComplete} />
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+
+            <div className="border-t p-4">
+              <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+                <div className="flex items-center gap-2 bg-background rounded-xl border shadow-sm p-2">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Type your message..."
+                    className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    disabled={isLoading}
+                  />
+                  <Button type="button" variant="ghost" size="icon" className="text-muted-foreground" disabled={isLoading}>
+                    <Paperclip className="h-5 w-5" />
+                  </Button>
+                  <Button type="submit" size="icon" disabled={!input.trim() || isLoading}>
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <WelcomeScreen />
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <MainLayout userName="Sanuj" greeting="Good evening" autoCollapse={true}>
+      {chatContent}
     </MainLayout>
   );
-};
-
-export default ChatPage;
+} 

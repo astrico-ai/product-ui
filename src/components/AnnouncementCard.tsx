@@ -1,48 +1,61 @@
+import { Bell, ArrowRight } from "lucide-react";
 
-import { Bell, ChevronRight } from "lucide-react";
-
-interface AnnouncementProps {
+interface AnnouncementItemProps {
   title: string;
-  description: string;
-  isHighlighted?: boolean;
+  date: string;
+  isNew?: boolean;
 }
 
-const Announcement = ({ title, description, isHighlighted }: AnnouncementProps) => {
-  return (
-    <div className={`p-4 rounded-lg transition-all ${isHighlighted ? 'bg-primary/5 border border-primary/10' : 'hover:bg-secondary/80'}`}>
-      <h4 className="font-medium flex items-center gap-2 text-navy-800">
-        {isHighlighted && <span className="text-red-500">🔔</span>}
-        {title}
-      </h4>
-      <p className="text-muted-foreground text-sm mt-1">{description}</p>
+const AnnouncementItem = ({ title, date, isNew }: AnnouncementItemProps) => (
+  <div className="flex items-center justify-between py-2">
+    <div className="flex items-center gap-2">
+      <span className="font-medium">{title}</span>
+      {isNew && (
+        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+          New
+        </span>
+      )}
     </div>
-  );
-};
+    <span className="text-sm text-muted-foreground">{date}</span>
+  </div>
+);
 
 export function AnnouncementCard() {
+  const announcements = [
+    {
+      title: "New Product Launch Meeting",
+      date: "Today, 2:00 PM",
+      isNew: true,
+    },
+    {
+      title: "Q1 Performance Review",
+      date: "Tomorrow, 10:00 AM",
+      isNew: true,
+    },
+    {
+      title: "Team Building Event",
+      date: "Mar 28, 2024",
+    },
+  ];
+
   return (
-    <div className="rounded-xl border bg-card shadow-subtle overflow-hidden animate-fade-in">
-      <div className="p-5 border-b flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Announcements</h3>
+    <div className="rounded-xl border bg-card shadow-subtle p-4 animate-fade-in">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="bg-primary/10 p-2 rounded-full">
+            <Bell className="h-5 w-5 text-primary" />
+          </div>
+          <h3 className="font-semibold">Recent Announcements</h3>
+        </div>
         <button className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
           <span>View All</span>
-          <ChevronRight className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4" />
         </button>
       </div>
-      <div className="p-4 space-y-4">
-        <Announcement 
-          title="New Spinny leads assigned! Please check"
-          description="Exciting news! New vehicle loan leads have been assigned to you."
-          isHighlighted
-        />
-        <Announcement 
-          title="Quarterly targets updated"
-          description="Your quarterly targets have been updated in the dashboard."
-        />
-        <Announcement 
-          title="New training session: Customer Engagement"
-          description="Join us for a new training session on effective customer engagement techniques."
-        />
+      <div className="space-y-2 divide-y">
+        {announcements.map((announcement) => (
+          <AnnouncementItem key={announcement.title} {...announcement} />
+        ))}
       </div>
     </div>
   );

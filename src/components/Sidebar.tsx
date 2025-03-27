@@ -1,66 +1,81 @@
-
-import { Home, MessageSquare, BookOpen, BarChart2, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Home, MessageSquare, Users, FileText, Settings } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
-export function Sidebar() {
+interface SidebarProps {
+  isCollapsed: boolean;
+  setIsCollapsed: (value: boolean) => void;
+}
+
+const menuItems = [
+  { icon: Home, label: "Home", path: "/" },
+  { icon: MessageSquare, label: "Chat", path: "/chat" },
+  { icon: Users, label: "Sources", path: "/sources" },
+  { icon: FileText, label: "Training", path: "/training" },
+  { icon: Settings, label: "Dashboard", path: "/dashboard" },
+];
+
+export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const location = useLocation();
-  
-  const navigation = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Chat', href: '/chat', icon: MessageSquare },
-    { name: 'AI Training', href: '/training', icon: BookOpen },
-    { name: 'Dashboard', href: '/dashboard', icon: BarChart2 },
-    { name: 'Sources', href: '/sources', icon: FileText },
-  ];
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-[70px] xl:w-[240px] bg-sidebar z-30 flex flex-col overflow-hidden transition-all duration-300">
-      <div className="flex h-16 items-center justify-center xl:justify-start xl:px-6 border-b border-sidebar-border">
-        <div className="hidden xl:flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold">S</span>
-          </div>
-          <span className="text-sidebar-foreground font-semibold">SleekSearch</span>
-        </div>
-        <div className="xl:hidden">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold">S</span>
-          </div>
-        </div>
+    <div
+      className={cn(
+        "fixed left-0 top-0 h-screen bg-blue-50/40 dark:bg-blue-950/20 border-r border-r-blue-100 dark:border-r-blue-900/30 transition-all duration-300 ease-in-out z-50",
+        isCollapsed ? "w-20" : "w-64"
+      )}
+    >
+      <div className="flex h-20 items-center justify-between px-5 border-b border-b-blue-100 dark:border-b-blue-900/30 bg-background">
+        {!isCollapsed && (
+          <span className="text-2xl font-bold">
+            Astrico <span className="text-primary">AI</span>
+          </span>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn("h-8 w-8", isCollapsed && "ml-auto mr-auto")}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-6 w-6" />
+          ) : (
+            <ChevronLeft className="h-6 w-6" />
+          )}
+        </Button>
       </div>
-      
-      <nav className="flex-1 pt-5 px-2">
-        <ul className="space-y-1">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <li key={item.name}>
-                <Link 
-                  to={item.href} 
-                  className={`sidebar-link ${isActive ? 'active' : ''}`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="hidden xl:block">{item.name}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="space-y-2 p-4">
+        {menuItems.map(({ icon: Icon, label, path }) => (
+          <Link key={path} to={path}>
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full py-6 transition-all duration-200",
+                isCollapsed ? "justify-center" : "justify-start gap-4",
+                location.pathname === path 
+                  ? "bg-primary/15 text-primary hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/25" 
+                  : "hover:bg-blue-100/50 dark:hover:bg-blue-900/20 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Icon className={cn(
+                "h-6 w-6 transition-colors",
+                location.pathname === path 
+                  ? "text-primary" 
+                  : "text-muted-foreground group-hover:text-foreground"
+              )} />
+              {!isCollapsed && (
+                <span className={cn(
+                  "text-base transition-colors",
+                  location.pathname === path && "text-primary font-medium"
+                )}>
+                  {label}
+                </span>
+              )}
+            </Button>
+          </Link>
+        ))}
       </nav>
-      
-      <div className="p-4 hidden xl:block">
-        <div className="rounded-lg bg-sidebar-accent p-3">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="text-primary-foreground text-sm font-medium">VP</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-sidebar-foreground">Vraj Patel</p>
-              <p className="text-xs text-sidebar-foreground/70">Premium Plan</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
+    </div>
   );
 }
