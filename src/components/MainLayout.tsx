@@ -54,7 +54,7 @@ export function MainLayout({
             </Button>
           </div>
         </div>
-        <div className="px-6 py-8">
+        <div className="px-6 py-2">
           {children}
         </div>
       </main>
