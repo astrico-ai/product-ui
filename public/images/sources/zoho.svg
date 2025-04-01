@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <g transform="translate(10, 60)">
+    <rect x="0" y="0" width="40" height="40" fill="#F5334F"/>
+    <rect x="46" y="0" width="40" height="40" fill="#34A853"/>
+    <rect x="92" y="0" width="40" height="40" fill="#4285F4"/>
+    <rect x="138" y="0" width="40" height="40" fill="#FBBC05"/>
+    <text x="90" y="70" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#333">ZOHO</text>
+  </g>
+</svg> 

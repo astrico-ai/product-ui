@@ -10,20 +10,41 @@ import {
   Settings, 
   HelpCircle,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  BarChart,
+  LineChart,
+  PieChart,
+  TrendingUp,
+  Mail
 } from "lucide-react";
 
-const navItems = [
+// Main nav items for the general application
+const mainNavItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: MessageSquare, label: "Chat", path: "/chat" },
+  { icon: BarChart, label: "Marketing", path: "/marketing" },
   { icon: Users2, label: "Sources", path: "/sources" },
   { icon: GraduationCap, label: "Training", path: "/training" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
 ];
 
+// Marketing-specific nav items
+const marketingNavItems = [
+  { icon: Home, label: "Home", path: "/marketing" },
+  { icon: MessageSquare, label: "Chat", path: "/chat/marketing" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/marketing/dashboard" },
+  { icon: Users2, label: "Sources", path: "/marketing/sources" },
+];
+
 export function MainLayout({ children }) {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(true);
+  
+  // Determine if we're in the marketing section of the app
+  const isMarketingSection = location.pathname.includes('/marketing') || location.pathname === '/chat/marketing';
+  
+  // Choose which nav items to display
+  const navItems = isMarketingSection ? marketingNavItems : mainNavItems;
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] flex">
@@ -46,11 +67,29 @@ export function MainLayout({ children }) {
           </button>
         </div>
 
+        {/* Section Title when expanded */}
+        {!isCollapsed && (
+          <div className="px-6 mb-4">
+            <h2 className="text-sm font-semibold text-gray-900">
+              {isMarketingSection ? "Marketing Hub" : "Enterprise Hub"}
+            </h2>
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className="flex-1">
           <div className="px-3 space-y-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              // Adjust the active state detection to work with nested routes
+              const isActive = location.pathname === item.path || 
+                                (item.path !== '/' && location.pathname.startsWith(`${item.path}/`) && 
+                                 // Ensure longer matching paths don't activate parent items
+                                 !navItems.some(other => 
+                                   other !== item && 
+                                   other.path !== '/' && 
+                                   other.path.startsWith(item.path + '/') && 
+                                   location.pathname.startsWith(other.path)
+                                 ));
               return (
                 <Link
                   key={item.path}
@@ -93,18 +132,23 @@ export function MainLayout({ children }) {
       {/* Main Content */}
       <div className={`flex-1 ${isCollapsed ? 'ml-[72px]' : 'ml-[280px]'} transition-all duration-300`}>
         {/* Top Header */}
-        <header className="h-16 bg-white border-b px-8 flex items-center justify-between fixed top-0 right-0 left-[72px] z-40 transition-all duration-300">
-          <h1 className="text-lg font-medium text-gray-900">Good evening, Sanuj</h1>
+        <header className="h-16 bg-white border-b px-8 flex items-center justify-between fixed top-0 right-0 left-0 z-40 transition-all duration-300" style={{ left: isCollapsed ? '72px' : '280px' }}>
+          <h1 className="text-lg font-medium text-gray-900">
+            {isMarketingSection ? "Good afternoon, Vraj" : "Good evening, Sanuj"}
+          </h1>
           <div className="flex items-center gap-2">
-            <button className="p-2 text-[#3551F3] hover:bg-[#EEF2FF] rounded-lg">
+            <button className="p-2 text-[#3551F3] hover:bg-[#EEF2FF] rounded-lg relative">
               <Bell className="w-5 h-5" />
+              <div className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-[10px] font-medium text-white">1</span>
+              </div>
             </button>
             <button className="p-2 text-[#3551F3] hover:bg-[#EEF2FF] rounded-lg">
               <MessageSquare className="w-5 h-5" />
             </button>
             <div className="h-8 w-[1px] bg-gray-200 mx-2" />
             <button className="w-8 h-8 rounded-full bg-[#3551F3] text-white flex items-center justify-center font-medium">
-              S
+              {isMarketingSection ? "V" : "S"}
             </button>
           </div>
         </header>

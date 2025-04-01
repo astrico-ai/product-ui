@@ -20,22 +20,42 @@ export function LeaderboardCard({ sortOrder = "desc" }) {
     }));
 
   return (
-    <div className="space-y-4">
-      {sortedData.map((item, index) => (
-        <div key={index} className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {item.trophy ? (
-              <Trophy className="w-5 h-5 text-[#3551F3]" />
-            ) : (
-              <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-600">
-                {item.rank}
-              </span>
-            )}
-            <span className="text-sm font-medium">{item.name}</span>
+    <div className="h-full bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="p-6 pb-4 bg-gradient-to-r from-amber-50 to-yellow-50/50">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500/10 to-yellow-500/10 flex items-center justify-center">
+            <Trophy className="h-5 w-5 text-amber-600" />
           </div>
-          <span className="text-sm text-gray-600">₹{item.points} L</span>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Leaderboard</h3>
+            <p className="text-sm text-gray-500">Top performers this month</p>
+          </div>
         </div>
-      ))}
+      </div>
+
+      <div className="p-6 pt-4 space-y-4">
+        {sortedData.map((item, index) => (
+          <div key={index} className="flex items-center justify-between group py-2 px-3 rounded-lg hover:bg-gray-50 transition-all">
+            <div className="flex items-center gap-3">
+              {item.trophy ? (
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                  index === 0 ? 'bg-amber-50 text-amber-600' :
+                  index === 1 ? 'bg-slate-50 text-slate-600' :
+                  'bg-orange-50 text-orange-600'
+                }`}>
+                  <Trophy className="w-4 h-4" />
+                </div>
+              ) : (
+                <span className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center text-sm font-medium text-gray-600">
+                  {item.rank}
+                </span>
+              )}
+              <span className="text-sm font-medium text-gray-900 group-hover:text-[#3551F3] transition-colors">{item.name}</span>
+            </div>
+            <span className="text-sm text-gray-600">₹{item.points} L</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 } 

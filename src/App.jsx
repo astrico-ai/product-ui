@@ -7,8 +7,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 // Page imports
 import Index from '@/pages/Index';
 import ChatPage from '@/pages/ChatPage';
+import MarketingPage from '@/pages/IciciPage';
+import MarketingChatPage from '@/pages/MarketingChatPage';
+import MarketingSourcesPage from '@/pages/MarketingSourcesPage';
+import MarketingDashboardPage from '@/pages/MarketingDashboardPage';
+import MarketingDashboardView from '@/pages/MarketingDashboardView';
 import DashboardList from '@/pages/DashboardList';
 import DashboardView from '@/pages/DashboardView';
+import Training from '@/pages/Training';
 
 // Import other pages as needed
 import { MainLayout } from '@/components/MainLayout';
@@ -23,25 +29,21 @@ const Sources = () => (
   </MainLayout>
 );
 
-const Training = () => (
-  <MainLayout>
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold mb-4">Training</h1>
-      <p>Training page content will go here.</p>
-    </div>
-  </MainLayout>
-);
-
 function App() {
   return (
     <TooltipProvider>
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/sources" element={<Sources />} />
-        <Route path="/training" element={<Training />} />
-        <Route path="/dashboard" element={<DashboardList />} />
-        <Route path="/dashboard/:id" element={<DashboardView />} />
+        <Route path="" element={<Index />} />
+        <Route path="chat" element={<ChatPage />} />
+        <Route path="chat/marketing" element={<MarketingChatPage />} />
+        <Route path="marketing" element={<MarketingPage />} />
+        <Route path="marketing/sources" element={<MarketingSourcesPage />} />
+        <Route path="marketing/dashboard" element={<MarketingDashboardPage />} />
+        <Route path="marketing/dashboard/:id" element={<MarketingDashboardView />} />
+        <Route path="sources" element={<Sources />} />
+        <Route path="training" element={<Training />} />
+        <Route path="dashboard" element={<DashboardList />} />
+        <Route path="dashboard/:id" element={<DashboardView />} />
       </Routes>
       <Toaster />
       <Sonner />
