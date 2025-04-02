@@ -59,35 +59,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-
-const DATA_SOURCES = [
-  { value: 'google-ads', label: 'Google Ads' },
-  { value: 'meta-ads', label: 'META Ads' },
-  { value: 'linkedin-ads', label: 'LinkedIn Ads' },
-  { value: 'mailchimp', label: 'Mailchimp' },
-  { value: 'netcore', label: 'Netcore' }
-];
-
-const METRICS = [
-  { value: 'impressions', label: 'Impressions' },
-  { value: 'clicks', label: 'Clicks' },
-  { value: 'ctr', label: 'CTR' },
-  { value: 'conversions', label: 'Conversions' },
-  { value: 'cost', label: 'Cost' },
-  { value: 'revenue', label: 'Revenue' },
-  { value: 'roas', label: 'ROAS' }
-];
-
-const GROUP_BY_OPTIONS = [
-  { value: 'campaign', label: 'Campaign' },
-  { value: 'ad_group', label: 'Ad Group' },
-  { value: 'ad_name', label: 'Ad Name' },
-  { value: 'platform', label: 'Platform' },
-  { value: 'date', label: 'Date' },
-  { value: 'device', label: 'Device' },
-  { value: 'geography', label: 'Geography' },
-  { value: 'channel', label: 'Channel' }
-];
+import { regularDashboardConfig, marketingDashboardConfig } from "@/config/dashboardConfig";
 
 const CHART_TYPES = [
   { value: "kpi", label: "KPI" },
@@ -365,9 +337,15 @@ function renderPreview(type) {
   }
 }
 
-export default function AddWidgetModal({ open, onOpenChange, onSubmit, initialData }) {
+export default function AddWidgetModal({ open, onOpenChange, onSubmit, initialData, dashboardType = 'regular' }) {
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState(initialData?.title || "");
+  const config = dashboardType === 'marketing' ? marketingDashboardConfig : regularDashboardConfig;
+  
+  // Use config values instead of hardcoded constants
+  const DATA_SOURCES = config.dataSources;
+  const METRICS = config.metrics;
+  const GROUP_BY_OPTIONS = config.groupByOptions;
   const [dataSource, setDataSource] = useState(initialData?.config?.dataSources[0] || DATA_SOURCES[0].value);
   const [metric, setMetric] = useState(initialData?.config?.metric || METRICS[0].value);
   const [groupBy, setGroupBy] = useState(initialData?.config?.groupBy || [GROUP_BY_OPTIONS[0].value]);
@@ -398,7 +376,6 @@ export default function AddWidgetModal({ open, onOpenChange, onSubmit, initialDa
     onSubmit({
       type: chartType,
       title,
-      description: `${metric} by ${groupBy.join(", ")}`,
       config: {
         dataSources: [dataSource],
         metric,
@@ -517,10 +494,7 @@ export default function AddWidgetModal({ open, onOpenChange, onSubmit, initialDa
                       "h-24 flex flex-col items-center justify-center gap-2 relative",
                       chartType === type.value && "border-primary"
                     )}
-                    onClick={() => {
-                      console.log("Button clicked:", type.value);
-                      handleChartTypeChange(type.value);
-                    }}
+                    onClick={() => handleChartTypeChange(type.value)}
                   >
                     <div className="pointer-events-none">
                       {type.value === "kpi" && <LayoutDashboard className="h-8 w-8" />}
@@ -543,10 +517,7 @@ export default function AddWidgetModal({ open, onOpenChange, onSubmit, initialDa
           <div className="col-span-12 lg:col-span-7">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Preview</CardTitle>
-                <CardDescription className="text-xs">
-                  Live preview of how your widget will look
-                </CardDescription>
+                <CardTitle className="text-sm font-medium">{title || 'Preview'}</CardTitle>
               </CardHeader>
               <CardContent className="pt-2">
                 <div className="h-[250px]">

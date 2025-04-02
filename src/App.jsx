@@ -15,19 +15,10 @@ import MarketingDashboardView from '@/pages/MarketingDashboardView';
 import DashboardList from '@/pages/DashboardList';
 import DashboardView from '@/pages/DashboardView';
 import Training from '@/pages/Training';
+import Sources from '@/pages/Sources';
 
 // Import other pages as needed
 import { MainLayout } from '@/components/MainLayout';
-
-// Placeholder components for pages that don't exist yet
-const Sources = () => (
-  <MainLayout>
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold mb-4">Sources</h1>
-      <p>Sources page content will go here.</p>
-    </div>
-  </MainLayout>
-);
 
 function App() {
   return (

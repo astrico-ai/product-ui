@@ -22,10 +22,9 @@ import {
 const mainNavItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: MessageSquare, label: "Chat", path: "/chat" },
-  { icon: BarChart, label: "Marketing", path: "/marketing" },
-  { icon: Users2, label: "Sources", path: "/sources" },
   { icon: GraduationCap, label: "Training", path: "/training" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: Users2, label: "Sources", path: "/sources" },
 ];
 
 // Marketing-specific nav items
@@ -66,15 +65,6 @@ export function MainLayout({ children }) {
             )}
           </button>
         </div>
-
-        {/* Section Title when expanded */}
-        {!isCollapsed && (
-          <div className="px-6 mb-4">
-            <h2 className="text-sm font-semibold text-gray-900">
-              {isMarketingSection ? "Marketing Hub" : "Enterprise Hub"}
-            </h2>
-          </div>
-        )}
 
         {/* Navigation */}
         <nav className="flex-1">

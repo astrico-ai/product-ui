@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Send, ChevronLeft, Plus, Link2, Send as SendIcon, FileText, Video, Search, Paperclip, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, ChevronLeft, Plus, Link2, Send as SendIcon, FileText, Video, Search, Paperclip, ChevronDown, ChevronUp, ChevronRight, ThumbsUp, ThumbsDown, Copy, Share2, X } from "lucide-react";
 import { MainLayout } from "@/components/MainLayout";
 import { TypewriterText } from "@/components/TypewriterText";
 import { Progress } from "@/components/ui/progress";
@@ -14,30 +14,30 @@ import { DataVisualization } from "@/components/DataVisualization";
 // Mock chat history data
 const chatHistory = {
   today: [
-    { id: 1, title: "AI Trends Discussion" },
-    { id: 2, title: "Python Programming Help" }
+    { id: 1, title: "Show me today's loan leads" },
+    { id: 2, title: "Documents for home loan" }
   ],
   yesterday: [
-    { id: 3, title: "Database Query Optimization" },
-    { id: 4, title: "React Components Discussion" }
+    { id: 3, title: "Business loan eligibility" },
+    { id: 4, title: "Processing fees for car loan" }
   ],
   previousWeek: [
-    { id: 5, title: "Cloud Architecture Planning" }
+    { id: 5, title: "Pending loan approvals" }
   ],
   previousMonth: [
-    { id: 6, title: "Machine Learning Fundamentals" }
+    { id: 6, title: "Interest rates comparison" }
   ]
 };
 
 // Mock chat messages for each chat
 const mockChatMessages = {
   1: [
-    { id: 1, text: "What are the latest trends in AI?", sender: 'user' },
-    { id: 2, text: "The latest trends in AI include large language models, generative AI, and autonomous systems.", sender: 'assistant' }
+    { id: 1, text: "Show me the loan leads assigned to me today", sender: 'user' },
+    { id: 2, text: "Here are your assigned loan leads for today...", sender: 'assistant' }
   ],
   2: [
-    { id: 1, text: "How do I implement a binary search in Python?", sender: 'user' },
-    { id: 2, text: "Here's an example of binary search implementation in Python...", sender: 'assistant' }
+    { id: 1, text: "What documents are needed for home loan?", sender: 'user' },
+    { id: 2, text: "Here's the list of required documents for home loan...", sender: 'assistant' }
   ]
 };
 
@@ -54,6 +54,8 @@ export default function ChatPage() {
   const [showVisualization, setShowVisualization] = useState(false);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [showSteps, setShowSteps] = useState({});
+  const [attachments, setAttachments] = useState([]);
+  const fileInputRef = useRef(null);
 
   const loadingSteps = [
     {
@@ -88,54 +90,17 @@ export default function ChatPage() {
         title: initialMessage.length > 30 ? `${initialMessage.slice(0, 30)}...` : initialMessage
       };
 
+      // Set initial state
       setCurrentChat(newChat);
       setMessages([searchMessage]);
-      handleSearch(initialMessage, searchMessage, newChat);
+
+      // Clear location state immediately
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Process the search
+      handleSearch(initialMessage);
     }
-  }, [location.state]);
-
-  // Load chat messages when a chat is selected
-  useEffect(() => {
-    if (currentChat) {
-      setIsLoading(true);
-      setLoadingProgress(0);
-      setCurrentStep(0);
-      
-      const progressInterval = setInterval(() => {
-        setLoadingProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return prev + 5;
-        });
-      }, 100);
-
-      const stepInterval = setInterval(() => {
-        setCurrentStep(prev => {
-          if (prev >= loadingSteps.length - 1) {
-            clearInterval(stepInterval);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-
-      setTimeout(() => {
-        const chatMessages = mockChatMessages[currentChat.id] || [];
-        setMessages(chatMessages);
-        setIsLoading(false);
-        setCurrentStep(0);
-        clearInterval(progressInterval);
-        clearInterval(stepInterval);
-      }, 5000);
-
-      return () => {
-        clearInterval(progressInterval);
-        clearInterval(stepInterval);
-      };
-    }
-  }, [currentChat]);
+  }, []);
 
   const startNewChat = () => {
     setCurrentChat(null);
@@ -150,7 +115,9 @@ export default function ChatPage() {
     setChatHistorySearch("");
   };
 
-  const handleSearch = async (query, searchMessage, newChat) => {
+  const handleSearch = async (query) => {
+    if (!query.trim()) return;
+    
     setIsLoading(true);
     setLoadingProgress(0);
     setCurrentStep(0);
@@ -159,13 +126,7 @@ export default function ChatPage() {
     
     try {
       const progressInterval = setInterval(() => {
-        setLoadingProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return prev + 1;
-        });
+        setLoadingProgress(prev => Math.min(prev + 1, 100));
       }, 50);
 
       const stepInterval = setInterval(() => {
@@ -179,30 +140,65 @@ export default function ChatPage() {
         });
       }, 1000);
 
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const searchResponse = {
-        id: Date.now() + 1,
-        text: `Based on the analysis of your Customer Acquisition Cost (CAC) data across different marketing channels over the past 6 months, here are the key insights:\n\n1. LinkedIn consistently shows the highest CAC, ranging from $63-70, indicating it's the most expensive channel but might be justified for B2B targeting.\n\n2. Facebook maintains the lowest CAC, averaging around $39, making it the most cost-effective channel.\n\n3. YouTube and Google show moderate CAC values with slight fluctuations, suggesting stable performance.\n\nBelow is a detailed breakdown of CAC metrics across all channels:`,
-        sender: 'assistant'
+      // Hardcoded queries and their responses
+      const queries = {
+        "I spoke with Mr John Doe and he was interested in getting 5L loan for a new Maruti Suzuki Car Swift Desire. He will put a down payment of 2L and he wants the loan for 5 years. Please push this to @SFDC": {
+          text: "Great, I will push this to SFDC. Before that, I will need to know the interest at which you have agreed to the transaction. And, I will also need a few documents:\n\n1. Pan card of the owner\n2. Income proof",
+          showFollowUp: false,
+          showFeedback: true
+        },
+        "9% and I don't have the documents right now": {
+          text: "No worries. I have created a lead in the funnel **Opportunity Feb 2025** with the following details:\n\n**SDFC ID** - 2345632\n**Status** - Open\n**Car Details** - Maruti Suzuki Swift Desire\n**Interest** - 9% p.a\n**Years** - 4\n**Down Payment** - ₹2,00,000\n**Owner** - John Doe\n**Agent ID** - 246\n\nPlease use this link to access the lead:\n@https://rbl.salesforce.com/lightning/r/Opportunity/0065G00000XYZ123/view",
+          showFollowUp: false,
+          showFeedback: true
+        }
       };
       
+      let searchResponse;
+      const matchedQuery = Object.keys(queries).find(key => query.trim() === key.trim());
+      
+      if (matchedQuery) {
+        const response = queries[matchedQuery];
+        searchResponse = {
+          id: Date.now() + 1,
+          text: response.text,
+          sender: 'assistant',
+          showFollowUp: response.showFollowUp,
+          showFeedback: response.showFeedback
+        };
+      } else {
+        searchResponse = {
+          id: Date.now() + 1,
+          text: `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`,
+          sender: 'assistant',
+          showFollowUp: true,
+          showFeedback: true
+        };
+      }
+      
       setIsTyping(true);
-      setMessages(prev => [...prev, searchResponse]);
       
-      chatHistory.today.unshift(newChat);
-      mockChatMessages[newChat.id] = [searchMessage, searchResponse];
-
-      setTimeout(() => {
-        setIsTyping(false);
-        setShowVisualization(true);
-        setCurrentStep(loadingSteps.length - 1);
-        setCompletedSteps(loadingSteps.map((_, index) => index));
-      }, 500);
+      // Add response after a delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setMessages(prev => {
+        // Only add response if it's not already in the messages
+        const isDuplicate = prev.some(msg => 
+          msg.sender === 'assistant' && msg.text === searchResponse.text
+        );
+        return isDuplicate ? prev : [...prev, searchResponse];
+      });
       
+      setIsTyping(false);
+      setShowVisualization(true);
+      setCurrentStep(loadingSteps.length - 1);
+      setCompletedSteps(loadingSteps.map((_, index) => index));
+      
+      // Clean up intervals
       clearInterval(progressInterval);
       clearInterval(stepInterval);
-      
+
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -239,16 +235,43 @@ export default function ChatPage() {
 
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const responseText = `Based on the analysis of your Customer Acquisition Cost (CAC) data across different marketing channels over the past 6 months, here are the key insights:\n\n1. LinkedIn consistently shows the highest CAC, ranging from $63-70, indicating it's the most expensive channel but might be justified for B2B targeting.\n\n2. Facebook maintains the lowest CAC, averaging around $39, making it the most cost-effective channel.\n\n3. YouTube and Google show moderate CAC values with slight fluctuations, suggesting stable performance.\n\nBelow is a detailed breakdown of CAC metrics across all channels:`;
-      
-      setIsTyping(true);
-      
-      const response = {
-        id: Date.now() + 1,
-        text: responseText,
-        sender: 'assistant'
+      // Use the same query matching logic as handleSearch
+      const queries = {
+        "I spoke with Mr John Doe and he was interested in getting 5L loan for a new Maruti Suzuki Car Swift Desire. He will put a down payment of 2L and he wants the loan for 5 years. Please push this to @SFDC": {
+          text: "Great, I will push this to SFDC. Before that, I will need to know the interest at which you have agreed to the transaction. And, I will also need a few documents:\n\n1. Pan card of the owner\n2. Income proof",
+          showFollowUp: false,
+          showFeedback: true
+        },
+        "9% and I don't have the documents right now": {
+          text: "No worries. I have created a lead in the funnel **Opportunity Feb 2025** with the following details:\n\n**SDFC ID** - 2345632\n**Status** - Open\n**Car Details** - Maruti Suzuki Swift Desire\n**Interest** - 9% p.a\n**Years** - 4\n**Down Payment** - ₹2,00,000\n**Owner** - John Doe\n**Agent ID** - 246\n\nPlease use this link to access the lead:\n@https://rbl.salesforce.com/lightning/r/Opportunity/0065G00000XYZ123/view",
+          showFollowUp: false,
+          showFeedback: true
+        }
       };
       
+      let response;
+      const matchedQuery = Object.keys(queries).find(key => inputValue.trim() === key.trim());
+      
+      if (matchedQuery) {
+        const matchedResponse = queries[matchedQuery];
+        response = {
+          id: Date.now() + 1,
+          text: matchedResponse.text,
+          sender: 'assistant',
+          showFollowUp: matchedResponse.showFollowUp,
+          showFeedback: matchedResponse.showFeedback
+        };
+      } else {
+        response = {
+          id: Date.now() + 1,
+          text: `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`,
+          sender: 'assistant',
+          showFollowUp: true,
+          showFeedback: true
+        };
+      }
+      
+      setIsTyping(true);
       setMessages(prev => [...prev, response]);
       
       if (currentChat) {
@@ -261,7 +284,7 @@ export default function ChatPage() {
 
       setTimeout(() => {
         setIsTyping(false);
-        setShowVisualization(true);
+        setShowVisualization(false);
       }, 500);
       clearInterval(interval);
       
@@ -308,16 +331,18 @@ export default function ChatPage() {
 
       // Simulate API delay
       setTimeout(async () => {
-        const responseText = `Based on the analysis of your Customer Acquisition Cost (CAC) data across different marketing channels over the past 6 months, here are the key insights:\n\n1. LinkedIn consistently shows the highest CAC, ranging from $63-70, indicating it's the most expensive channel but might be justified for B2B targeting.\n\n2. Facebook maintains the lowest CAC, averaging around $39, making it the most cost-effective channel.\n\n3. YouTube and Google show moderate CAC values with slight fluctuations, suggesting stable performance.\n\nBelow is a detailed breakdown of CAC metrics across all channels:`;
+        const responseText = `Yes but one additional document is also required in the case of partnership firms: **Board resolution for Trust.**`;
         
         setIsTyping(true);
         
         const response = {
           id: Date.now() + 1,
           text: responseText,
-          sender: 'assistant'
+          sender: 'assistant',
+          showFollowUp: true,
+          hideFollowUpQuery: true
         };
-        
+
         setMessages(prev => [...prev, response]);
         
         if (currentChat) {
@@ -337,11 +362,22 @@ export default function ChatPage() {
         clearInterval(stepInterval);
         setIsLoading(false);
       }, 5000);
-      
+
     } catch (error) {
       console.error('Error:', error);
       setIsLoading(false);
     }
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    setAttachments(prev => [...prev, ...files]);
+    // Reset file input
+    e.target.value = '';
+  };
+
+  const removeAttachment = (fileName) => {
+    setAttachments(prev => prev.filter(file => file.name !== fileName));
   };
 
   return (
@@ -450,68 +486,89 @@ export default function ChatPage() {
               <h1 className="text-4xl font-bold text-gray-900 mb-3">Hello, Sanuj</h1>
               <p className="text-lg text-gray-500 mb-8 text-center">Ask me anything or search through your knowledge base</p>
               <div className="w-full">
-                <div className="relative flex items-center">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={chatHistorySearch}
-                    onChange={(e) => setChatHistorySearch(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && chatHistorySearch.trim()) {
-                        const newMessage = {
-                          id: Date.now(),
-                          text: chatHistorySearch.trim(),
-                          sender: 'user'
-                        };
-                        const newChat = {
-                          id: Date.now(),
-                          title: chatHistorySearch.length > 30 ? `${chatHistorySearch.slice(0, 30)}...` : chatHistorySearch
-                        };
-                        setCurrentChat(newChat);
-                        setMessages([newMessage]);
-                        handleSearch(chatHistorySearch, newMessage, newChat);
-                      }
-                    }}
-                    placeholder="Search for information, documents, people, and more..."
-                    className="w-full pl-12 pr-24 py-4 bg-white border border-gray-200 rounded-xl text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3551F3] focus:border-transparent transition-all"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <button 
-                      className={`p-2 rounded-lg transition-colors ${
-                        chatHistorySearch 
-                          ? 'text-[#3551F3] hover:bg-[#EEF2FF]' 
-                          : 'text-gray-300 cursor-not-allowed'
-                      }`}
-                      disabled={!chatHistorySearch}
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => {
-                        if (chatHistorySearch.trim()) {
-                          const newMessage = {
-                            id: Date.now(),
-                            text: chatHistorySearch.trim(),
-                            sender: 'user'
-                          };
-                          const newChat = {
-                            id: Date.now(),
-                            title: chatHistorySearch.length > 30 ? `${chatHistorySearch.slice(0, 30)}...` : chatHistorySearch
-                          };
-                          setCurrentChat(newChat);
-                          setMessages([newMessage]);
-                          handleSearch(chatHistorySearch, newMessage, newChat);
-                        }
-                      }}
-                      className={`p-2 rounded-lg transition-colors ${
-                        chatHistorySearch 
-                          ? 'bg-[#3551F3] text-white hover:bg-[#2B41D9]' 
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                      disabled={!chatHistorySearch}
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
+                <div className="relative flex flex-col gap-3">
+                  <div className="relative flex items-center">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <div className="w-full flex items-center gap-2 pl-12 pr-24 py-2 bg-white border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-[#3551F3] focus-within:border-transparent transition-all">
+                      {attachments.map((file) => (
+                        <div
+                          key={file.name}
+                          className="flex items-center gap-1.5 bg-[#EEF2FF] text-[#3551F3] px-2 py-1 rounded-full text-sm"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span className="max-w-[100px] truncate">{file.name}</span>
+                          <button
+                            onClick={() => removeAttachment(file.name)}
+                            className="hover:bg-[#3551F3] hover:text-white p-0.5 rounded-full transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <input
+                        type="text"
+                        value={chatHistorySearch}
+                        onChange={(e) => setChatHistorySearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && chatHistorySearch.trim()) {
+                            const newMessage = {
+                              id: Date.now(),
+                              text: chatHistorySearch.trim(),
+                              sender: 'user',
+                              attachments: attachments
+                            };
+                            const newChat = {
+                              id: Date.now(),
+                              title: chatHistorySearch.length > 30 ? `${chatHistorySearch.slice(0, 30)}...` : chatHistorySearch
+                            };
+                            setCurrentChat(newChat);
+                            setMessages([newMessage]);
+                            handleSearch(chatHistorySearch);
+                            setAttachments([]);
+                          }
+                        }}
+                        placeholder="Search for information, documents, people, and more..."
+                        className="flex-1 text-base text-gray-900 placeholder-gray-500 focus:outline-none bg-transparent"
+                      />
+                    </div>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        multiple
+                      />
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-2 rounded-lg transition-colors text-[#3551F3] hover:bg-[#EEF2FF]"
+                      >
+                        <Paperclip className="w-5 h-5" />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (chatHistorySearch.trim()) {
+                            const newMessage = {
+                              id: Date.now(),
+                              text: chatHistorySearch.trim(),
+                              sender: 'user',
+                              attachments: attachments
+                            };
+                            const newChat = {
+                              id: Date.now(),
+                              title: chatHistorySearch.length > 30 ? `${chatHistorySearch.slice(0, 30)}...` : chatHistorySearch
+                            };
+                            setCurrentChat(newChat);
+                            setMessages([newMessage]);
+                            handleSearch(chatHistorySearch);
+                            setAttachments([]);
+                          }
+                        }}
+                        className="p-2 rounded-lg transition-colors bg-[#3551F3] text-white hover:bg-[#2B41D9]"
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -559,12 +616,12 @@ export default function ChatPage() {
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <h3 className="text-base font-semibold text-gray-900">Request processed</h3>
-                              <span className="text-sm text-gray-500 font-medium">100%</span>
+                              <span className="text-sm text-gray-500 font-medium">{Math.round(loadingProgress)}%</span>
                             </div>
-                            <Progress value={100} className="h-1.5" />
+                            <Progress value={loadingProgress} className="h-1.5" />
                           </div>
                           
-                          <LoadingSteps steps={loadingSteps} currentStep={loadingSteps.length - 1} />
+                          <LoadingSteps steps={loadingSteps} currentStep={currentStep} />
                         </div>
                       )}
                       <div
@@ -579,31 +636,58 @@ export default function ChatPage() {
                             <div className="whitespace-pre-wrap leading-relaxed">
                               <TypewriterText 
                                 text={msg.text} 
-                                delay={20} 
+                                delay={5} 
                                 onComplete={() => {
                                   setTimeout(() => {
-                                    const vizElement = document.querySelector(`#viz-${msg.id}`);
-                                    if (vizElement) {
-                                      vizElement.style.opacity = '1';
-                                      vizElement.style.transform = 'translateY(0)';
+                                    const followUpElement = document.querySelector(`#followup-${msg.id}`);
+                                    const feedbackElement = document.querySelector(`#feedback-${msg.id}`);
+                                    if (msg.showFollowUp && followUpElement) {
+                                      followUpElement.style.opacity = '1';
+                                      followUpElement.style.transform = 'translateY(0)';
+                                    }
+                                    if (feedbackElement) {
+                                      feedbackElement.style.opacity = '1';
                                     }
                                   }, 500);
                                 }}
                               />
                             </div>
                             <div 
-                              id={`viz-${msg.id}`} 
-                              style={{ 
-                                opacity: '0', 
-                                transform: 'translateY(10px)',
-                                transition: 'opacity 0.3s ease, transform 0.3s ease'
-                              }}
+                              id={`feedback-${msg.id}`} 
+                              className="mt-4 flex items-center gap-2"
+                              style={{ opacity: '0', transition: 'opacity 0.3s ease' }}
                             >
-                              <DataVisualization 
-                                show={showVisualization} 
-                                onFollowUpClick={handleFollowUpClick}
-                              />
+                              <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                                <ThumbsUp className="w-4 h-4 text-gray-500" />
+                              </button>
+                              <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                                <ThumbsDown className="w-4 h-4 text-gray-500" />
+                              </button>
+                              <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                                <Copy className="w-4 h-4 text-gray-500" />
+                              </button>
+                              <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                                <Share2 className="w-4 h-4 text-gray-500" />
+                              </button>
                             </div>
+                            {msg.showFollowUp && !msg.hideFollowUpQuery && (
+                              <div 
+                                id={`followup-${msg.id}`} 
+                                className="mt-4 flex flex-wrap gap-2"
+                                style={{ 
+                                  opacity: '0', 
+                                  transform: 'translateY(10px)',
+                                  transition: 'opacity 0.3s ease, transform 0.3s ease'
+                                }}
+                              >
+                                <button
+                                  onClick={() => handleFollowUpClick("Are the documents same for partnership firms?")}
+                                  className="bg-[#EEF2FF] text-[#3551F3] px-4 py-2 rounded-full text-sm font-medium hover:bg-[#EFF6FF] transition-colors"
+                                >
+                                  Are the documents same for partnership firms?
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div className="whitespace-pre-wrap leading-relaxed">
@@ -613,7 +697,7 @@ export default function ChatPage() {
                       </div>
                     </div>
                   ))}
-                  
+
                   {isLoading && (
                     <div className="bg-white rounded-2xl p-6 space-y-5 border border-gray-100">
                       <div className="flex items-center gap-3">
@@ -668,26 +752,24 @@ export default function ChatPage() {
                     disabled={isLoading}
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      multiple
+                    />
                     <button 
-                      className={`p-2 rounded-lg transition-colors ${
-                        inputValue 
-                          ? 'text-[#3551F3] hover:bg-[#EEF2FF]' 
-                          : 'text-gray-300 cursor-not-allowed'
-                      }`}
-                      disabled={!inputValue || isLoading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 rounded-lg transition-colors text-[#3551F3] hover:bg-[#EEF2FF]"
                     >
                       <Paperclip className="w-5 h-5" />
                     </button>
                     <button
                       onClick={handleSendMessage}
-                      className={`p-2 rounded-lg transition-colors ${
-                        inputValue 
-                          ? 'bg-[#3551F3] text-white hover:bg-[#2B41D9]' 
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                      disabled={!inputValue || isLoading}
+                      className="p-2 rounded-lg transition-colors bg-[#3551F3] text-white hover:bg-[#2B41D9]"
                     >
-                      <Send className="h-5 w-5" />
+                      <Send className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
@@ -698,4 +780,4 @@ export default function ChatPage() {
       </div>
     </MainLayout>
   );
-} 
+}

@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { MainLayout } from "@/components/MainLayout";
 import { Download, Clock, Star, Trophy, CheckCircle, ArrowRight, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { VideoPlayer } from "@/components/VideoPlayer";
+import { TrainingReportModal } from "@/components/TrainingReportModal";
 
 const pendingScenarios = [
   {
@@ -91,9 +93,33 @@ function DifficultyBadge({ difficulty }) {
 }
 
 export default function Training() {
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState(null);
+  const videoUrl = "https://drive.google.com/file/d/1YbLMB-q8jhMJGB6-HrZrYNIM65HPwe4b/view";
+
+  const handleDownloadReport = (scenario) => {
+    setSelectedScenario(scenario);
+    setIsReportOpen(true);
+  };
+
   return (
     <MainLayout>
       <div className="max-w-[1600px] mx-auto px-6 py-8">
+        {/* Video Player */}
+        <VideoPlayer
+          isOpen={isVideoOpen}
+          onClose={() => setIsVideoOpen(false)}
+          videoUrl={videoUrl}
+        />
+
+        {/* Report Modal */}
+        <TrainingReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          scenario={selectedScenario}
+        />
+
         <div className="space-y-8">
           {/* Hero Section */}
           <div className="bg-gradient-to-r from-[#3551F3]/5 to-purple-50/50 rounded-2xl p-8 border border-[#3551F3]/10">
@@ -132,7 +158,10 @@ export default function Training() {
                             <span className="text-sm text-gray-600">{scenario.timeInMinutes} mins</span>
                           </div>
                         </div>
-                        <Button className="opacity-0 group-hover:opacity-100 transition-opacity bg-[#3551F3] text-white hover:bg-[#3551F3]/90">
+                        <Button 
+                          className="opacity-0 group-hover:opacity-100 transition-opacity bg-[#3551F3] text-white hover:bg-[#3551F3]/90"
+                          onClick={() => setIsVideoOpen(true)}
+                        >
                           Start Scenario
                           <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
@@ -194,7 +223,7 @@ export default function Training() {
                 
                 <div className="px-8 py-6 space-y-4">
                   {completedScenarios.map((scenario) => (
-                    <div key={scenario.id} className="flex items-center justify-between py-2.5 group">
+                    <div key={scenario.id} className="flex items-center justify-between group">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                           <CheckCircle className="w-4 h-4 text-green-600" />
@@ -212,7 +241,12 @@ export default function Training() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium text-gray-900">{scenario.score}%</span>
-                        <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900 hover:bg-green-50/50">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-gray-500 hover:text-gray-900 hover:bg-green-50/50"
+                          onClick={() => handleDownloadReport(scenario)}
+                        >
                           <Download className="w-4 h-4" />
                         </Button>
                       </div>

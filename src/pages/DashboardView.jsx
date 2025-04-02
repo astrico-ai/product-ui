@@ -126,7 +126,7 @@ export default function DashboardView() {
       switch (widget.type) {
         case "kpi":
           const value = widget.data[0]?.value || 0;
-          const trend = widget.data[0]?.trend || 0;
+          const trend = widget.data[0]?.trend || (widget.title === "Total Leads" ? 12.5 : widget.title === "Total Live Agents" ? 8.3 : -2.8);
           return (
             <div className="h-full flex items-center justify-center p-6">
               <div className="text-center">
@@ -308,12 +308,71 @@ export default function DashboardView() {
           );
 
         case "table":
-          const tableData = widget.data || [
-            { id: 1, name: "Item 1", value: 100, change: 5.2 },
-            { id: 2, name: "Item 2", value: 200, change: -2.1 },
-            { id: 3, name: "Item 3", value: 150, change: 3.4 },
-            { id: 4, name: "Item 4", value: 300, change: -1.5 },
-            { id: 5, name: "Item 5", value: 250, change: 4.8 }
+          const tableData = [
+            { 
+              id: 1, 
+              name: "Rajesh Kumar", 
+              value: 7500000, 
+              change: 12.5,
+              target: 8500000,
+              achievement: 88.2
+            },
+            { 
+              id: 2, 
+              name: "Priya Patel", 
+              value: 9200000, 
+              change: -5.2,
+              target: 8000000,
+              achievement: 115.0
+            },
+            { 
+              id: 3, 
+              name: "Suresh Reddy", 
+              value: 6800000, 
+              change: 8.4,
+              target: 7500000,
+              achievement: 90.7
+            },
+            { 
+              id: 4, 
+              name: "Meera Sharma", 
+              value: 5500000, 
+              change: -2.8,
+              target: 7000000,
+              achievement: 78.6
+            },
+            { 
+              id: 5, 
+              name: "Arun Verma", 
+              value: 9800000, 
+              change: 15.7,
+              target: 9000000,
+              achievement: 108.9
+            },
+            { 
+              id: 6, 
+              name: "Deepak Kumar", 
+              value: 8200000, 
+              change: 10.3,
+              target: 8500000,
+              achievement: 96.5
+            },
+            { 
+              id: 7, 
+              name: "Anita Desai", 
+              value: 7100000, 
+              change: -3.5,
+              target: 7500000,
+              achievement: 94.7
+            },
+            { 
+              id: 8, 
+              name: "Vikram Singh", 
+              value: 6500000, 
+              change: 7.8,
+              target: 7000000,
+              achievement: 92.9
+            }
           ];
 
           return (
@@ -322,19 +381,39 @@ export default function DashboardView() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th key="name" className="px-4 py-2 text-left font-medium text-gray-500">Name</th>
-                      <th key="value" className="px-4 py-2 text-right font-medium text-gray-500">Value</th>
-                      <th key="change" className="px-4 py-2 text-right font-medium text-gray-500">Change</th>
+                      <th className="px-4 py-2 text-left font-medium text-gray-500">Collection Source</th>
+                      <th className="px-4 py-2 text-right font-medium text-gray-500">Collected Amount</th>
+                      <th className="px-4 py-2 text-right font-medium text-gray-500">Target</th>
+                      <th className="px-4 py-2 text-right font-medium text-gray-500">Achievement %</th>
+                      <th className="px-4 py-2 text-right font-medium text-gray-500">MoM Growth</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tableData.map((row) => (
                       <tr key={`row-${row.id}`} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td key={`name-${row.id}`} className="px-4 py-2 text-gray-900">{row.name}</td>
-                        <td key={`value-${row.id}`} className="px-4 py-2 text-right text-gray-900">
-                          {row.value.toLocaleString()}
+                        <td className="px-4 py-2 text-gray-900">{row.name}</td>
+                        <td className="px-4 py-2 text-right text-gray-900">
+                          {new Intl.NumberFormat('en-IN', {
+                            style: 'currency',
+                            currency: 'INR',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                          }).format(row.value)}
                         </td>
-                        <td key={`change-${row.id}`} className={`px-4 py-2 text-right ${
+                        <td className="px-4 py-2 text-right text-gray-900">
+                          {new Intl.NumberFormat('en-IN', {
+                            style: 'currency',
+                            currency: 'INR',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                          }).format(row.target)}
+                        </td>
+                        <td className={`px-4 py-2 text-right ${
+                          row.achievement >= 100 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {row.achievement}%
+                        </td>
+                        <td className={`px-4 py-2 text-right ${
                           row.change >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
                           {row.change >= 0 ? '+' : ''}{row.change}%
@@ -348,6 +427,49 @@ export default function DashboardView() {
           );
 
         case "line":
+          const lineData = [
+            {
+              month: "Oct'24",
+              Ramesh: 1100000,
+              Ankur: 1500000,
+              Gaurav: 1600000,
+              Rahul: 1300000,
+              Roshan: 1800000
+            },
+            {
+              month: "Nov'24",
+              Ramesh: 800000,
+              Ankur: 1500000,
+              Gaurav: 1800000,
+              Rahul: 500000,
+              Roshan: 700000
+            },
+            {
+              month: "Dec'24",
+              Ramesh: 1700000,
+              Ankur: 1200000,
+              Gaurav: 1000000,
+              Rahul: 1500000,
+              Roshan: 1600000
+            },
+            {
+              month: "Jan'25",
+              Ramesh: 1900000,
+              Ankur: 900000,
+              Gaurav: 600000,
+              Rahul: 1500000,
+              Roshan: 1100000
+            },
+            {
+              month: "Feb'25",
+              Ramesh: 1500000,
+              Ankur: 800000,
+              Gaurav: 1600000,
+              Rahul: 1900000,
+              Roshan: 800000
+            }
+          ];
+
           return (
             <div className="p-4">
               <Suspense fallback={<div>Loading chart...</div>}>
@@ -355,33 +477,107 @@ export default function DashboardView() {
                   options={{
                     chart: {
                       type: 'line',
-                      toolbar: { show: false },
+                      toolbar: {
+                        show: false
+                      }
                     },
                     stroke: {
-                      curve: 'smooth',
                       width: 2,
+                      curve: 'smooth'
                     },
                     xaxis: {
-                      type: 'category',
-                      categories: widget.data?.map(d => d.name) || [],
+                      categories: lineData.map(d => d.month)
                     },
-                    theme: {
-                      mode: 'light',
-                      palette: 'palette1'
+                    yaxis: {
+                      labels: {
+                        formatter: (value) => {
+                          return new Intl.NumberFormat('en-IN', {
+                            style: 'currency',
+                            currency: 'INR',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                          }).format(value);
+                        }
+                      }
                     }
                   }}
-                  series={[{
-                    name: 'Value',
-                    data: widget.data?.map(d => d.value) || []
-                  }]}
+                  series={[
+                    {
+                      name: 'Ramesh',
+                      data: lineData.map(d => d.Ramesh)
+                    },
+                    {
+                      name: 'Ankur',
+                      data: lineData.map(d => d.Ankur)
+                    },
+                    {
+                      name: 'Gaurav',
+                      data: lineData.map(d => d.Gaurav)
+                    },
+                    {
+                      name: 'Rahul',
+                      data: lineData.map(d => d.Rahul)
+                    },
+                    {
+                      name: 'Roshan',
+                      data: lineData.map(d => d.Roshan)
+                    }
+                  ]}
                   type="line"
-                  height={300}
+                  height={350}
+                />
+              </Suspense>
+            </div>
+          );
+
+        case "pie":
+          const pieData = [
+            { type: 'Rural Vehicle Finance', amount: 48000000 },
+            { type: 'Business Loan', amount: 27000000 },
+            { type: 'Two Wheeler Loan', amount: 13000000 },
+            { type: 'Loan against Property', amount: 34000000 },
+            { type: 'Pre Owned Car Loan', amount: 23000000 }
+          ];
+
+          return (
+            <div className="p-4">
+              <Suspense fallback={<div>Loading chart...</div>}>
+                <Chart
+                  options={{
+                    chart: {
+                      type: 'pie'
+                    },
+                    labels: pieData.map(d => d.type),
+                    tooltip: {
+                      y: {
+                        formatter: (value) => {
+                          return new Intl.NumberFormat('en-IN', {
+                            style: 'currency',
+                            currency: 'INR',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                          }).format(value);
+                        }
+                      }
+                    }
+                  }}
+                  series={pieData.map(d => d.amount)}
+                  type="pie"
+                  height={350}
                 />
               </Suspense>
             </div>
           );
 
         case "bar":
+          const barData = [
+            { agent: 'Amit Sharma', amount: 600000 },
+            { agent: 'Priya Iyer', amount: 1400000 },
+            { agent: 'Rahul Verma', amount: 1300000 },
+            { agent: 'Sneha Nair', amount: 1400000 },
+            { agent: 'Vikram Singh', amount: 900000 }
+          ];
+
           return (
             <div className="p-4">
               <Suspense fallback={<div>Loading chart...</div>}>
@@ -389,60 +585,45 @@ export default function DashboardView() {
                   options={{
                     chart: {
                       type: 'bar',
-                      toolbar: { show: false },
+                      toolbar: {
+                        show: false
+                      }
                     },
                     plotOptions: {
                       bar: {
-                        borderRadius: 4,
                         horizontal: false,
-                      }
+                        columnWidth: '55%',
+                        endingShape: 'rounded'
+                      },
                     },
                     xaxis: {
-                      type: 'category',
-                      categories: widget.data?.map(d => d.name) || [],
+                      categories: barData.map(d => d.agent),
+                      labels: {
+                        rotate: -45,
+                        style: {
+                          fontSize: '12px'
+                        }
+                      }
                     },
-                    theme: {
-                      mode: 'light',
-                      palette: 'palette1'
-                    }
-                  }}
-                  series={[{
-                    name: 'Value',
-                    data: widget.data?.map(d => d.value) || []
-                  }]}
-                  type="bar"
-                  height={300}
-                />
-              </Suspense>
-            </div>
-          );
-
-        case "pie":
-          return (
-            <div className="p-4">
-              <Suspense fallback={<div>Loading chart...</div>}>
-                <Chart
-                  options={{
-                    chart: {
-                      type: 'donut',
-                      toolbar: { show: false },
-                    },
-                    labels: widget.data?.map(d => d.name) || [],
-                    theme: {
-                      mode: 'light',
-                      palette: 'palette1'
-                    },
-                    plotOptions: {
-                      pie: {
-                        donut: {
-                          size: '70%'
+                    yaxis: {
+                      labels: {
+                        formatter: (value) => {
+                          return new Intl.NumberFormat('en-IN', {
+                            style: 'currency',
+                            currency: 'INR',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                          }).format(value);
                         }
                       }
                     }
                   }}
-                  series={widget.data?.map(d => d.value) || []}
-                  type="donut"
-                  height={300}
+                  series={[{
+                    name: 'Overdue Amount (>1 Year)',
+                    data: barData.map(d => d.amount)
+                  }]}
+                  type="bar"
+                  height={350}
                 />
               </Suspense>
             </div>
@@ -655,6 +836,7 @@ export default function DashboardView() {
         open={isAddWidgetModalOpen}
         onOpenChange={setIsAddWidgetModalOpen}
         onSubmit={handleWidgetSubmit}
+        dashboardType="regular"
       />
     </MainLayout>
   );

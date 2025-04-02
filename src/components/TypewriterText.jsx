@@ -22,5 +22,16 @@ export function TypewriterText({ text, delay = 20, onComplete }) {
     setCurrentIndex(0);
   }, [text]);
 
-  return <>{displayText}</>;
+  // Process markdown for bold text
+  const processMarkdown = (text) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
+
+  return <div className="whitespace-pre-wrap">{processMarkdown(displayText)}</div>;
 } 
