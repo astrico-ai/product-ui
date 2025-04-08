@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -16,25 +16,41 @@ import DashboardList from '@/pages/DashboardList';
 import DashboardView from '@/pages/DashboardView';
 import Training from '@/pages/Training';
 import Sources from '@/pages/Sources';
-
-// Import other pages as needed
-import { MainLayout } from '@/components/MainLayout';
+import InsuranceDashboardList from '@/pages/InsuranceDashboardList';
+import InsuranceDashboardView from '@/pages/InsuranceDashboardView';
+import InsuranceChatPage from '@/pages/InsuranceChatPage';
+import InsuranceSources from '@/pages/InsuranceSources';
+import IndiaMapDemo from '@/pages/IndiaMapDemo';
+import InsurancePage from "@/pages/InsurancePage";
 
 function App() {
   return (
     <TooltipProvider>
       <Routes>
-        <Route path="" element={<Index />} />
-        <Route path="chat" element={<ChatPage />} />
-        <Route path="chat/marketing" element={<MarketingChatPage />} />
-        <Route path="marketing" element={<MarketingPage />} />
-        <Route path="marketing/sources" element={<MarketingSourcesPage />} />
-        <Route path="marketing/dashboard" element={<MarketingDashboardPage />} />
-        <Route path="marketing/dashboard/:id" element={<MarketingDashboardView />} />
-        <Route path="sources" element={<Sources />} />
-        <Route path="training" element={<Training />} />
-        <Route path="dashboard" element={<DashboardList />} />
-        <Route path="dashboard/:id" element={<DashboardView />} />
+        {/* Main Routes */}
+        <Route path="/" element={<Index />} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/chat/marketing" element={<MarketingChatPage />} />
+        <Route path="/chat/insurance" element={<InsuranceChatPage />} />
+        
+        {/* Marketing Routes */}
+        <Route path="/marketing" element={<MarketingPage />} />
+        <Route path="/marketing/sources" element={<MarketingSourcesPage />} />
+        <Route path="/marketing/dashboard" element={<MarketingDashboardPage />} />
+        <Route path="/marketing/dashboard/:id" element={<MarketingDashboardView />} />
+        
+        {/* Insurance Routes */}
+        <Route path="/insurance" element={<InsurancePage />} />
+        <Route path="/insurance/dashboard" element={<InsuranceDashboardList />} />
+        <Route path="/insurance/dashboard/:id" element={<InsuranceDashboardView />} />
+        <Route path="/insurance/sources" element={<InsuranceSources />} />
+        
+        {/* Other Routes */}
+        <Route path="/sources" element={<Sources />} />
+        <Route path="/training" element={<Training />} />
+        <Route path="/dashboard" element={<DashboardList />} />
+        <Route path="/dashboard/:id" element={<DashboardView />} />
+        <Route path="/india-map" element={<IndiaMapDemo />} />
       </Routes>
       <Toaster />
       <Sonner />

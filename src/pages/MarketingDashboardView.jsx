@@ -684,10 +684,11 @@ export default function MarketingDashboardView() {
 
       {/* Add Widget Modal */}
       <AddWidgetModal
-        open={isAddWidgetModalOpen}
-        onOpenChange={setIsAddWidgetModalOpen}
+        isOpen={isAddWidgetModalOpen}
+        onClose={setIsAddWidgetModalOpen}
         onSubmit={handleWidgetSubmit}
         dashboardType="marketing"
+        initialData={null}
       />
     </MainLayout>
   );

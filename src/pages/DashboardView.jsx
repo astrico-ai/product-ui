@@ -125,8 +125,26 @@ export default function DashboardView() {
     const renderChart = () => {
       switch (widget.type) {
         case "kpi":
-          const value = widget.data[0]?.value || 0;
-          const trend = widget.data[0]?.trend || (widget.title === "Total Leads" ? 12.5 : widget.title === "Total Live Agents" ? 8.3 : -2.8);
+          let value;
+          let trend;
+          
+          // Determine value based on widget title
+          if (widget.title === "Total Leads") {
+            value = Math.floor(Math.random() * (500 - 100 + 1)) + 100; // Random between 100-500
+            trend = 12.5;
+          } else if (widget.title === "Total Live Agents") {
+            const maxValue = value || 400; // Use previous value or 400 if undefined
+            value = Math.floor(Math.random() * (maxValue - 50 + 1)) + 50; // Random but less than first card
+            trend = 8.3;
+          } else {
+            // For third card: between 30-75 and less than first card
+            const firstCardValue = value || 500; // Use first card value or max possible value
+            const maxAllowed = Math.min(75, firstCardValue); // Take the smaller of 75 or first card value
+            const minValue = 30;
+            value = Math.floor(Math.random() * (maxAllowed - minValue + 1)) + minValue;
+            trend = -2.8;
+          }
+          
           return (
             <div className="h-full flex items-center justify-center p-6">
               <div className="text-center">
@@ -833,10 +851,11 @@ export default function DashboardView() {
       )}
 
       <AddWidgetModal
-        open={isAddWidgetModalOpen}
-        onOpenChange={setIsAddWidgetModalOpen}
+        isOpen={isAddWidgetModalOpen}
+        onClose={setIsAddWidgetModalOpen}
         onSubmit={handleWidgetSubmit}
         dashboardType="regular"
+        initialData={null}
       />
     </MainLayout>
   );

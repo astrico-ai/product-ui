@@ -50,7 +50,7 @@ export default function Index() {
         <div className="bg-gradient-to-r from-[#3551F3] to-[#4B6AF5] rounded-2xl p-8 mb-8 shadow-lg">
           <div className="w-full">
             <h1 className="text-3xl font-bold text-white mb-2">Astrico Knowledge Hub</h1>
-            <p className="text-blue-100 text-lg mb-6">Get information of all your marketing queries here</p>
+            <p className="text-blue-100 text-lg mb-6">Get information of all your queries here</p>
             
             {/* Search Bar */}
             <div className="relative bg-white/10 p-1 rounded-xl backdrop-blur-sm">

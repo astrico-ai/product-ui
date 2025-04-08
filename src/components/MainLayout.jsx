@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Mail
 } from "lucide-react";
+import { cn } from "../lib/utils";
 
 // Main nav items for the general application
 const mainNavItems = [
@@ -35,15 +36,31 @@ const marketingNavItems = [
   { icon: Users2, label: "Sources", path: "/marketing/sources" },
 ];
 
+// Insurance-specific nav items
+const insuranceNavItems = [
+  { icon: Home, label: "Home", path: "/insurance" },
+  { icon: MessageSquare, label: "Chat", path: "/chat/insurance" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/insurance/dashboard" },
+  { icon: Users2, label: "Sources", path: "/insurance/sources" },
+];
+
 export function MainLayout({ children }) {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(true);
   
-  // Determine if we're in the marketing section of the app
-  const isMarketingSection = location.pathname.includes('/marketing') || location.pathname === '/chat/marketing';
+  // Determine if we're in the marketing or insurance section
+  const isMarketingSection = location.pathname.startsWith('/marketing') || 
+                            (location.pathname.startsWith('/chat') && location.pathname.includes('marketing'));
+  const isInsuranceSection = location.pathname.startsWith('/insurance') || 
+                            (location.pathname.startsWith('/chat') && location.pathname.includes('insurance'));
   
   // Choose which nav items to display
-  const navItems = isMarketingSection ? marketingNavItems : mainNavItems;
+  let navItems = mainNavItems;
+  if (isMarketingSection) {
+    navItems = marketingNavItems;
+  } else if (isInsuranceSection) {
+    navItems = insuranceNavItems;
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] flex">
@@ -70,16 +87,14 @@ export function MainLayout({ children }) {
         <nav className="flex-1">
           <div className="px-3 space-y-1">
             {navItems.map((item) => {
-              // Adjust the active state detection to work with nested routes
               const isActive = location.pathname === item.path || 
-                                (item.path !== '/' && location.pathname.startsWith(`${item.path}/`) && 
-                                 // Ensure longer matching paths don't activate parent items
-                                 !navItems.some(other => 
-                                   other !== item && 
-                                   other.path !== '/' && 
-                                   other.path.startsWith(item.path + '/') && 
-                                   location.pathname.startsWith(other.path)
-                                 ));
+                             (item.path !== '/' && location.pathname.startsWith(`${item.path}/`) && 
+                              !navItems.some(other => 
+                                other !== item && 
+                                other.path !== '/' && 
+                                other.path.startsWith(item.path + '/') && 
+                                location.pathname.startsWith(other.path)
+                              ));
               return (
                 <Link
                   key={item.path}

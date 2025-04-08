@@ -21,6 +21,32 @@ export const regularDashboardConfig = {
   ]
 };
 
+// Insurance Dashboard Configuration
+export const insuranceDashboardConfig = {
+  dataSources: [
+    { value: 'salesforce', label: 'Salesforce' },
+    { value: 'genesys', label: 'Genesys' },
+    { value: 'exotel', label: 'Exotel' }
+  ],
+  metrics: [
+    { value: 'total_premium', label: 'Total Premium Collection' },
+    { value: 'new_policies', label: 'New Policies Issued' },
+    { value: 'policy_renewals', label: 'Policy Renewals' },
+    { value: 'claims_ratio', label: 'Claims Ratio' },
+    { value: 'avg_claim_settlement', label: 'Average Claim Settlement Time' },
+    { value: 'lapse_ratio', label: 'Policy Lapse Ratio' },
+    { value: 'agent_performance', label: 'Agent Performance' },
+    { value: 'customer_complaints', label: 'Customer Complaints' }
+  ],
+  groupByOptions: [
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'quarterly', label: 'Quarterly' },
+    { value: 'yearly', label: 'Yearly' }
+  ]
+};
+
 // Marketing Dashboard Configuration (existing)
 export const marketingDashboardConfig = {
   dataSources: [
