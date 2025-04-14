@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -239,6 +239,8 @@ export default function AddWidgetModal({
 }) {
   const [step, setStep] = useState(1);
   const [title, setTitle] = useState(initialData?.title || "");
+  const [csvData, setCsvData] = useState(null);
+  const fileInputRef = useRef(null);
   const config = dashboardType === 'marketing' 
     ? marketingDashboardConfig 
     : dashboardType === 'insurance'
@@ -274,8 +276,25 @@ export default function AddWidgetModal({
     setPreviewData(getPreviewData(chartType));
   }, [chartType]);
 
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCsvData(e.target.result);
+      };
+      reader.readAsText(file);
+    }
+  };
+
   const handleSubmit = () => {
-    const data = getPreviewData(chartType);
+    let data = getPreviewData(chartType);
+    
+    // If it's a table widget and we have CSV data, use that instead
+    if (chartType === 'table' && csvData) {
+      data = { csvData };
+    }
+    
     onSubmit({
       type: chartType,
       title,
@@ -286,6 +305,7 @@ export default function AddWidgetModal({
         chartType,
       },
       data: data,
+      csvData: chartType === 'table' ? csvData : undefined,
     });
     onClose(false);
   };
@@ -690,6 +710,32 @@ export default function AddWidgetModal({
               </div>
             </div>
 
+            {/* Add CSV upload for table widget type */}
+            {chartType === 'table' && (
+              <div className="space-y-2">
+                <Label>CSV Data</Label>
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Upload CSV
+                  </Button>
+                  {csvData && (
+                    <p className="text-sm text-green-600">CSV file loaded successfully</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Chart Type</Label>
               <div 
@@ -749,7 +795,7 @@ export default function AddWidgetModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!isValid}
+            disabled={!isValid || (chartType === 'table' && !csvData)}
           >
             {initialData ? "Save Changes" : "Add Widget"}
           </Button>

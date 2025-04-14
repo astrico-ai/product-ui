@@ -569,7 +569,7 @@ export default function InsuranceChatPage() {
           {!currentChat ? (
             // New Chat View
             <div className="h-full flex flex-col items-center justify-center max-w-[800px] mx-auto px-6">
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">Hello, Sanuj</h1>
+              <h1 className="text-4xl font-bold text-gray-900 mb-3">Hello, Vraj</h1>
               <p className="text-lg text-gray-500 mb-8 text-center">Ask me anything about insurance or search through your knowledge base</p>
               <div className="w-full">
                 <div className="relative flex flex-col gap-3">

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getDashboard, updateDashboard } from "@/utils/dashboardStorage";
 import { cn } from "@/lib/utils";
+import Papa from 'papaparse';
 
 // Lazy load ApexCharts
 const Chart = lazy(() => import('react-apexcharts'));
@@ -24,6 +25,7 @@ export default function DashboardView() {
   const [isPresentationMode, setIsPresentationMode] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [loadingWidgets, setLoadingWidgets] = useState({});
+  const [tableData, setTableData] = useState([]);
 
   // Handle presentation navigation
   const handleNextSlide = () => {
@@ -69,6 +71,23 @@ export default function DashboardView() {
     const loadedDashboard = getDashboard(id);
     setDashboard(loadedDashboard);
   }, [id]);
+
+  useEffect(() => {
+    if (dashboard?.widgets) {
+      const tableWidget = dashboard.widgets.find(w => w.type === 'table' && w.csvData);
+      if (tableWidget?.csvData) {
+        Papa.parse(tableWidget.csvData, {
+          header: true,
+          complete: (results) => {
+            setTableData(results.data);
+          },
+          error: (error) => {
+            console.error('Error parsing CSV:', error);
+          }
+        });
+      }
+    }
+  }, [dashboard?.widgets]);
 
   const handleWidgetSubmit = (widgetData) => {
     if (!dashboard) return;
@@ -326,7 +345,8 @@ export default function DashboardView() {
           );
 
         case "table":
-          const tableData = [
+          // If no CSV data is provided, fall back to default data
+          const displayData = tableData.length > 0 ? tableData : [
             { 
               id: 1, 
               name: "Rajesh Kumar", 
@@ -396,46 +416,43 @@ export default function DashboardView() {
           return (
             <div className="p-4">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="px-4 py-2 text-left font-medium text-gray-500">Collection Source</th>
-                      <th className="px-4 py-2 text-right font-medium text-gray-500">Collected Amount</th>
-                      <th className="px-4 py-2 text-right font-medium text-gray-500">Target</th>
-                      <th className="px-4 py-2 text-right font-medium text-gray-500">Achievement %</th>
-                      <th className="px-4 py-2 text-right font-medium text-gray-500">MoM Growth</th>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      {Object.keys(displayData[0] || {}).map((header) => (
+                        <th key={header} className="px-6 py-4 text-left font-medium text-gray-500 uppercase tracking-wider">
+                          {header.charAt(0).toUpperCase() + header.slice(1)}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody>
-                    {tableData.map((row) => (
-                      <tr key={`row-${row.id}`} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-2 text-gray-900">{row.name}</td>
-                        <td className="px-4 py-2 text-right text-gray-900">
-                          {new Intl.NumberFormat('en-IN', {
-                            style: 'currency',
-                            currency: 'INR',
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 0
-                          }).format(row.value)}
-                        </td>
-                        <td className="px-4 py-2 text-right text-gray-900">
-                          {new Intl.NumberFormat('en-IN', {
-                            style: 'currency',
-                            currency: 'INR',
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 0
-                          }).format(row.target)}
-                        </td>
-                        <td className={`px-4 py-2 text-right ${
-                          row.achievement >= 100 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {row.achievement}%
-                        </td>
-                        <td className={`px-4 py-2 text-right ${
-                          row.change >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {row.change >= 0 ? '+' : ''}{row.change}%
-                        </td>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {displayData.map((row, index) => (
+                      <tr key={row.id || `row-${index}`} className="hover:bg-gray-50 transition-colors">
+                        {Object.entries(row).map(([key, value]) => (
+                          <td 
+                            key={key} 
+                            className={cn(
+                              "px-6 py-4 whitespace-nowrap",
+                              key === 'change' || key === 'achievement' 
+                                ? Number(value) >= 0 ? 'text-green-600' : 'text-red-600'
+                                : 'text-gray-900',
+                              key === 'value' || key === 'target' ? 'text-right' : ''
+                            )}
+                          >
+                            {key === 'value' || key === 'target'
+                              ? new Intl.NumberFormat('en-IN', {
+                                  style: 'currency',
+                                  currency: 'INR',
+                                  minimumFractionDigits: 0,
+                                  maximumFractionDigits: 0
+                                }).format(value)
+                              : key === 'change' || key === 'achievement'
+                                ? `${Number(value) >= 0 ? '+' : ''}${value}%`
+                                : value
+                            }
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
@@ -839,7 +856,12 @@ export default function DashboardView() {
                     .filter(w => w.type !== 'kpi')
                     .sort((a, b) => a.position - b.position)
                     .map((widget) => (
-                      <div key={widget.id}>
+                      <div 
+                        key={widget.id} 
+                        className={cn(
+                          widget.type === 'table' ? 'md:col-span-2' : ''
+                        )}
+                      >
                         {renderWidget(widget)}
                       </div>
                     ))}

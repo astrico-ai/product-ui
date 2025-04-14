@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient Background -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3551F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Face Circle -->
+  <circle cx="100" cy="100" r="90" fill="url(#grad)"/>
+  
+  <!-- Abstract Pattern -->
+  <path d="M60 80 Q100 120 140 80" stroke="white" stroke-width="4" fill="none"/>
+  <circle cx="70" cy="60" r="8" fill="white"/>
+  <circle cx="130" cy="60" r="8" fill="white"/>
+  
+  <!-- Circuit Board Pattern -->
+  <path d="M30 100 H50 M150 100 H170" stroke="white" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M100 30 V50 M100 150 V170" stroke="white" stroke-width="2" stroke-opacity="0.5"/>
+  
+  <!-- Additional Circuit Elements -->
+  <circle cx="50" cy="100" r="3" fill="white" fill-opacity="0.5"/>
+  <circle cx="150" cy="100" r="3" fill="white" fill-opacity="0.5"/>
+  <circle cx="100" cy="50" r="3" fill="white" fill-opacity="0.5"/>
+  <circle cx="100" cy="150" r="3" fill="white" fill-opacity="0.5"/>
+</svg> 

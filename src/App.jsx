@@ -19,9 +19,13 @@ import Sources from '@/pages/Sources';
 import InsuranceDashboardList from '@/pages/InsuranceDashboardList';
 import InsuranceDashboardView from '@/pages/InsuranceDashboardView';
 import InsuranceChatPage from '@/pages/InsuranceChatPage';
-import InsuranceSources from '@/pages/InsuranceSources';
 import IndiaMapDemo from '@/pages/IndiaMapDemo';
 import InsurancePage from "@/pages/InsurancePage";
+import MiningPage from "@/pages/MiningPage";
+import MiningChatPage from "@/pages/MiningChatPage";
+import MiningSources from "@/pages/MiningSources";
+import RewardsApp from '@/modules/rewards/App';
+
 
 function App() {
   return (
@@ -43,7 +47,17 @@ function App() {
         <Route path="/insurance" element={<InsurancePage />} />
         <Route path="/insurance/dashboard" element={<InsuranceDashboardList />} />
         <Route path="/insurance/dashboard/:id" element={<InsuranceDashboardView />} />
-        <Route path="/insurance/sources" element={<InsuranceSources />} />
+        <Route path="/insurance/sources" element={<Sources />} />
+
+        {/* Mining Routes */}
+        <Route path="/mining" element={<MiningPage />} />
+        <Route path="/chat/mining" element={<MiningChatPage />} />
+        <Route path="/mining/training" element={<Training />} />
+        <Route path="/mining/dashboard" element={<DashboardList />} />
+        <Route path="/mining/dashboard/:id" element={<DashboardView />} />
+        <Route path="/mining/sources" element={<MiningSources />} />
+
+        <Route path="/rewards" element={<RewardsApp />} />
         
         {/* Other Routes */}
         <Route path="/sources" element={<Sources />} />

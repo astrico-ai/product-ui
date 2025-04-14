@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { TrainingReportModal } from "@/components/TrainingReportModal";
+import { TrainingScenario } from "@/components/TrainingScenario";
 
 const pendingScenarios = [
   {
@@ -96,7 +97,13 @@ export default function Training() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState(null);
+  const [isTrainingOpen, setIsTrainingOpen] = useState(false);
   const videoUrl = "https://drive.google.com/file/d/1YbLMB-q8jhMJGB6-HrZrYNIM65HPwe4b/view";
+
+  const handleStartScenario = (scenario) => {
+    setSelectedScenario(scenario);
+    setIsTrainingOpen(true);
+  };
 
   const handleDownloadReport = (scenario) => {
     setSelectedScenario(scenario);
@@ -111,6 +118,13 @@ export default function Training() {
           isOpen={isVideoOpen}
           onClose={() => setIsVideoOpen(false)}
           videoUrl={videoUrl}
+        />
+
+        {/* Training Scenario Modal */}
+        <TrainingScenario
+          isOpen={isTrainingOpen}
+          onClose={() => setIsTrainingOpen(false)}
+          scenario={selectedScenario}
         />
 
         {/* Report Modal */}
@@ -160,7 +174,7 @@ export default function Training() {
                         </div>
                         <Button 
                           className="opacity-0 group-hover:opacity-100 transition-opacity bg-[#3551F3] text-white hover:bg-[#3551F3]/90"
-                          onClick={() => setIsVideoOpen(true)}
+                          onClick={() => handleStartScenario(scenario)}
                         >
                           Start Scenario
                           <ArrowRight className="w-4 h-4 ml-2" />

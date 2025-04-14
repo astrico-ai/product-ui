@@ -15,7 +15,8 @@ import {
   LineChart,
   PieChart,
   TrendingUp,
-  Mail
+  Mail,
+  Trophy
 } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -26,6 +27,7 @@ const mainNavItems = [
   { icon: GraduationCap, label: "Training", path: "/training" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Users2, label: "Sources", path: "/sources" },
+  { icon: Trophy, label: "Rewards", path: "/rewards" },
 ];
 
 // Marketing-specific nav items
@@ -44,15 +46,27 @@ const insuranceNavItems = [
   { icon: Users2, label: "Sources", path: "/insurance/sources" },
 ];
 
+// Mining-specific nav items
+const miningNavItems = [
+  { icon: Home, label: "Home", path: "/mining" },
+  { icon: MessageSquare, label: "Chat", path: "/chat/mining" },
+  { icon: GraduationCap, label: "Training", path: "/mining/training" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/mining/dashboard" },
+  { icon: Users2, label: "Sources", path: "/mining/sources" },
+];
+
 export function MainLayout({ children }) {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(true);
   
-  // Determine if we're in the marketing or insurance section
+  // Determine if we're in the marketing, insurance, or mining section
   const isMarketingSection = location.pathname.startsWith('/marketing') || 
                             (location.pathname.startsWith('/chat') && location.pathname.includes('marketing'));
   const isInsuranceSection = location.pathname.startsWith('/insurance') || 
                             (location.pathname.startsWith('/chat') && location.pathname.includes('insurance'));
+  const isMiningSection = location.pathname.startsWith('/mining') || 
+                         (location.pathname.startsWith('/chat') && location.pathname.includes('mining')) ||
+                         location.pathname === '/mining';
   
   // Choose which nav items to display
   let navItems = mainNavItems;
@@ -60,6 +74,8 @@ export function MainLayout({ children }) {
     navItems = marketingNavItems;
   } else if (isInsuranceSection) {
     navItems = insuranceNavItems;
+  } else if (isMiningSection) {
+    navItems = miningNavItems;
   }
 
   return (
@@ -139,7 +155,10 @@ export function MainLayout({ children }) {
         {/* Top Header */}
         <header className="h-16 bg-white border-b px-8 flex items-center justify-between fixed top-0 right-0 left-0 z-40 transition-all duration-300" style={{ left: isCollapsed ? '72px' : '280px' }}>
           <h1 className="text-lg font-medium text-gray-900">
-            {isMarketingSection ? "Good afternoon, Vraj" : "Good evening, Sanuj"}
+            {isMarketingSection ? "Good afternoon, Vraj" : 
+             isInsuranceSection ? "Good afternoon, Vraj" :
+             isMiningSection ? "Good afternoon, Vraj" :
+             "Good afternoon, Vraj"}
           </h1>
           <div className="flex items-center gap-2">
             <button className="p-2 text-[#3551F3] hover:bg-[#EEF2FF] rounded-lg relative">
@@ -153,7 +172,10 @@ export function MainLayout({ children }) {
             </button>
             <div className="h-8 w-[1px] bg-gray-200 mx-2" />
             <button className="w-8 h-8 rounded-full bg-[#3551F3] text-white flex items-center justify-center font-medium">
-              {isMarketingSection ? "V" : "S"}
+              {isMarketingSection ? "V" : 
+               isInsuranceSection ? "S" :
+               isMiningSection ? "R" :
+               "A"}
             </button>
           </div>
         </header>
