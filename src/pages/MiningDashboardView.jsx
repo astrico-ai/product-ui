@@ -326,408 +326,10 @@ export default function MiningDashboardView() {
           const trendDirection = displayTrend >= 0 ? "↑" : "↓";
           const trendColor = displayTrend >= 0 ? "text-green-600" : "text-red-600";
           
-          return (
-            <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-3xl font-semibold text-gray-900">{formattedValue}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className={trendColor}>{trendDirection} {Math.abs(displayTrend)}%</span>
-                    <span className="text-gray-500">vs last period</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
+          case "table":
 
-        case "line":
-          const lineData = {
-            series: [
-              {
-                name: "Carbon Fibre",
-                data: [2.8, 2.95, 3.0, 3.2, 3.3, 3.5]
-              },
-              {
-                name: "Aramid Fibre",
-                data: [1.3, 2.0, 2.05, 2.2, 2.25, 2.5]
-              },
-              {
-                name: "Glass Fibre",
-                data: [2.1, 2.0, 1.95, 1.93, 1.96, 1.9]
-              },
-              {
-                name: "Hybrid Fibre",
-                data: [1.45, 1.2, 1.25, 0.86, 0.87, 0.85]
-              }
-            ],
-            options: {
-              chart: {
-                height: 350,
-                type: 'line',
-                animations: { enabled: false },
-                toolbar: { show: false }
-              },
-              stroke: {
-                width: 3,
-                curve: 'smooth',
-                colors: ['#3551F3', '#7C3AED', '#059669', '#DC2626']
-              },
-              xaxis: {
-                categories: [
-                  'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'
-                ],
-                labels: {
-                  style: {
-                    colors: '#000000'
-                  }
-                }
-              },
-              yaxis: {
-                labels: {
-                  style: {
-                    colors: '#000000'
-                  },
-                  formatter: function(value) {
-                    return '₹' + value.toFixed(2) + ' Cr';
-                  }
-                },
-                title: {
-                  text: 'Sales (₹ Cr)',
-                  style: {
-                    color: '#000000'
-                  }
-                }
-              },
-              dataLabels: {
-                enabled: false
-              },
-              markers: {
-                size: 4
-              },
-              colors: CHART_COLORS.line,
-              legend: {
-                position: 'bottom',
-                horizontalAlign: 'center',
-                labels: {
-                  colors: '#000000'
-                }
-              }
-            }
-          };
+
           
-          return (
-            <div className="p-4">
-              <Suspense fallback={<div>Loading chart...</div>}>
-                <Chart
-                  options={lineData.options}
-                  series={lineData.series}
-                  type="line"
-                  height={350}
-                  width="100%"
-                />
-              </Suspense>
-            </div>
-          );
-
-        case "bar":
-          const barData = {
-            series: [{
-              name: "Production (tons)",
-              data: [180000, 155000, 142000, 138000, 129000]
-            }],
-            options: {
-              chart: {
-                height: 350,
-                type: 'bar',
-                animations: { enabled: false },
-                toolbar: { show: false }
-              },
-              plotOptions: {
-                bar: {
-                  borderRadius: 4,
-                  distributed: true,
-                  columnWidth: '60%'
-                }
-              },
-              xaxis: {
-                categories: [
-                  'Mine A',
-                  'Mine B',
-                  'Mine C',
-                  'Mine D',
-                  'Mine E'
-                ],
-                labels: {
-                  style: {
-                    colors: '#000000',
-                    fontSize: '12px'
-                  },
-                  rotate: -45,
-                  rotateAlways: false,
-                  trim: false
-                }
-              },
-              yaxis: {
-                labels: {
-                  formatter: function(value) {
-                    return (value/1000).toFixed(1) + 'k tons';
-                  },
-                  style: {
-                    colors: '#000000'
-                  }
-                }
-              },
-              colors: CHART_COLORS.bar,
-              dataLabels: {
-                enabled: true,
-                style: {
-                  colors: ['#000000'],
-                  fontSize: '12px'
-                },
-                formatter: function(value) {
-                  return (value/1000).toFixed(1) + 'k';
-                },
-                offsetY: -20
-              },
-              grid: {
-                show: true,
-                borderColor: '#f1f1f1',
-                strokeDashArray: 4
-              }
-            }
-          };
-          
-          return (
-            <div className="p-4">
-              <Suspense fallback={<div>Loading chart...</div>}>
-                <Chart
-                  options={barData.options}
-                  series={barData.series}
-                  type="bar"
-                  height={350}
-                  width="100%"
-                />
-              </Suspense>
-            </div>
-          );
-
-        case "pie":
-          const pieData = {
-            series: [27.63, 23.68, 19.74, 15.79, 13.16],
-            options: {
-              chart: {
-                type: 'pie',
-                animations: { enabled: false },
-                toolbar: { show: false },
-                background: '#ffffff'
-              },
-              labels: [
-                'Kavita Mehta',
-                'Mohit Nair',
-                'Megha Rao',
-                'Ankit Sharma',
-                'Puneet Sinha'
-              ],
-              legend: {
-                position: 'bottom',
-                fontSize: '14px',
-                fontWeight: 500,
-                labels: {
-                  colors: '#000000'
-                }
-              },
-              colors: CHART_COLORS.pie,
-              dataLabels: {
-                enabled: true,
-                formatter: function(val) {
-                  return val.toFixed(2) + '%';
-                },
-                style: {
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  colors: ['#000000']
-                }
-              },
-              tooltip: {
-                style: {
-                  fontSize: '14px'
-                },
-                y: {
-                  formatter: function(val) {
-                    return val.toFixed(2) + '%';
-                  }
-                }
-              }
-            }
-          };
-          
-          return (
-            <div className="p-4">
-              <Suspense fallback={<div>Loading chart...</div>}>
-                <Chart
-                  options={pieData.options}
-                  series={pieData.series}
-                  type="pie"
-                  height={350}
-                  width="100%"
-                />
-              </Suspense>
-            </div>
-          );
-
-        case "table":
-          // If the widget title includes "Leaderboard", render the sales leaderboard table
-          if (widget.title && widget.title.includes("Leaderboard")) {
-            const leaderboardData = [
-              { 
-                rank: 1,
-                name: "Kavita Mehta",
-                sales: 37.4
-              },
-              { 
-                rank: 2,
-                name: "Mohit Nair",
-                sales: 35
-              },
-              { 
-                rank: 3,
-                name: "Megha Rao",
-                sales: 32.3
-              },
-              { 
-                rank: 4,
-                name: "Ankit Sharma",
-                sales: 28.5
-              },
-              { 
-                rank: 5,
-                name: "Puneet Sinha",
-                sales: 26
-              }
-            ];
-            
-            return (
-              <div className="p-4 overflow-auto h-[350px]">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0 z-10">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KAM</th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Q1 Sales</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {leaderboardData.map((row, index) => (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center justify-center h-8 w-8 rounded-full text-sm font-semibold ${
-                            row.rank === 1 ? 'bg-yellow-100 text-yellow-800' :
-                            row.rank === 2 ? 'bg-gray-100 text-gray-800' :
-                            row.rank === 3 ? 'bg-orange-100 text-orange-800' :
-                            'bg-gray-50 text-gray-600'
-                          }`}>
-                            {row.rank}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">₹ {row.sales.toFixed(1)} Cr</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-gray-50">
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" colSpan="2">Total</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                        ₹ {leaderboardData.reduce((sum, row) => sum + row.sales, 0).toFixed(1)} Cr
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            );
-          }
-
-          // If the widget title includes "Lost" and "Customers", render the lost customers table
-          if (widget.title && widget.title.includes("Lost") && widget.title.includes("Customers")) {
-            const lostCustomersData = [
-              { 
-                clientName: "Tata Composites",
-                fibreType: "Glass Fibre",
-                lySales: 1.39,
-                lyVolume: 18.4
-              },
-              { 
-                clientName: "Reliance Fibres",
-                fibreType: "Glass Fibre",
-                lySales: 1.09,
-                lyVolume: 13.0
-              },
-              { 
-                clientName: "Bharat Textiles",
-                fibreType: "Glass Fibre",
-                lySales: 1.04,
-                lyVolume: 8.8
-              },
-              { 
-                clientName: "Aditya Polymers",
-                fibreType: "Hybrid Fibre",
-                lySales: 0.99,
-                lyVolume: 15.8
-              },
-              { 
-                clientName: "Larsen Composites",
-                fibreType: "Glass Fibre",
-                lySales: 1.39,
-                lyVolume: 14.5
-              }
-            ];
-            
-            return (
-              <div className="p-4 overflow-auto h-[350px]">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50 sticky top-0 z-10">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fibre Type</th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">LY Sales (₹ Cr)</th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">LY Volume (tonnes)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {lostCustomersData.map((row, index) => (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.clientName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            row.fibreType === 'Glass Fibre' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {row.fibreType}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">₹ {row.lySales.toFixed(2)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{row.lyVolume.toFixed(1)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-gray-50">
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Total</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                        ₹ {lostCustomersData.reduce((sum, row) => sum + row.lySales, 0).toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                        {lostCustomersData.reduce((sum, row) => sum + row.lyVolume, 0).toFixed(1)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            );
-          }
-
           // Original table case for other tables
           const tableData = [
             { 
@@ -941,33 +543,324 @@ export default function MiningDashboardView() {
         {/* Dashboard Content */}
         {dashboard.widgets && dashboard.widgets.length > 0 && (
           <div className="space-y-6">
-            {/* KPI Widgets */}
-            {dashboard.widgets.some(w => w.type === 'kpi') && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {dashboard.widgets
-                  .filter(w => w.type === 'kpi')
-                  .sort((a, b) => a.position - b.position)
-                  .map((widget) => (
-                    <div key={widget.id}>
-                      {renderWidget(widget)}
-                    </div>
-                  ))}
-              </div>
-            )}
+          
             
             {/* Other Widgets */}
-            {dashboard.widgets.some(w => w.type !== 'kpi') && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {dashboard.widgets
-                  .filter(w => w.type !== 'kpi')
-                  .sort((a, b) => a.position - b.position)
-                  .map((widget) => (
-                    <div key={widget.id}>
-                      {renderWidget(widget)}
-                    </div>
-                  ))}
+            
+            {/* Pinned Charts Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {(() => {
+  const firstNonKPIWidget = dashboard.widgets.find(w => w.type !== 'kpi');
+  return firstNonKPIWidget ? (
+    <div >
+      <div key={firstNonKPIWidget.id}>
+        {renderWidget(firstNonKPIWidget)}
+      </div>
+    </div>
+  ) : null;
+})()}
+
+
+          {(() => {
+            const pinnedCharts = JSON.parse(localStorage.getItem('pinnedCharts') || '[]');
+
+            <div className="bg-white rounded-2xl border border-gray-200 p-16">
+            <div className="max-w-md mx-auto text-center">
+              <div className="h-12 w-12 rounded-lg bg-[#3551F3]/10 flex items-center justify-center mb-6 mx-auto">
+                <LayoutDashboard className="h-6 w-6 text-[#3551F3]" />
               </div>
-            )}
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">No widgets yet</h2>
+              <p className="text-gray-500 mb-8">
+                Start building your mining dashboard by adding widgets. You can add various types of visualizations to track your metrics.
+              </p>
+              <Button 
+                onClick={() => setIsAddWidgetModalOpen(true)}
+                className="bg-[#3551F3] hover:bg-[#2B41D9] text-white gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Your First Widget
+              </Button>
+            </div>
+          </div>
+            
+            return pinnedCharts.map((chart) => (
+              <div key={chart.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-800">{chart.title}</h3>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => handleChatIconClick(chart)}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          Share
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <span className="flex items-center">
+                            Edit
+                          </span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          const updatedCharts = pinnedCharts.filter(c => c.id !== chart.id);
+                          localStorage.setItem('pinnedCharts', JSON.stringify(updatedCharts));
+                          window.location.reload();
+                        }} className="text-red-600">
+                          <span className="flex items-center">
+                            Delete
+                          </span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+                <div className="p-4">
+                  {chart.type === 'copper' && (
+                    <Suspense fallback={<div>Loading chart...</div>}>
+                      <Chart
+                        options={{
+                          chart: {
+                            height: 350,
+                            type: 'line',
+                            animations: { enabled: false },
+                            toolbar: { show: false }
+                          },
+                          stroke: {
+                            width: 3,
+                            curve: 'smooth',
+                            colors: ['#3551F3']
+                          },
+                          xaxis: {
+                            categories: ['January', 'February', 'March'],
+                            labels: {
+                              style: {
+                                colors: '#000000'
+                              }
+                            }
+                          },
+                          yaxis: {
+                            labels: {
+                              style: {
+                                colors: '#000000'
+                              },
+                              formatter: function(value) {
+                                return '$' + value.toFixed(2);
+                              }
+                            },
+                            title: {
+                              text: 'Price (USD)',
+                              style: {
+                                color: '#000000'
+                              }
+                            }
+                          },
+                          dataLabels: {
+                            enabled: false
+                          },
+                          markers: {
+                            size: 4
+                          },
+                          colors: ['#3551F3'],
+                          legend: {
+                            position: 'bottom',
+                            horizontalAlign: 'center',
+                            labels: {
+                              colors: '#000000'
+                            }
+                          }
+                        }}
+                        series={[{
+                          name: "Copper Price",
+                          data: [
+                            { date: "March", price: 9363.5 },
+                            { date: "February", price: 8949.5 },
+                            { date: "January", price: 8949.5 }
+                          ].map(d => d.price)
+                        }]}
+                        type="line"
+                        height={350}
+                        width="100%"
+                      />
+                    </Suspense>
+                  )}
+                  {chart.type === 'monthly_sales' && (
+                    <Suspense fallback={<div>Loading chart...</div>}>
+                      <Chart
+                        options={{
+                          chart: {
+                            height: 350,
+                            type: 'line',
+                            animations: { enabled: false },
+                            toolbar: { show: false }
+                          },
+                          stroke: {
+                            width: 3,
+                            curve: 'smooth',
+                            colors: ['#3551F3', '#7C3AED', '#059669', '#DC2626']
+                          },
+                          xaxis: {
+                            categories: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                            labels: {
+                              style: {
+                                colors: '#000000'
+                              }
+                            }
+                          },
+                          yaxis: {
+                            labels: {
+                              style: {
+                                colors: '#000000'
+                              },
+                              formatter: function(value) {
+                                return '₹' + value.toFixed(2) + ' Cr';
+                              }
+                            },
+                            title: {
+                              text: 'Sales (₹ Cr)',
+                              style: {
+                                color: '#000000'
+                              }
+                            }
+                          },
+                          dataLabels: {
+                            enabled: false
+                          },
+                          markers: {
+                            size: 4
+                          },
+                          colors: CHART_COLORS.line,
+                          legend: {
+                            position: 'bottom',
+                            horizontalAlign: 'center',
+                            labels: {
+                              colors: '#000000'
+                            }
+                          }
+                        }}
+                        series={[
+                          {
+                            name: "Carbon Fibre",
+                            data: [2.8, 2.95, 3.0, 3.2, 3.3, 3.5]
+                          },
+                          {
+                            name: "Aramid Fibre",
+                            data: [1.3, 2.0, 2.05, 2.2, 2.25, 2.5]
+                          },
+                          {
+                            name: "Glass Fibre",
+                            data: [2.1, 2.0, 1.95, 1.93, 1.96, 1.9]
+                          },
+                          {
+                            name: "Hybrid Fibre",
+                            data: [1.45, 1.2, 1.25, 0.86, 0.87, 0.85]
+                          }
+                        ]}
+                        type="line"
+                        height={350}
+                        width="100%"
+                      />
+                    </Suspense>
+                  )}
+                  {chart.type === 'lost_customers' && (
+                    <div className="p-4 overflow-auto h-[350px]">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fibre Type</th>
+                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">LY Sales (₹ Cr)</th>
+                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">LY Volume (tonnes)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {[
+                            { clientName: "Tata Composites", fibreType: "Glass Fibre", lySales: 1.39, lyVolume: 18.4 },
+                            { clientName: "Reliance Fibres", fibreType: "Glass Fibre", lySales: 1.09, lyVolume: 13.0 },
+                            { clientName: "Bharat Textiles", fibreType: "Glass Fibre", lySales: 1.04, lyVolume: 8.8 },
+                            { clientName: "Aditya Polymers", fibreType: "Hybrid Fibre", lySales: 0.99, lyVolume: 15.8 },
+                            { clientName: "Larsen Composites", fibreType: "Glass Fibre", lySales: 1.39, lyVolume: 14.5 }
+                          ].map((row, index) => (
+                            <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.clientName}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.fibreType}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">₹ {row.lySales.toFixed(2)}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{row.lyVolume.toFixed(1)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {chart.type === 'aramid_contribution' && (
+                    <Suspense fallback={<div>Loading chart...</div>}>
+                      <Chart
+                        options={{
+                          chart: {
+                            type: 'pie',
+                            animations: { enabled: false },
+                            toolbar: { show: false },
+                            background: '#ffffff'
+                          },
+                          labels: [
+                            'Kavita Mehta',
+                            'Mohit Nair',
+                            'Megha Rao',
+                            'Ankit Sharma',
+                            'Puneet Sinha'
+                          ],
+                          legend: {
+                            position: 'bottom',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            labels: {
+                              colors: '#000000'
+                            }
+                          },
+                          colors: CHART_COLORS.pie,
+                          dataLabels: {
+                            enabled: true,
+                            formatter: function(val) {
+                              return val.toFixed(2) + '%';
+                            },
+                            style: {
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              colors: ['#000000']
+                            }
+                          },
+                          tooltip: {
+                            style: {
+                              fontSize: '14px'
+                            },
+                            y: {
+                              formatter: function(val) {
+                                return val.toFixed(2) + '%';
+                              }
+                            }
+                          }
+                        }}
+                        series={[27.63, 23.68, 19.74, 15.79, 13.16]}
+                        type="pie"
+                        height={350}
+                        width="100%"
+                      />
+                    </Suspense>
+                  )}
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
           </div>
         )}
       </div>

@@ -889,6 +889,34 @@ export default function MiningChatPage() {
     setTimeout(() => {
       setShowToast(false);
     }, 3000);
+
+    // Get the current message that contains the visualization
+    const currentMessage = messages[messages.length - 1];
+    if (!currentMessage || !currentMessage.showVisualization) return;
+
+    // Create a unique ID for the pinned chart
+    const chartId = `pinned_chart_${Date.now()}`;
+    
+    // Store the chart data in localStorage
+    const chartData = {
+      id: chartId,
+      type: currentMessage.visualizationType,
+      title: currentMessage.visualizationType === 'copper' ? 'Copper Price Trend' :
+             currentMessage.visualizationType === 'monthly_sales' ? 'Monthly Sales Split' :
+             currentMessage.visualizationType === 'lost_customers' ? 'Lost Customers' :
+             currentMessage.visualizationType === 'aramid_contribution' ? 'Aramid Contribution' : '',
+      timestamp: new Date().toISOString(),
+      query: currentQuery
+    };
+
+    // Get existing pinned charts or initialize empty array
+    const pinnedCharts = JSON.parse(localStorage.getItem('pinnedCharts') || '[]');
+    
+    // Add new chart to the array
+    pinnedCharts.push(chartData);
+    
+    // Store back in localStorage
+    localStorage.setItem('pinnedCharts', JSON.stringify(pinnedCharts));
   };
 
   return (
