@@ -75,6 +75,65 @@ export default function ChatPage() {
     }
   ];
 
+  const detectLanguage = (text) => {
+    // Simple language detection based on common words
+    const marathiWords = ['कार', 'लोन', 'कागदपत्रे', 'आहे', 'साठी', 'कंपनी'];
+    const normalizedText = text.toLowerCase();
+    
+    if (marathiWords.some(word => text.includes(word))) {
+      return 'mr';
+    }
+    return 'en';
+  };
+
+  const getCustomLoadingSteps = (query) => {
+    const language = detectLanguage(query);
+    
+    if (language === 'mr') {
+      return [
+        {
+          title: "तुमचा प्रश्न समजत आहे..."
+        },
+        {
+          title: "स्रोतांमधून उपयोगी माहिती काढत आहे..."
+        },
+        {
+          title: "सोपी उत्तर तयार करत आहे आणि पुढे काय करायचं ते सांगत आहे..."
+        }
+      ];
+    }
+    
+    return loadingSteps;
+  };
+
+  const getCustomSources = (query) => {
+    const language = detectLanguage(query);
+    
+    if (language === 'mr') {
+      return [
+        {
+          icon: <FileText className="w-4 h-4" />,
+          text: "SOP डॉक्युमेंट्स"
+        },
+        {
+          icon: <Video className="w-4 h-4" />,
+          text: "RBL व्हिडिओ फाइल्स"
+        }
+      ];
+    }
+    
+    return [
+      {
+        icon: <FileText className="w-4 h-4" />,
+        text: "SOP Documents"
+      },
+      {
+        icon: <Video className="w-4 h-4" />,
+        text: "RBL Video Files"
+      }
+    ];
+  };
+
   // Handle initial message from search
   useEffect(() => {
     const initialMessage = location.state?.initialMessage;
@@ -131,7 +190,7 @@ export default function ChatPage() {
 
       const stepInterval = setInterval(() => {
         setCurrentStep(prev => {
-          if (prev >= loadingSteps.length - 1) {
+          if (prev >= getCustomLoadingSteps(query).length - 1) {
             clearInterval(stepInterval);
             return prev;
           }
@@ -151,6 +210,11 @@ export default function ChatPage() {
         },
         "9% and I don't have the documents right now": {
           text: "No worries. I have created a lead in the funnel **Opportunity Feb 2025** with the following details:\n\n**SDFC ID** - 2345632\n**Status** - Open\n**Car Details** - Maruti Suzuki Swift Desire\n**Interest** - 9% p.a\n**Years** - 4\n**Down Payment** - ₹2,00,000\n**Owner** - John Doe\n**Agent ID** - 246\n\nPlease use this link to access the lead:\n@https://rbl.salesforce.com/lightning/r/Opportunity/0065G00000XYZ123/view",
+          showFollowUp: false,
+          showFeedback: true
+        },
+        "कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीला कोणते कागदपत्रे लागतात?": {
+          text: "नवीन कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीसाठी दोन प्रकारचे कागदपत्रे लागतात.\n\n📌 सामान्य कागदपत्रे:\n\nअर्ज फॉर्म (Application Form)\nप्रोफॉर्मा इनव्हॉइस (Performa Invoice)\nपासपोर्ट साइज फोटो\nKYC प्रूफ\n\n📑 याशिवाय लागणारी अतिरिक्त कागदपत्रे:\n\nमागील दोन वर्षांचे ऑडिटेड बॅलन्स शीट\nशेवटच्या तीन महिन्यांचे बॅलन्स शीट\nMSME नोंदणी प्रमाणपत्र / आस्थापना प्रमाणपत्र\nशेअरहोल्डिंग पॅटर्न",
           showFollowUp: false,
           showFeedback: true
         }
@@ -192,8 +256,8 @@ export default function ChatPage() {
       
       setIsTyping(false);
       setShowVisualization(true);
-      setCurrentStep(loadingSteps.length - 1);
-      setCompletedSteps(loadingSteps.map((_, index) => index));
+      setCurrentStep(getCustomLoadingSteps(query).length - 1);
+      setCompletedSteps(getCustomLoadingSteps(query).map((_, index) => index));
       
       // Clean up intervals
       clearInterval(progressInterval);
@@ -321,7 +385,7 @@ export default function ChatPage() {
 
       const stepInterval = setInterval(() => {
         setCurrentStep(prev => {
-          if (prev >= loadingSteps.length - 1) {
+          if (prev >= getCustomLoadingSteps(query).length - 1) {
             clearInterval(stepInterval);
             return prev;
           }
@@ -602,14 +666,15 @@ export default function ChatPage() {
                           <div className="flex items-center gap-3">
                             <h3 className="text-base font-semibold text-gray-900">Sources:</h3>
                             <div className="flex gap-3">
-                              <div className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium">
-                                <FileText className="w-4 h-4" />
-                                SOP Documents
-                              </div>
-                              <div className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium">
-                                <Video className="w-4 h-4" />
-                                RBL Video Files
-                              </div>
+                              {getCustomSources(msg.text).map((source, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium"
+                                >
+                                  {source.icon}
+                                  {source.text}
+                                </div>
+                              ))}
                             </div>
                           </div>
                           
@@ -621,7 +686,7 @@ export default function ChatPage() {
                             <Progress value={loadingProgress} className="h-1.5" />
                           </div>
                           
-                          <LoadingSteps steps={loadingSteps} currentStep={currentStep} />
+                          <LoadingSteps steps={getCustomLoadingSteps(msg.text)} currentStep={currentStep} />
                         </div>
                       )}
                       <div
@@ -703,14 +768,15 @@ export default function ChatPage() {
                       <div className="flex items-center gap-3">
                         <h3 className="text-base font-semibold text-gray-900">Sources:</h3>
                         <div className="flex gap-3">
-                          <div className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium">
-                            <FileText className="w-4 h-4" />
-                            SOP Documents
-                          </div>
-                          <div className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium">
-                            <Video className="w-4 h-4" />
-                            RBL Video Files
-                          </div>
+                          {getCustomSources(chatHistorySearch).map((source, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium"
+                            >
+                              {source.icon}
+                              {source.text}
+                            </div>
+                          ))}
                         </div>
                       </div>
                       
@@ -722,7 +788,7 @@ export default function ChatPage() {
                         <Progress value={loadingProgress} className="h-1.5" />
                       </div>
                       
-                      <LoadingSteps steps={loadingSteps} currentStep={currentStep} />
+                      <LoadingSteps steps={getCustomLoadingSteps(chatHistorySearch)} currentStep={currentStep} />
                     </div>
                   )}
 
