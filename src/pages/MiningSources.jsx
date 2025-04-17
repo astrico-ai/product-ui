@@ -52,9 +52,9 @@ export default function MiningSources() {
       <div className="max-w-[1400px] mx-auto px-8 py-8">
         {/* Header Section */}
         <div className="mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">Mining Data Sources</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">Data Sources</h1>
           <p className="text-lg text-gray-600">
-            Connected platforms and services that provide mining-related data to the Astrico Knowledge Hub
+            Connected platforms and services that provide data to the Astrico Knowledge Hub
           </p>
         </div>
 

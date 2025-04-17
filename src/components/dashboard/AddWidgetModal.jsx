@@ -245,7 +245,17 @@ export default function AddWidgetModal({
     ? marketingDashboardConfig 
     : dashboardType === 'insurance'
       ? insuranceDashboardConfig
-      : regularDashboardConfig;
+      : dashboardType === 'mining'
+        ? {
+            ...regularDashboardConfig,
+            metrics: [
+              { value: "product_performance", label: "Product wise Performance" },
+              { value: "monthly_growth", label: "Monthly Sales Growth" },
+              { value: "sales_contribution", label: "Contribution to Sales" },
+              { value: "lost_customers", label: "Lost Customers" }
+            ]
+          }
+        : regularDashboardConfig;
   
   // Use config values instead of hardcoded constants
   const DATA_SOURCES = config.dataSources;
@@ -290,9 +300,9 @@ export default function AddWidgetModal({
   const handleSubmit = () => {
     let data = getPreviewData(chartType);
     
-    // If it's a table widget and we have CSV data, use that instead
-    if (chartType === 'table' && csvData) {
-      data = { csvData };
+    // If it's a table widget, use CSV data if available, otherwise use preview data
+    if (chartType === 'table') {
+      data = csvData ? { csvData } : data;
     }
     
     onSubmit({
@@ -305,7 +315,7 @@ export default function AddWidgetModal({
         chartType,
       },
       data: data,
-      csvData: chartType === 'table' ? csvData : undefined,
+      csvData: chartType === 'table' && csvData ? csvData : undefined,
     });
     onClose(false);
   };
@@ -795,7 +805,7 @@ export default function AddWidgetModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!isValid || (chartType === 'table' && !csvData)}
+            disabled={!isValid}
           >
             {initialData ? "Save Changes" : "Add Widget"}
           </Button>

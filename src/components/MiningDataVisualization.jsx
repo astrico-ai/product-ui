@@ -89,13 +89,12 @@ const MiningDataVisualization = ({ show = false, onPin }) => {
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold text-gray-900">Copper Price Trend (US$ Per Tonne)</h3>
           <Button
-            variant="outline"
-            size="sm"
+            variant="ghost"
+            size="icon"
             onClick={onPin}
-            className="text-[#3551F3] hover:bg-[#EEF2FF]"
+            className="text-gray-500 hover:text-[#3551F3] hover:bg-[#EEF2FF]"
           >
-            <Pin className="w-4 h-4 mr-2" />
-            Pin to Dashboard
+            <Pin className="w-5 h-5" />
           </Button>
         </div>
         

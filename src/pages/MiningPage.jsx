@@ -22,7 +22,7 @@ export default function MiningPage() {
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 mb-8 shadow-lg">
           <div className="w-full">
             <h1 className="text-3xl font-bold text-white mb-3">Astrico Knowledge Hub</h1>
-            <p className="text-blue-100 text-lg mb-6">Get information of all your mining queries here</p>
+            <p className="text-blue-100 text-lg mb-6">Get information of all your queries here</p>
             
             {/* Search Bar with full width */}
             <div className="bg-white/10 p-1 rounded-xl backdrop-blur-sm w-full">

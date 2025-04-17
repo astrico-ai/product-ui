@@ -25,6 +25,9 @@ import MiningPage from "@/pages/MiningPage";
 import MiningChatPage from "@/pages/MiningChatPage";
 import MiningSources from "@/pages/MiningSources";
 import RewardsApp from '@/modules/rewards/App';
+import MiningDashboardList from '@/pages/MiningDashboardList';
+import MiningDashboardView from '@/pages/MiningDashboardView';
+import MiningTraining from '@/pages/MiningTraining';
 
 
 function App() {
@@ -52,11 +55,12 @@ function App() {
         {/* Mining Routes */}
         <Route path="/mining" element={<MiningPage />} />
         <Route path="/chat/mining" element={<MiningChatPage />} />
-        <Route path="/mining/training" element={<Training />} />
-        <Route path="/mining/dashboard" element={<DashboardList />} />
-        <Route path="/mining/dashboard/:id" element={<DashboardView />} />
+        <Route path="/mining/training" element={<MiningTraining />} />
+        <Route path="/mining/dashboard" element={<MiningDashboardList />} />
+        <Route path="/mining/dashboard/:id" element={<MiningDashboardView />} />
         <Route path="/mining/sources" element={<MiningSources />} />
 
+        {/* Rewards Routes */}
         <Route path="/rewards" element={<RewardsApp />} />
         
         {/* Other Routes */}

@@ -10,6 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingSteps } from "@/components/LoadingSteps";
 import { useLocation } from "react-router-dom";
 import MiningDataVisualization from "@/components/MiningDataVisualization";
+import MonthlySalesVisualization from "@/components/MonthlySalesVisualization";
+import LostCustomersVisualization from "@/components/LostCustomersVisualization";
+import AramidContributionVisualization from "@/components/AramidContributionVisualization";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/components/ui/use-toast";
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -38,10 +41,10 @@ const mockChatMessages = {};
 // New hybrid matching system
 const topicMatcher = {
   smart_eps: {
-    keywords: ["smart eps", "eps", "features", "capabilities", "fitur", "kemampuan"],
+    keywords: ["smart eps", "eps", "features", "capabilities", "fitur", "kemampuan", "फीचर्स", "स्मार्ट"],
     subtopics: {
       features: {
-        keywords: ["features", "fitur", "capabilities", "can do", "what does", "apa saja", "tell me about"],
+        keywords: ["features", "fitur", "capabilities", "can do", "what does", "apa saja", "tell me about", "कौन", "क्या", "फीचर्स"],
         response: {
           en: {
             text: "**Features of ECS Smart EPS Solution**\n\n• Forecasted energy and GHG performance to achieve set targets\n• Achievement of performance milestones\n• Achievement of set targets\n• Assurance of priority project viability\n• Focused energy and GHG reduction plan by Emission type\n• Transition Roadmap to Net Carbon Zero",
@@ -51,6 +54,12 @@ const topicMatcher = {
           },
           id: {
             text: "**Fitur-fitur ECS Smart EPS Solution**\n\n• Perkiraan kinerja energi dan GHG untuk mencapai target yang ditetapkan\n• Pencapaian milestone kinerja\n• Pencapaian target yang ditetapkan\n• Jaminan kelayakan proyek prioritas\n• Rencana pengurangan energi dan GHG yang terfokus berdasarkan jenis Emisi\n• Peta Jalan Transisi menuju Net Carbon Zero",
+            showVisualization: false,
+            showFollowUp: false,
+            showFeedback: true
+          },
+          hi: {
+            text: "**ECS Smart EPS Solution की खास बातें**\n\n• लक्ष्य पूरे करने के लिए ऊर्जा और GHG प्रदर्शन का पहले से अनुमान लगाना\n• प्रदर्शन से जुड़ी उपलब्धियों को समय पर पूरा करना\n• तय किए गए लक्ष्य हासिल करना\n• ज़रूरी परियोजनाओं के सफल होने का भरोसा देना\n• उत्सर्जन के हर प्रकार के लिए ऊर्जा और GHG कम करने की साफ़ योजना\n• Net Carbon Zero तक पहुँचने के लिए एक तयशुदा रास्ता",
             showVisualization: false,
             showFollowUp: false,
             showFeedback: true
@@ -176,6 +185,57 @@ const topicMatcher = {
         }
       }
     }
+  },
+  monthly_sales: {
+    keywords: ["monthly", "split", "product", "april", "sept", "september"],
+    subtopics: {
+      product_split: {
+        keywords: ["split", "product", "monthly", "april", "sept", "september", "apr", 'sep"'],
+        response: {
+          en: {
+            text: "Here is a monthly sales split as per the products.\n\nThere is an increase of 10% in Aramid fibre and a dip of -3 % for Glass Fibre and -1% for Hybrid Fibre compared to last month.",
+            showVisualization: true,
+            showFollowUp: false,
+            showFeedback: true,
+            visualizationType: "monthly_sales"
+          }
+        }
+      }
+    }
+  },
+  lost_customers: {
+    keywords: ["lost", "customers", "dip", "glass", "hybrid", "fibre", "list","customers"],
+    subtopics: {
+      product_customers: {
+        keywords: ["list", "share", "customers", "lost", "products", "dip"],
+        response: {
+          en: {
+            text: "Here is the list of lost customers for Glass Fibre and Hybrid Fibre products:",
+            showVisualization: true,
+            showFollowUp: false,
+            showFeedback: true,
+            visualizationType: "lost_customers"
+          }
+        }
+      }
+    }
+  },
+  sales_contribution: {
+    keywords: ["contribution", "mohits", "aramid", "fibre", "sales", "team", "compared"],
+    subtopics: {
+      team_contribution: {
+        keywords: ["contribution", "show", "mohits", "aramid", "sales", "compared", "team"],
+        response: {
+          en: {
+            text: "Mohit has contributed 23.68% of overall Aramid Fibre sales in Q1 2025 compared to the team",
+            showVisualization: true,
+            showFollowUp: false,
+            showFeedback: true,
+            visualizationType: "aramid_contribution",
+          }
+        }
+      }
+    }
   }
 };
 
@@ -206,10 +266,18 @@ const calculateSimilarity = (str1, str2) => {
 };
 
 const detectLanguage = (text) => {
-  // Simple language detection based on common Indonesian words
+  // Simple language detection based on common words
   const indonesianWords = ['apa', 'bagaimana', 'siapa', 'mengapa', 'kapan', 'dimana', 'berapa', 'apakah'];
+  const hindiWords = ['क्या', 'कौन', 'कैसे', 'क्यों', 'कब', 'कहाँ', 'में', 'की', 'है', 'हैं'];
   const normalizedText = normalizeText(text);
-  return indonesianWords.some(word => normalizedText.includes(word)) ? 'id' : 'en';
+  
+  if (hindiWords.some(word => normalizedText.includes(word))) {
+    return 'hi';
+  }
+  if (indonesianWords.some(word => normalizedText.includes(word))) {
+    return 'id';
+  }
+  return 'en';
 };
 
 const findBestMatch = (query, context = null) => {
@@ -275,6 +343,7 @@ export default function MiningChatPage() {
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [currentContext, setCurrentContext] = useState(null);
   const initialized = useRef(false);
+  const [searchPill, setSearchPill] = useState(null);
 
   const loadingSteps = [
     {
@@ -296,6 +365,79 @@ export default function MiningChatPage() {
 
   const getCustomLoadingSteps = (query) => {
     const normalizedQuery = query.toLowerCase().trim();
+    const language = detectLanguage(query);
+    
+    if (language === 'hi' && normalizedQuery.includes('फीचर्स')) {
+      return [
+        {
+          title: "आपका सवाल समझा जा रहा है..."
+        },
+        {
+          title: "Mining डेटा को ध्यान से देखा जा रहा है ताकि ज़रूरी बातें निकाली जा सकें..."
+        },
+        {
+          title: "सही संदर्भ में डेटा का विश्लेषण किया जा रहा है..."
+        },
+        {
+          title: "ज़रूरी जानकारी को अच्छे से तैयार किया जा रहा है..."
+        },
+        {
+          title: "अब जवाब और अगला सबसे अच्छा कदम तैयार किया जा रहा है..."
+        }
+      ];
+    }
+    
+    if (normalizedQuery.includes('monthly') && normalizedQuery.includes('sales')) {
+      return [
+        {
+          title: "Retrieving data from the current dashboard..."
+        },
+        {
+          title: "Extracting the context..."
+        },
+        {
+          title: "Extracting Sales data from Salesforce for the products..."
+        },
+        {
+          title: "Generating response and next best actions..."
+        }
+      ];
+    }
+    
+    if (normalizedQuery.includes('lost') || normalizedQuery.includes('customers')) {
+      return [
+        {
+          title: "Retrieving data from the current dashboard..."
+        },
+        {
+          title: "Extracting the context..."
+        },
+        {
+          title: "Extracting Lost Customer data from Salesforce for the products..."
+        },
+        {
+          title: "Generating response and next best actions..."
+        }
+      ];
+    }
+    
+    if (normalizedQuery.includes('contribution') && normalizedQuery.includes('mohit')) {
+      return [
+        {
+          title: "Retrieving data from the current dashboard..."
+        },
+        {
+          title: "Extracting the context..."
+        },
+        {
+          title: "Extracting Sales data from Salesforce for the products..."
+        },
+        {
+          title: "Generating response and next best actions..."
+        }
+      ];
+    }
+
     if (normalizedQuery.includes('copper') || normalizedQuery.includes('performing')) {
       return [
         {
@@ -412,6 +554,32 @@ export default function MiningChatPage() {
 
   const getCustomSources = (query) => {
     const normalizedQuery = query.toLowerCase().trim();
+    const language = detectLanguage(query);
+    
+    if (language === 'hi' && normalizedQuery.includes('फीचर्स')) {
+      return [
+        {
+          icon: <FileText className="w-4 h-4" />,
+          text: "ECS वेबसाइट"
+        }
+      ];
+    }
+    
+    if (normalizedQuery.includes('monthly') && normalizedQuery.includes('sales') ||
+        normalizedQuery.includes('lost') || normalizedQuery.includes('customers') ||
+        normalizedQuery.includes('contribution') && normalizedQuery.includes('mohit')) {
+      return [
+        {
+          icon: <FileText className="w-4 h-4" />,
+          text: "Dashboard"
+        },
+        {
+          icon: <FileText className="w-4 h-4" />,
+          text: "Salesforce"
+        }
+      ];
+    }
+
     if (normalizedQuery.includes('copper') || normalizedQuery.includes('performing')) {
       return [
         {
@@ -516,6 +684,15 @@ export default function MiningChatPage() {
     processInitialQuery();
   }, []);
 
+  // Handle initial pill from session storage
+  useEffect(() => {
+    const pillTitle = sessionStorage.getItem('chatPillTitle');
+    if (pillTitle) {
+      setSearchPill(pillTitle);
+      sessionStorage.removeItem('chatPillTitle'); // Clear after reading
+    }
+  }, []);
+
   const startNewChat = () => {
     setCurrentChat(null);
     setMessages([]);
@@ -606,7 +783,7 @@ export default function MiningChatPage() {
       setMessages(prev => [...prev, searchResponse]);
       
       setIsTyping(false);
-      if (searchResponse.showVisualization && searchResponse.visualizationType === 'copper') {
+      if (searchResponse.showVisualization && (searchResponse.visualizationType === 'copper' || searchResponse.visualizationType === 'monthly_sales')) {
         setShowVisualization(true);
       }
       setCurrentStep(customSteps.length - 1);
@@ -680,6 +857,10 @@ export default function MiningChatPage() {
 
   const handleRemoveFile = (fileToRemove) => {
     setAttachedFiles(prev => prev.filter(file => file !== fileToRemove));
+  };
+
+  const handleRemovePill = () => {
+    setSearchPill(null);
   };
 
   const filteredHistory = Object.entries(chatHistory).reduce((acc, [key, chats]) => {
@@ -829,12 +1010,24 @@ export default function MiningChatPage() {
             // New Chat View
             <div className="h-full flex flex-col items-center justify-center max-w-[800px] mx-auto px-6">
               <h1 className="text-4xl font-bold text-gray-900 mb-3">Hello, Vraj</h1>
-              <p className="text-lg text-gray-500 mb-8 text-center">Ask me anything about mining or search through your knowledge base</p>
+              <p className="text-lg text-gray-500 mb-8 text-center">Ask me anything and search through your knowledge base</p>
               <div className="w-full">
                 <div className="relative flex flex-col gap-3">
                   <div className="relative flex items-center">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <div className="w-full flex items-center gap-2 pl-12 pr-24 py-2 bg-white border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-[#3551F3] focus-within:border-transparent transition-all">
+                      {searchPill && (
+                        <div className="flex items-center gap-1.5 bg-[#EEF2FF] text-[#3551F3] px-2 py-1 rounded-full text-sm">
+                          <FileText className="w-3.5 h-3.5" />
+                          <span className="max-w-[200px] truncate">{searchPill}</span>
+                          <button
+                            onClick={handleRemovePill}
+                            className="hover:bg-[#3551F3] hover:text-white p-0.5 rounded-full transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
                       {attachments.map((file) => (
                         <div
                           key={file.id}
@@ -856,18 +1049,30 @@ export default function MiningChatPage() {
                         onChange={(e) => setChatHistorySearch(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && chatHistorySearch.trim()) {
+                            e.preventDefault();
+                            const query = chatHistorySearch.trim();
+                            
                             const newChat = {
                               id: Date.now(),
-                              title: chatHistorySearch.length > 30 ? `${chatHistorySearch.slice(0, 30)}...` : chatHistorySearch
+                              title: query.length > 30 ? `${query.slice(0, 30)}...` : query
                             };
                             setCurrentChat(newChat);
-                            // Don't add message here, let handleSearch do it
-                            handleSearch(chatHistorySearch);
+                            
+                            // Add user message before search
+                            const userMessage = {
+                              id: Date.now(),
+                              text: query,
+                              sender: 'user'
+                            };
+                            setMessages([userMessage]);
+                            
+                            handleSearch(query);
                             setAttachments([]);
                             setChatHistorySearch('');
+                            setSearchPill(null);
                           }
                         }}
-                        placeholder="Search for information about mining operations, equipment, safety protocols, and more..."
+                        placeholder="Search for information about operations, equipment, safety protocols, and more..."
                         className="flex-1 text-base text-gray-900 placeholder-gray-500 focus:outline-none bg-transparent"
                       />
                     </div>
@@ -888,15 +1093,26 @@ export default function MiningChatPage() {
                       <button 
                         onClick={() => {
                           if (chatHistorySearch.trim()) {
+                            const query = chatHistorySearch.trim();
+                            
                             const newChat = {
                               id: Date.now(),
-                              title: chatHistorySearch.length > 30 ? `${chatHistorySearch.slice(0, 30)}...` : chatHistorySearch
+                              title: query.length > 30 ? `${query.slice(0, 30)}...` : query
                             };
                             setCurrentChat(newChat);
-                            // Don't add message here, let handleSearch do it
-                            handleSearch(chatHistorySearch);
+                            
+                            // Add user message before search
+                            const userMessage = {
+                              id: Date.now(),
+                              text: query,
+                              sender: 'user'
+                            };
+                            setMessages([userMessage]);
+                            
+                            handleSearch(query);
                             setAttachments([]);
                             setChatHistorySearch('');
+                            setSearchPill(null);
                           }
                         }}
                         className="p-2 rounded-lg transition-colors bg-[#3551F3] text-white hover:bg-[#2B41D9]"
@@ -1018,20 +1234,70 @@ export default function MiningChatPage() {
                                   </div>
                                 </div>
                               )}
-                              {msg.showVisualization && msg.visualizationType === 'copper' && (
-                                <div 
-                                  className="mt-6 transition-all duration-500"
-                                  style={{ 
-                                    opacity: showVisualization ? 1 : 0,
-                                    transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
-                                    display: showVisualization ? 'block' : 'none'
-                                  }}
-                                >
-                                  <MiningDataVisualization 
-                                    show={showVisualization}
-                                    onPin={handlePin}
-                                  />
-                                </div>
+                              {msg.showVisualization && (
+                                <>
+                                  {msg.visualizationType === 'copper' && (
+                                    <div 
+                                      className="mt-6 transition-all duration-500"
+                                      style={{ 
+                                        opacity: showVisualization ? 1 : 0,
+                                        transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
+                                        display: showVisualization ? 'block' : 'none'
+                                      }}
+                                    >
+                                      <MiningDataVisualization 
+                                        show={showVisualization}
+                                        onPin={handlePin}
+                                      />
+                                    </div>
+                                  )}
+                                  {msg.visualizationType === 'monthly_sales' && (
+                                    <div 
+                                      className="mt-6 transition-all duration-500"
+                                      style={{ 
+                                        opacity: showVisualization ? 1 : 0,
+                                        transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
+                                        display: showVisualization ? 'block' : 'none'
+                                      }}
+                                    >
+                                      <MonthlySalesVisualization 
+                                        show={showVisualization}
+                                        onPin={handlePin}
+                                        chatQuery={currentQuery}
+                                      />
+                                    </div>
+                                  )}
+                                  {msg.visualizationType === 'lost_customers' && (
+                                    <div 
+                                      className="mt-6 transition-all duration-500"
+                                      style={{ 
+                                        opacity: showVisualization ? 1 : 0,
+                                        transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
+                                        display: showVisualization ? 'block' : 'none'
+                                      }}
+                                    >
+                                      <LostCustomersVisualization 
+                                        show={showVisualization}
+                                        onPin={handlePin}
+                                      />
+                                    </div>
+                                  )}
+                                  {msg.visualizationType === 'aramid_contribution' && (
+                                    <div 
+                                      className="mt-6 transition-all duration-500"
+                                      style={{ 
+                                        opacity: showVisualization ? 1 : 0,
+                                        transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
+                                        display: showVisualization ? 'block' : 'none'
+                                      }}
+                                    >
+                                      <AramidContributionVisualization 
+                                        show={showVisualization}
+                                        onPin={handlePin}
+                                      />
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
                             <div 
