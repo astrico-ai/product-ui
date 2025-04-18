@@ -567,7 +567,7 @@ export default function MiningChatPage() {
     
     if (normalizedQuery.includes('monthly') && normalizedQuery.includes('sales') ||
         normalizedQuery.includes('lost') || normalizedQuery.includes('customers') ||
-        normalizedQuery.includes('contribution') && normalizedQuery.includes('mohit')) {
+        normalizedQuery.includes('contribution') || normalizedQuery.includes('mohit')) {
       return [
         {
           icon: <FileText className="w-4 h-4" />,

@@ -183,6 +183,8 @@ export default function ChatPage() {
     setShowVisualization(false);
     setCompletedSteps([]);
     
+    const queryLanguage = detectLanguage(query);
+    
     try {
       const progressInterval = setInterval(() => {
         setLoadingProgress(prev => Math.min(prev + 1, 100));
@@ -230,15 +232,19 @@ export default function ChatPage() {
           text: response.text,
           sender: 'assistant',
           showFollowUp: response.showFollowUp,
-          showFeedback: response.showFeedback
+          showFeedback: response.showFeedback,
+          language: queryLanguage
         };
       } else {
         searchResponse = {
           id: Date.now() + 1,
-          text: `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`,
+          text: queryLanguage === 'mr' 
+            ? "नवीन कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीसाठी दोन प्रकारचे कागदपत्रे लागतात.\n\n📌 सामान्य कागदपत्रे:\n\nअर्ज फॉर्म (Application Form)\nप्रोफॉर्मा इनव्हॉइस (Performa Invoice)\nपासपोर्ट साइज फोटो\nKYC प्रूफ\n\n📑 याशिवाय लागणारी अतिरिक्त कागदपत्रे:\n\nमागील दोन वर्षांचे ऑडिटेड बॅलन्स शीट\nशेवटच्या तीन महिन्यांचे बॅलन्स शीट\nMSME नोंदणी प्रमाणपत्र / आस्थापना प्रमाणपत्र\nशेअरहोल्डिंग पॅटर्न"
+            : `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`,
           sender: 'assistant',
           showFollowUp: true,
-          showFeedback: true
+          showFeedback: true,
+          language: queryLanguage
         };
       }
       
@@ -287,15 +293,26 @@ export default function ChatPage() {
     setShowVisualization(false);
 
     try {
-      const interval = setInterval(() => {
+      const progressInterval = setInterval(() => {
         setLoadingProgress(prev => {
           if (prev >= 100) {
-            clearInterval(interval);
+            clearInterval(progressInterval);
             return 100;
           }
           return prev + 5;
         });
       }, 50);
+
+      const stepInterval = setInterval(() => {
+        setCurrentStep(prev => {
+          if (prev >= getCustomLoadingSteps(inputValue).length - 1) {
+            clearInterval(stepInterval);
+            return prev;
+          }
+          setCompletedSteps(current => [...current, prev]);
+          return prev + 1;
+        });
+      }, 1000);
 
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -308,6 +325,11 @@ export default function ChatPage() {
         },
         "9% and I don't have the documents right now": {
           text: "No worries. I have created a lead in the funnel **Opportunity Feb 2025** with the following details:\n\n**SDFC ID** - 2345632\n**Status** - Open\n**Car Details** - Maruti Suzuki Swift Desire\n**Interest** - 9% p.a\n**Years** - 4\n**Down Payment** - ₹2,00,000\n**Owner** - John Doe\n**Agent ID** - 246\n\nPlease use this link to access the lead:\n@https://rbl.salesforce.com/lightning/r/Opportunity/0065G00000XYZ123/view",
+          showFollowUp: false,
+          showFeedback: true
+        },
+        "कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीला कोणते कागदपत्रे लागतात?": {
+          text: "नवीन कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीसाठी दोन प्रकारचे कागदपत्रे लागतात.\n\n📌 सामान्य कागदपत्रे:\n\nअर्ज फॉर्म (Application Form)\nप्रोफॉर्मा इनव्हॉइस (Performa Invoice)\nपासपोर्ट साइज फोटो\nKYC प्रूफ\n\n📑 याशिवाय लागणारी अतिरिक्त कागदपत्रे:\n\nमागील दोन वर्षांचे ऑडिटेड बॅलन्स शीट\nशेवटच्या तीन महिन्यांचे बॅलन्स शीट\nMSME नोंदणी प्रमाणपत्र / आस्थापना प्रमाणपत्र\nशेअरहोल्डिंग पॅटर्न",
           showFollowUp: false,
           showFeedback: true
         }
@@ -326,9 +348,13 @@ export default function ChatPage() {
           showFeedback: matchedResponse.showFeedback
         };
       } else {
+        const defaultResponse = detectLanguage(inputValue) === 'mr' 
+          ? "नवीन कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीसाठी दोन प्रकारचे कागदपत्रे लागतात.\n\n📌 सामान्य कागदपत्रे:\n\nअर्ज फॉर्म (Application Form)\nप्रोफॉर्मा इनव्हॉइस (Performa Invoice)\nपासपोर्ट साइज फोटो\nKYC प्रूफ\n\n📑 याशिवाय लागणारी अतिरिक्त कागदपत्रे:\n\nमागील दोन वर्षांचे ऑडिटेड बॅलन्स शीट\nशेवटच्या तीन महिन्यांचे बॅलन्स शीट\nMSME नोंदणी प्रमाणपत्र / आस्थापना प्रमाणपत्र\nशेअरहोल्डिंग पॅटर्न"
+          : `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`;
+
         response = {
           id: Date.now() + 1,
-          text: `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`,
+          text: defaultResponse,
           sender: 'assistant',
           showFollowUp: true,
           showFeedback: true
@@ -348,9 +374,14 @@ export default function ChatPage() {
 
       setTimeout(() => {
         setIsTyping(false);
-        setShowVisualization(false);
+        setShowVisualization(true);
+        setCurrentStep(getCustomLoadingSteps(inputValue).length - 1);
+        setCompletedSteps(getCustomLoadingSteps(inputValue).map((_, index) => index));
       }, 500);
-      clearInterval(interval);
+
+      // Make sure to clear both intervals
+      clearInterval(progressInterval);
+      clearInterval(stepInterval);
       
     } catch (error) {
       console.error('Error:', error);
@@ -666,7 +697,7 @@ export default function ChatPage() {
                           <div className="flex items-center gap-3">
                             <h3 className="text-base font-semibold text-gray-900">Sources:</h3>
                             <div className="flex gap-3">
-                              {getCustomSources(msg.text).map((source, index) => (
+                              {getCustomSources(msg.language === 'mr' ? 'कार' : 'car').map((source, index) => (
                                 <div
                                   key={index}
                                   className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium"
@@ -680,13 +711,15 @@ export default function ChatPage() {
                           
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <h3 className="text-base font-semibold text-gray-900">Request processed</h3>
+                              <h3 className="text-base font-semibold text-gray-900">
+                                {msg.language === 'mr' ? 'प्रक्रिया सुरू आहे' : 'Request processed'}
+                              </h3>
                               <span className="text-sm text-gray-500 font-medium">{Math.round(loadingProgress)}%</span>
                             </div>
                             <Progress value={loadingProgress} className="h-1.5" />
                           </div>
                           
-                          <LoadingSteps steps={getCustomLoadingSteps(msg.text)} currentStep={currentStep} />
+                          <LoadingSteps steps={getCustomLoadingSteps(msg.language === 'mr' ? 'कार' : 'car')} currentStep={currentStep} />
                         </div>
                       )}
                       <div
@@ -768,7 +801,7 @@ export default function ChatPage() {
                       <div className="flex items-center gap-3">
                         <h3 className="text-base font-semibold text-gray-900">Sources:</h3>
                         <div className="flex gap-3">
-                          {getCustomSources(chatHistorySearch).map((source, index) => (
+                          {getCustomSources(inputValue || chatHistorySearch).map((source, index) => (
                             <div
                               key={index}
                               className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium"
@@ -782,13 +815,15 @@ export default function ChatPage() {
                       
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <h3 className="text-base font-semibold text-gray-900">Processing your request</h3>
+                          <h3 className="text-base font-semibold text-gray-900">
+                            {detectLanguage(inputValue || chatHistorySearch) === 'mr' ? 'प्रक्रिया सुरू आहे' : 'Processing your request'}
+                          </h3>
                           <span className="text-sm text-gray-500 font-medium">{Math.round(loadingProgress)}%</span>
                         </div>
                         <Progress value={loadingProgress} className="h-1.5" />
                       </div>
                       
-                      <LoadingSteps steps={getCustomLoadingSteps(chatHistorySearch)} currentStep={currentStep} />
+                      <LoadingSteps steps={getCustomLoadingSteps(inputValue || chatHistorySearch)} currentStep={currentStep} />
                     </div>
                   )}
 
