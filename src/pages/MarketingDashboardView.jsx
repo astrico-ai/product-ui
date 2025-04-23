@@ -2,7 +2,7 @@ import { useState, useEffect, Suspense, lazy } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, PieChart, Share2, Edit, MoreHorizontal, Plus, ChevronRight, Presentation, MessageSquare, Trash2 } from "lucide-react";
+import { ChevronLeft, PieChart, Share2, Edit, MoreHorizontal, Plus, ChevronRight, Presentation, MessageSquare, Trash2, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -43,6 +43,72 @@ const updateMarketingDashboard = (id, data) => {
   return null;
 };
 
+// Replace mockInsights with simplified version
+const mockInsights = {
+  kpi: {
+    impressions: {
+      summary: "Impressions are showing strong positive momentum",
+      points: [
+        "23% increase in last 2 weeks",
+        "Highest growth rate in 6 months",
+        "Social media campaigns driving growth",
+        "Mobile impressions leading desktop by 2.5x"
+      ],
+      confidence: 92
+    },
+    ctr: {
+      summary: "Click-through rate requires attention",
+      points: [
+        "0.8% decline in CTR this month",
+        "Below industry average of 4.2%",
+        "Mobile performance lagging",
+        "Ad creative fatigue detected"
+      ],
+      confidence: 75
+    }
+  },
+  line: {
+    summary: "Channel performance shows mixed results",
+    points: [
+      "Google Ads showing consistent growth pattern",
+      "Facebook performance declining by 12%",
+      "Email campaigns exceeding targets by 15%",
+      "Instagram showing promising early results"
+    ],
+    confidence: 94
+  },
+  bar: {
+    summary: "Monthly performance indicates positive trend",
+    points: [
+      "Strong upward trend since May",
+      "August shows highest performance to date",
+      "Weekend campaigns outperform weekday ones",
+      "Q3 growth rate at 28% YoY"
+    ],
+    confidence: 90
+  },
+  pie: {
+    summary: "Traffic sources show organic growth",
+    points: [
+      "Organic search leads at 44% of total traffic",
+      "Social media contribution down to 13%",
+      "Direct traffic up by 15%",
+      "Email marketing steady at 22%"
+    ],
+    confidence: 96
+  },
+  scatter: {
+    summary: "Campaign ROI analysis reveals optimal zones",
+    points: [
+      "Strong correlation between spend and returns",
+      "Optimal performance in 40-50k range",
+      "Several outliers in higher spend range",
+      "Weekend campaigns show better clustering"
+    ],
+    confidence: 86
+  }
+};
+
 export default function MarketingDashboardView() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -52,6 +118,7 @@ export default function MarketingDashboardView() {
   const [isPresentationMode, setIsPresentationMode] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [loadingWidgets, setLoadingWidgets] = useState({});
+  const [widgetInsights, setWidgetInsights] = useState({});
 
   // Handle presentation navigation
   const handleNextSlide = () => {
@@ -158,21 +225,59 @@ export default function MarketingDashboardView() {
     updateMarketingDashboard(id, updatedDashboard);
   };
 
+  const toggleInsight = (widgetId) => {
+    setWidgetInsights(prev => ({
+      ...prev,
+      [widgetId]: !prev[widgetId]
+    }));
+  };
+
   const renderWidget = (widget) => {
     if (!widget) return null;
 
+    const getConfidenceColor = (score) => {
+      if (score >= 90) return 'text-green-500';
+      if (score >= 70) return 'text-yellow-500';
+      return 'text-red-500';
+    };
+
+    const getInsightData = () => {
+      switch (widget.type) {
+        case 'kpi':
+          return widget.title === "Click-through Rate" 
+            ? mockInsights.kpi.ctr 
+            : mockInsights.kpi.impressions;
+        case 'line':
+          return mockInsights.line;
+        case 'bar':
+          return mockInsights.bar;
+        case 'pie':
+          return mockInsights.pie;
+        case 'scatter':
+          return mockInsights.scatter;
+        default:
+          return null;
+      }
+    };
+
+    const insightData = getInsightData();
+    const showInsights = widgetInsights[widget.id] || false;
+
     const renderChart = () => {
       switch (widget.type) {
-        case "kpi":
+        case "kpi": {
           // Add more realistic trend values based on widget title
           let value, trend;
+          let insightKey = 'impressions'; // default
           
           if (widget.title === "Impressions") {
             value = 256789;
             trend = 12.7;
+            insightKey = 'impressions';
           } else if (widget.title === "Click-through Rate") {
             value = 3.45;
             trend = -0.8;
+            insightKey = 'ctr';
           } else if (widget.title === "Conversions") {
             value = 3256;
             trend = 8.2;
@@ -209,7 +314,7 @@ export default function MarketingDashboardView() {
           }
           
           return (
-            <div className="h-full flex items-center justify-center p-6">
+            <div className="h-full flex items-center justify-center p-6 relative">
               <div className="text-center">
                 <div className="text-4xl font-bold text-gray-900">
                   {formattedValue}
@@ -223,6 +328,7 @@ export default function MarketingDashboardView() {
               </div>
             </div>
           );
+        }
 
         case "scatter":
           const scatterData = {
@@ -260,7 +366,7 @@ export default function MarketingDashboardView() {
           };
 
           return (
-            <div className="p-4">
+            <div className="p-4 relative">
               <Suspense fallback={<div>Loading chart...</div>}>
                 <Chart
                   options={scatterData.options}
@@ -319,7 +425,7 @@ export default function MarketingDashboardView() {
           };
           
           return (
-            <div className="p-4">
+            <div className="p-4 relative">
               <Suspense fallback={<div>Loading chart...</div>}>
                 <Chart
                   options={lineData.options}
@@ -363,7 +469,7 @@ export default function MarketingDashboardView() {
           };
           
           return (
-            <div className="p-4">
+            <div className="p-4 relative">
               <Suspense fallback={<div>Loading chart...</div>}>
                 <Chart
                   options={barData.options}
@@ -395,7 +501,7 @@ export default function MarketingDashboardView() {
           };
           
           return (
-            <div className="p-4">
+            <div className="p-4 relative">
               <Suspense fallback={<div>Loading chart...</div>}>
                 <Chart
                   options={pieData.options}
@@ -466,6 +572,19 @@ export default function MarketingDashboardView() {
         <div className="p-4 border-b border-gray-100 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-800">{widget.title}</h3>
           <div className="flex items-center gap-2">
+            {insightData && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={() => toggleInsight(widget.id)}
+              >
+                <Sparkles className={cn(
+                  "h-4 w-4",
+                  showInsights ? "text-blue-500" : "text-gray-500"
+                )} />
+              </Button>
+            )}
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
               <MessageSquare className="h-4 w-4" />
             </Button>
@@ -484,7 +603,54 @@ export default function MarketingDashboardView() {
             </DropdownMenu>
           </div>
         </div>
+
+        {/* Chart Content */}
         {renderChart()}
+
+        {/* Insights Panel */}
+        {showInsights && insightData && (
+          <div className="p-4 border-t border-gray-100 bg-gray-50">
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">AI Insights</h4>
+                <p className="text-sm font-medium text-gray-900 mb-3">
+                  {insightData.summary}
+                </p>
+                <div className="space-y-2">
+                  {insightData.points.map((point, index) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <span className="text-blue-500 mt-1">•</span>
+                      <span className="text-gray-600">{point}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="relative w-12 h-12 flex-shrink-0">
+                {/* Background circle */}
+                <div className="absolute inset-0 rounded-full border-4 border-gray-100"></div>
+                {/* Colored donut segment */}
+                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="20"
+                    fill="none"
+                    strokeWidth="4"
+                    stroke={insightData.confidence >= 90 ? "#22C55E" : insightData.confidence >= 70 ? "#EAB308" : "#EF4444"}
+                    strokeDasharray={`${(insightData.confidence / 100) * 125.6} 125.6`}
+                    className="transition-all duration-300"
+                  />
+                </svg>
+                {/* Score text */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-medium">
+                    {insightData.confidence}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };

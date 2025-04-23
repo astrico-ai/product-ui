@@ -48,7 +48,7 @@ export function TrainingReportModal({ isOpen, onClose, scenario }) {
                 <iframe 
                   className="w-full mt-2 rounded-lg shadow" 
                   height="315" 
-                  src="https://drive.google.com/file/d/1YbLMB-q8jhMJGB6-HrZrYNIM65HPwe4b/preview" 
+                  src="https://drive.google.com/file/d/1TUmq-167K-jUdcB9yZtoKlmwxNJp4rb7/preview" 
                   allow="autoplay" 
                   allowFullScreen
                 />

@@ -10,8 +10,8 @@ import { TrainingScenario } from "@/components/TrainingScenario";
 const pendingScenarios = [
   {
     id: 1,
-    title: "Handling an Angry Customer's Loan Default",
-    description: "Learn to manage a heated conversation with a customer who's defaulted on their loan payments while maintaining professionalism and finding a resolution.",
+    title: "Handling an Angry Customer's Credit Card Issue",
+    description: "Learn to manage a heated conversation with a customer who's payment has been debited from their account twice while maintaining professionalism and finding a resolution.",
     difficulty: "hard",
     timeInMinutes: 15,
     skills: ["Conflict Resolution", "Empathy", "Policy Communication"]
