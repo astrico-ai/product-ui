@@ -23,7 +23,7 @@ export function TrainingIframeModal({ isOpen, onClose, scenario }) {
         {/* Iframe Container */}
         <div className="flex-1 w-full h-full min-h-0">
           <iframe
-            src="https://ebek.astrico.ai/agent"
+            src="https://training.astrico.ai/agent"
             className="w-full h-full"
             frameBorder="0"
             allow="camera; microphone; display-capture; fullscreen; autoplay"
