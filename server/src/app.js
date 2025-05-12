@@ -8,7 +8,6 @@ const debug = require('debug')('app:server');
 
 const { logger, stream } = require('./utils/logger');
 const { errorHandler } = require('./utils/errors');
-const AudioProcessor = require('./services/audioProcessor');
 
 // Initialize express app
 const app = express();
@@ -36,52 +35,6 @@ app.get('/health', (req, res) => {
 io.on('connection', (socket) => {
     debug(`New client connected: ${socket.id}`);
     
-    // Create audio processor instance for this connection
-    const audioProcessor = new AudioProcessor(socket);
-    
-    socket.on('start_recording', () => {
-        debug(`Client ${socket.id} started recording`);
-        // Clear any existing conversation
-        audioProcessor.clearConversation();
-    });
-
-    socket.on('audio_data', async (data) => {
-        try {
-            debug(`Received audio data from client ${socket.id}, data size: ${data.audio.length}`);
-            const audioBuffer = Buffer.from(data.audio, 'base64');
-            debug(`Converted to audio buffer, size: ${audioBuffer.length} bytes`);
-            await audioProcessor.addAudioChunk(audioBuffer);
-        } catch (error) {
-            console.error('Error processing audio:', error);
-            debug('Audio processing error details:', {
-                error: error.message,
-                stack: error.stack
-            });
-            socket.emit('error', { message: 'Error processing audio data' });
-        }
-    });
-
-    socket.on('end_recording', async () => {
-        debug(`Client ${socket.id} ended recording`);
-        // No need to process audio here as it's processed in real-time
-    });
-
-    socket.on('start_training', async () => {
-        try {
-            // Clear any existing conversation state
-            audioProcessor.clearConversation();
-        } catch (error) {
-            console.error('Error starting training:', error);
-            socket.emit('error', { message: 'Error starting training session' });
-        }
-    });
-
-    socket.on('end_training', () => {
-        debug(`Client ${socket.id} ended training session`);
-        // Clear conversation state
-        audioProcessor.clearConversation();
-    });
-
     socket.on('disconnect', () => {
         debug(`Client disconnected: ${socket.id}`);
     });

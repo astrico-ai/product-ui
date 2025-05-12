@@ -30,6 +30,11 @@ const mainNavItems = [
   { icon: Trophy, label: "Rewards", path: "/rewards" },
 ];
 
+const insightsSubNav = [
+  { icon: BarChart, label: "Analytics", path: "/analytics" },
+  { icon: MessageSquare, label: "Message History", path: "/message-history" },
+];
+
 // Marketing-specific nav items
 const marketingNavItems = [
   { icon: Home, label: "Home", path: "/marketing" },
@@ -58,6 +63,7 @@ const miningNavItems = [
 export function MainLayout({ children }) {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [insightsOpen, setInsightsOpen] = useState(false);
   
   // Determine if we're in the marketing, insurance, or mining section
   const isMarketingSection = location.pathname.startsWith('/marketing') || 
@@ -128,6 +134,45 @@ export function MainLayout({ children }) {
                 </Link>
               );
             })}
+            {/* Insights Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setInsightsOpen((open) => !open)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-all duration-300 ${
+                  insightsSubNav.some(sub => location.pathname.startsWith(sub.path))
+                    ? 'bg-[#3551F3] text-white shadow-md shadow-[#3551F3]/20'
+                    : 'text-gray-500 hover:bg-white hover:text-[#3551F3] hover:shadow-sm'
+                }`}
+              >
+                <BarChart className={`w-5 h-5 shrink-0 ${insightsSubNav.some(sub => location.pathname.startsWith(sub.path)) ? 'text-white' : ''}`} />
+                {!isCollapsed && <span className="text-sm font-medium">Insights</span>}
+                {!isCollapsed && (
+                  <ChevronRight className={`w-4 h-4 ml-auto transition-transform ${insightsOpen ? 'rotate-90' : ''}`} />
+                )}
+              </button>
+              {/* Subnav */}
+              {!isCollapsed && insightsOpen && (
+                <div className="ml-8 mt-1 space-y-1">
+                  {insightsSubNav.map((sub) => {
+                    const isActive = location.pathname.startsWith(sub.path);
+                    return (
+                      <Link
+                        key={sub.path}
+                        to={sub.path}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                          isActive
+                            ? 'bg-[#E0E7FF] text-[#3551F3] font-semibold'
+                            : 'text-gray-500 hover:bg-gray-100 hover:text-[#3551F3]'
+                        }`}
+                      >
+                        <sub.icon className="w-4 h-4" />
+                        <span className="text-sm">{sub.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </nav>
 
