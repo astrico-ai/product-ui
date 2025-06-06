@@ -1,7 +1,76 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { MainLayout } from "@/components/MainLayout";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, XCircle } from "lucide-react";
 
 export default function MarketingSourcesPage() {
+  const [connectedSources, setConnectedSources] = useState(() => {
+    const stored = localStorage.getItem('connectedSources');
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('connectedSources', JSON.stringify(connectedSources));
+  }, [connectedSources]);
+
+  const handleConnect = (sourceId) => {
+    if (sourceId === 1) { // Google Ads
+      // Immediately mark Google Ads as connected
+      setConnectedSources(prev => {
+        if (!prev.includes(1)) {
+          return [...prev, 1];
+        }
+        return prev;
+      });
+
+      // Open OAuth URL in new tab
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+
+      const oauthUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
+        "client_id=916350483395-kkm9u444j84gcn5mc86gusrdi1kv5oe4.apps.googleusercontent.com&" +
+        "redirect_uri=https://www.astrico.ai/oauth2/callback&" +
+        "response_type=code&" +
+        "scope=https://www.googleapis.com/auth/adwords&" +
+        "access_type=offline&" +
+        "prompt=consent";
+
+      window.open(
+        oauthUrl,
+        'Google Ads OAuth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+    }
+  };
+
+  // Listen for OAuth callback message
+  useEffect(() => {
+    const handleOAuthCallback = (event) => {
+      // Verify the origin of the message
+      if (event.origin !== "https://www.astrico.ai") return;
+
+      try {
+        const data = event.data;
+        if (data.type === 'oauth_callback' && data.source === 'google_ads' && data.code) {
+          // Add Google Ads to connected sources
+          setConnectedSources(prev => {
+            if (!prev.includes(1)) { // 1 is Google Ads ID
+              return [...prev, 1];
+            }
+            return prev;
+          });
+        }
+      } catch (error) {
+        console.error('Error handling OAuth callback:', error);
+      }
+    };
+
+    window.addEventListener('message', handleOAuthCallback);
+    return () => window.removeEventListener('message', handleOAuthCallback);
+  }, []);
+
   const marketingSources = [
     {
       id: 1,
@@ -79,29 +148,36 @@ export default function MarketingSourcesPage() {
         {/* Sources Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {marketingSources.map((source) => (
-            <div key={source.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all hover:shadow-md relative">
-              {/* Status Indicator */}
-              <div className="absolute top-4 right-4 h-3 w-3 rounded-full bg-green-500"></div>
-              <div className="p-6 flex items-center space-x-4">
-                {/* Logo */}
-                <div className="h-16 w-16 flex-shrink-0 bg-gray-50 rounded-lg p-2 flex items-center justify-center">
-                  <img 
-                    src={source.logo} 
-                    alt={`${source.name} logo`} 
-                    className="max-h-full max-w-full object-contain"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "https://via.placeholder.com/60x60";
-                    }}
-                  />
+            <div
+              key={source.id}
+              className="bg-white rounded-xl border border-gray-100 p-6 hover:border-primary/20 hover:shadow-md transition-all relative group"
+            >
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-lg bg-white border border-gray-100 p-2 flex items-center justify-center flex-shrink-0">
+                  <img src={source.logo} alt={source.name} className="w-full h-full object-contain" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold text-lg text-gray-900">{source.name}</h3>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-medium text-gray-900">{source.name}</h3>
+                    {connectedSources.includes(source.id) ? (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    ) : null}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">{source.description}</p>
                 </div>
               </div>
+
+              {/* Connect Button - Only show for unconnected sources */}
+              {!connectedSources.includes(source.id) && (
+                <div className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    onClick={() => handleConnect(source.id)}
+                    className="w-full bg-primary text-white hover:bg-primary/90"
+                  >
+                    Connect
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>

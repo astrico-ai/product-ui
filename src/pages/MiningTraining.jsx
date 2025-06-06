@@ -1,16 +1,26 @@
 import React, { useState } from "react";
 import { MainLayout } from "@/components/MainLayout";
-import { Download, Clock, Star, Trophy, CheckCircle, ArrowRight, GraduationCap, Building2, Factory, Users, Briefcase } from "lucide-react";
+import { Download, Clock, Star, Trophy, CheckCircle, ArrowRight, GraduationCap, Building2, Factory, Users, Briefcase, MessageSquare, UserCircle, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { MiningTrainingReportModal } from "@/components/MiningTrainingReportModal";
 import { TrainingScenario } from "@/components/TrainingScenario";
 import { TrainingIframeModal } from "@/components/TrainingIframeModal";
+import { motion } from "framer-motion";
 
 const pendingScenarios = [
   {
     id: 1,
+    title: "Heat Stress | Kiln Safety Scenario",
+    description: "Learn how to identify early symptoms of heat stress, take immediate peer-level action, and escalate responsibly in a high-temperature industrial setting.",
+    difficulty: "medium",
+    timeInMinutes: 15,
+    skills: ["Judgement", "Peer Intervention", "Safety Escalation", "Incident Reporting"],
+    icon: "AlertTriangle"
+  },
+  {
+    id: 2,
     title: "Strategic Sales Negotiation Drill",
     description: "Practice high-stakes negotiations with key industry decision-makers. Focus on value proposition, technical specifications, and long-term partnership benefits.",
     difficulty: "hard",
@@ -20,13 +30,13 @@ const pendingScenarios = [
   },
   {
     id: 2,
-    title: "Handling Procurement Pushback on New Vendor Onboarding",
-    description: "Learn to address common procurement objections, demonstrate compliance requirements, and navigate vendor registration processes effectively.",
+    title: "PPE Compliance During Shutdown",
+    description: "Understand how to consistently follow PPE protocols during shutdowns, including high-risk zones and interactions with multiple teams. Learn how to spot and correct non-compliance in real time.",
     difficulty: "medium",
-    timeInMinutes: 15,
-    skills: ["Objection Handling", "Process Knowledge", "Stakeholder Management"],
-    icon: Factory
-  },
+    timeInMinutes: 12,
+    skills: ["PPE Awareness", "Zone Compliance", "Peer Correction", "Risk Anticipation"],
+    icon: "ShieldCheck"
+  },  
   {
     id: 3,
     title: "Pitching a New Product Line to a Resistant Plant Head",
@@ -64,9 +74,9 @@ const completedScenarios = [
   },
   {
     id: 102,
-    title: "Cost Optimization Presentation",
+    title: "Heat Stress | Kiln Safety Scenario",
     completedDate: "2024-04-10",
-    score: 89,
+    score: 72,
   },
   {
     id: 103,
@@ -84,6 +94,42 @@ const topPerformers = [
   { id: 5, name: "Megha Rao", score: 86, scenariosCompleted: 5, trend: "same" }
 ];
 
+// New feedback data
+const employeeFeedbacks = [
+  {
+    id: 1,
+    name: "Mohit Sharma",
+    role: "Material Handling Operator",
+    completedScenarios: [
+      { id: 101, title: "Safe Material Handling", date: "2025-06-06" }
+    ]
+  },
+  {
+    id: 2,
+    name: "Kavita Mehta",
+    role: "Maintenance Technician",
+    completedScenarios: [
+      { id: 102, title: "PPE Compliance During Shutdown", date: "2025-06-05" }
+    ]
+  },
+  {
+    id: 3,
+    name: "Rohit Nair",
+    role: "Loading Supervisorr",
+    completedScenarios: [
+      { id: 103, title: "Unsafe Stacking & Warehouse Safety", date: "2025-06-01" }
+    ]
+  },
+  {
+    id: 4,
+    name: "Ankit Sharma",
+    role: "Shift Quality Inspector",
+    completedScenarios: [
+      { id: 107, title: "Sampling Hazard During Active Belt Movement", date: "2025-05-30" }
+    ]
+  }
+];
+
 function DifficultyBadge({ difficulty }) {
   const styles = {
     easy: "bg-green-50 text-green-700 border-green-200",
@@ -98,12 +144,380 @@ function DifficultyBadge({ difficulty }) {
   );
 }
 
+function SafetyFeedbackModal({ isOpen, onClose, employee, onSubmit }) {
+  const [formData, setFormData] = useState({
+    materialHandling: '',
+    liftingPosture: '',
+    liftingAids: '',
+    communication: '',
+    nearMisses: '',
+    reportingUnsafe: '',
+    additionalComments: ''
+  });
+
+  // Helper function to get color classes based on option
+  const getOptionColorClasses = (option) => {
+    switch (option.toLowerCase()) {
+      case 'yes':
+      case 'always':
+        return {
+          radio: 'checked:border-green-500 checked:border-6',
+          text: 'group-hover:text-green-700',
+          bg: 'group-hover:bg-green-50'
+        };
+      case 'no':
+      case 'rarely':
+        return {
+          radio: 'checked:border-red-500 checked:border-6',
+          text: 'group-hover:text-red-700',
+          bg: 'group-hover:bg-red-50'
+        };
+      case 'sometimes':
+        return {
+          radio: 'checked:border-yellow-500 checked:border-6',
+          text: 'group-hover:text-yellow-700',
+          bg: 'group-hover:bg-yellow-50'
+        };
+      case 'not applicable':
+      case 'not observed':
+        return {
+          radio: 'checked:border-gray-500 checked:border-6',
+          text: 'group-hover:text-gray-700',
+          bg: 'group-hover:bg-gray-50'
+        };
+      default:
+        return {
+          radio: 'checked:border-primary checked:border-6',
+          text: 'group-hover:text-primary',
+          bg: 'group-hover:bg-primary/5'
+        };
+    }
+  };
+
+  // Helper function to render radio options
+  const renderRadioOptions = (options, name, value, onChange) => {
+    return options.map((option) => {
+      const colorClasses = getOptionColorClasses(option);
+      return (
+        <label
+          key={option}
+          className={`relative flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition-all ${colorClasses.bg}`}
+        >
+          <input
+            type="radio"
+            name={name}
+            value={option}
+            checked={value === option}
+            onChange={onChange}
+            className={`w-5 h-5 border-2 border-gray-300 rounded-full appearance-none transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 ${colorClasses.radio}`}
+          />
+          <span className={`text-gray-600 font-medium transition-colors ${colorClasses.text}`}>
+            {option}
+          </span>
+        </label>
+      );
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
+      >
+        <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-blue-500/5 via-primary/10 to-purple-500/5 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-blue-600 via-primary to-purple-600 text-transparent bg-clip-text">Safety Feedback</h2>
+            <p className="text-sm text-gray-600 mt-1">Providing feedback for {employee?.name}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/80 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            <div className="grid gap-8">
+              {/* Material Handling */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Have you observed this employee handling materials (e.g., bags, drums, tools) safely during loading/unloading tasks?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Yes', 'No'],
+                    'materialHandling',
+                    formData.materialHandling,
+                    (e) => setFormData({ ...formData, materialHandling: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Lifting Posture */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Does the employee consistently follow safe lifting posture (e.g., bending knees, keeping back straight, using both hands)?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Always', 'Sometimes', 'Rarely'],
+                    'liftingPosture',
+                    formData.liftingPosture,
+                    (e) => setFormData({ ...formData, liftingPosture: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Lifting Aids */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Have they used available lifting aids or equipment (e.g., trolleys, hooks, cranes) instead of manual handling where appropriate?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Yes', 'No', 'Not Applicable'],
+                    'liftingAids',
+                    formData.liftingAids,
+                    (e) => setFormData({ ...formData, liftingAids: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Communication */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Does the employee maintain clear communication with others during shared handling activities (e.g., signaling, confirming load release)?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Yes', 'Sometimes', 'No'],
+                    'communication',
+                    formData.communication,
+                    (e) => setFormData({ ...formData, communication: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Near Misses */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Have you noticed any near-misses or unsafe practices (e.g., sudden movements, stacking imbalance, lifting beyond capacity) by this employee?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Yes', 'No'],
+                    'nearMisses',
+                    formData.nearMisses,
+                    (e) => setFormData({ ...formData, nearMisses: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Reporting Unsafe */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Does the employee report unsafe conditions like broken pallets, wet floors, or overloaded trolleys in the handling zone?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Yes', 'No', 'Not Observed'],
+                    'reportingUnsafe',
+                    formData.reportingUnsafe,
+                    (e) => setFormData({ ...formData, reportingUnsafe: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Additional Comments */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Additional comments or observations:
+                </label>
+                <textarea
+                  value={formData.additionalComments}
+                  onChange={(e) => setFormData({ ...formData, additionalComments: e.target.value })}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white placeholder-gray-400"
+                  rows={4}
+                  placeholder="Enter any additional observations or comments..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="px-6 border-gray-200 hover:bg-gray-50/80"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="px-6 bg-gradient-to-r from-blue-600 via-primary to-purple-600 text-white hover:opacity-90"
+              >
+                Submit Feedback
+              </Button>
+            </div>
+          </form>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function EmployeeFeedbackCard({ employee }) {
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState('pending');
+
+  const handleFeedbackSubmit = (formData) => {
+    console.log('Feedback submitted:', formData);
+    setFeedbackStatus('completed');
+    setShowFeedbackModal(false);
+  };
+
+  return (
+    <>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative bg-white rounded-xl border border-gray-100 shadow-sm hover:border-primary/20 hover:shadow-md transition-all p-6 group"
+      >
+        <div className="space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4 min-w-0">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/5 to-purple-50/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                <UserCircle className="w-7 h-7 text-primary/70" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-lg font-medium text-gray-900 group-hover:text-primary transition-colors truncate">{employee.name}</h3>
+                <p className="text-sm text-gray-600">{employee.role}</p>
+              </div>
+            </div>
+
+            {/* Status Badge - Moved to the right side */}
+            {feedbackStatus === 'completed' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 border border-green-100 flex-shrink-0"
+              >
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-[10px] font-medium text-green-600 whitespace-nowrap">Feedback Submitted</span>
+              </motion.div>
+            )}
+          </div>
+              
+          <div className="space-y-2">
+            {employee.completedScenarios.map((scenario) => (
+              <div key={scenario.id} className="flex items-center justify-between text-sm">
+                <span className="text-gray-700 truncate mr-4">{scenario.title}</span>
+                <span className="text-gray-500 text-xs flex-shrink-0">
+                  {new Date(scenario.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Give Feedback Button - Only visible on hover and when feedback is pending */}
+          {feedbackStatus === 'pending' && (
+            <div className="h-0 overflow-hidden group-hover:h-auto transition-all duration-200">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Button
+                  className="w-full bg-primary text-white hover:bg-primary/90"
+                  onClick={() => setShowFeedbackModal(true)}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Give Feedback
+                </Button>
+              </motion.div>
+            </div>
+          )}
+
+          {/* View Feedback Button - Only visible on hover when feedback is completed */}
+          {feedbackStatus === 'completed' && (
+            <div className="h-0 overflow-hidden group-hover:h-auto transition-all duration-200">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Button
+                  className="w-full bg-primary text-white hover:bg-primary/90"
+                  onClick={() => setShowFeedbackModal(true)}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  View Feedback
+                </Button>
+              </motion.div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      <SafetyFeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        employee={employee}
+        onSubmit={handleFeedbackSubmit}
+      />
+    </>
+  );
+}
+
+function TabNavigation({ activeTab, setActiveTab }) {
+  const tabs = [
+    { id: 'scenarios', label: 'Scenarios', icon: Briefcase },
+    { id: 'feedback', label: 'Feedback', icon: MessageSquare },
+  ];
+
+  return (
+    <div className="border-b border-gray-200">
+      <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
+              activeTab === tab.id
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <tab.icon className={`w-5 h-5 ${
+              activeTab === tab.id ? "text-primary" : "text-gray-400"
+            }`} />
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
 export default function MiningTraining() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState(null);
   const [isTrainingOpen, setIsTrainingOpen] = useState(false);
   const [isIframeModalOpen, setIsIframeModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('scenarios');
   const videoUrl = "https://drive.google.com/file/d/1YbLMB-q8jhMJGB6-HrZrYNIM65HPwe4b/view";
 
   const handleStartScenario = (scenario) => {
@@ -155,56 +569,81 @@ export default function MiningTraining() {
                 <GraduationCap className="h-6 w-6 text-[#3551F3]" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">B2B Industry Sales Training</h1>
-                <p className="text-gray-600">Master complex B2B sales scenarios with our AI-powered training simulations.</p>
+                <h1 className="text-2xl font-semibold text-gray-900">B2B Industry Safety Training</h1>
+                <p className="text-gray-600">Master complex B2B safety scenarios with our AI-powered training simulations.</p>
               </div>
             </div>
           </div>
 
+          {/* Tab Navigation */}
+          <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+
           <div className="grid grid-cols-12 gap-8">
-            {/* Pending Scenarios Section */}
+            {/* Main Content Area */}
             <div className="col-span-12 lg:col-span-8">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-                <div className="px-8 py-6 border-b border-gray-100">
-                  <h2 className="text-lg font-semibold text-gray-900">Training Scenarios</h2>
-                  <p className="text-sm text-gray-500 mt-1">Practice real-world B2B industry sales situations</p>
-                </div>
-                
-                <div className="p-8 space-y-5">
-                  {pendingScenarios.map((scenario) => (
-                    <div key={scenario.id} className="group p-6 rounded-xl border border-gray-100 hover:border-[#3551F3]/20 hover:bg-[#3551F3]/[0.02] transition-all">
-                      <div className="flex items-start justify-between gap-6">
-                        <div className="space-y-3 flex-1">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-base font-medium text-gray-900 group-hover:text-[#3551F3] transition-colors">{scenario.title}</h3>
-                            <DifficultyBadge difficulty={scenario.difficulty} />
-                          </div>
-                          <p className="text-sm text-gray-600 leading-relaxed">{scenario.description}</p>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="w-4 h-4 text-[#3551F3]" />
-                              <span className="text-sm text-gray-600">{scenario.timeInMinutes} mins</span>
+                {activeTab === 'scenarios' ? (
+                  <>
+                    <div className="px-8 py-6 border-b border-gray-100">
+                      <h2 className="text-lg font-semibold text-gray-900">Training Scenarios</h2>
+                      <p className="text-sm text-gray-500 mt-1">Practice real-world B2B industry safety situations</p>
+                    </div>
+                    
+                    <div className="p-8 space-y-5">
+                      {pendingScenarios.map((scenario) => (
+                        <div key={scenario.id} className="group p-6 rounded-xl border border-gray-100 hover:border-[#3551F3]/20 hover:bg-[#3551F3]/[0.02] transition-all">
+                          <div className="flex items-start justify-between gap-6">
+                            <div className="space-y-3 flex-1">
+                              <div className="flex items-center gap-3">
+                                <h3 className="text-base font-medium text-gray-900 group-hover:text-[#3551F3] transition-colors">{scenario.title}</h3>
+                                <DifficultyBadge difficulty={scenario.difficulty} />
+                              </div>
+                              <p className="text-sm text-gray-600 leading-relaxed">{scenario.description}</p>
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-4 h-4 text-[#3551F3]" />
+                                  <span className="text-sm text-gray-600">{scenario.timeInMinutes} mins</span>
+                                </div>
+                                <div className="flex gap-2">
+                                  {scenario.skills.map((skill, index) => (
+                                    <Badge key={index} variant="secondary" className="bg-gray-50">
+                                      {skill}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex gap-2">
-                              {scenario.skills.map((skill, index) => (
-                                <Badge key={index} variant="secondary" className="bg-gray-50">
-                                  {skill}
-                                </Badge>
-                              ))}
-                            </div>
+                            <Button 
+                              className="opacity-0 group-hover:opacity-100 transition-opacity bg-[#3551F3] text-white hover:bg-[#3551F3]/90"
+                              onClick={() => handleStartScenario(scenario)}
+                            >
+                              Start Scenario
+                              <ArrowRight className="w-4 h-4 ml-2" />
+                            </Button>
                           </div>
                         </div>
-                        <Button 
-                          className="opacity-0 group-hover:opacity-100 transition-opacity bg-[#3551F3] text-white hover:bg-[#3551F3]/90"
-                          onClick={() => handleStartScenario(scenario)}
-                        >
-                          Start Scenario
-                          <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="px-8 py-6 border-b border-gray-100">
+                      <h2 className="text-lg font-semibold text-gray-900">Employee Feedback</h2>
+                      <p className="text-sm text-gray-500 mt-1">Review and provide feedback on completed scenarios</p>
+                    </div>
+                    
+                    <div className="p-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {employeeFeedbacks.map((employee) => (
+                          <EmployeeFeedbackCard
+                            key={employee.id}
+                            employee={employee}
+                          />
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -214,7 +653,7 @@ export default function MiningTraining() {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
                 <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-amber-50/50 to-orange-50/30">
                   <h2 className="text-lg font-semibold text-gray-900">Top Performers</h2>
-                  <p className="text-sm text-gray-500 mt-1">Leading sales professionals this month</p>
+                  <p className="text-sm text-gray-500 mt-1">Leading safety professionals this month</p>
                 </div>
                 
                 <div className="px-8 py-6 space-y-4">
