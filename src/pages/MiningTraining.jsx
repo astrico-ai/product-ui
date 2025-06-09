@@ -1,6 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/MainLayout";
-import { Download, Clock, Star, Trophy, CheckCircle, ArrowRight, GraduationCap, Building2, Factory, Users, Briefcase, MessageSquare, UserCircle, ChevronDown, X } from "lucide-react";
+import { 
+  Download, 
+  Clock, 
+  Star, 
+  Trophy, 
+  CheckCircle, 
+  ArrowRight, 
+  GraduationCap, 
+  Building2, 
+  Factory, 
+  Users, 
+  Briefcase, 
+  MessageSquare,
+  UserCircle, 
+  ChevronDown, 
+  X,
+  MoreVertical,
+  Edit2,
+  Trash2,
+  Plus,
+  Play,
+  Shield,
+  MessageCircle
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VideoPlayer } from "@/components/VideoPlayer";
@@ -129,6 +152,22 @@ const employeeFeedbacks = [
     ]
   }
 ];
+
+// Add these constants at the top after the existing constants
+const AGE_GROUPS = ['20-30', '30-40', '40-50', '50-60', '60+'];
+const PERSONA_TYPES = [
+  'Angry',
+  'Price Sensitive',
+  'Distrustful',
+  'Silent Resistor',
+  'First-Time Buyer',
+  'Repeat Customer',
+  'Indecisive',
+  'Brand Conscious'
+];
+const TONES = ['Friendly', 'Skeptical', 'Aggressive', 'Confused', 'Passive'];
+const OBJECTION_STYLES = ['Passive', 'Assertive', 'Defensive', 'Avoidant'];
+const LANGUAGES = ['English', 'Hindi', 'Marathi', 'Malayalam', 'Tamil', 'Telugu', 'Punjabi'];
 
 function DifficultyBadge({ difficulty }) {
   const styles = {
@@ -484,6 +523,7 @@ function EmployeeFeedbackCard({ employee }) {
 function TabNavigation({ activeTab, setActiveTab }) {
   const tabs = [
     { id: 'scenarios', label: 'Scenarios', icon: Briefcase },
+    { id: 'personas', label: 'AI Personas', icon: UserCircle },
     { id: 'feedback', label: 'Feedback', icon: MessageSquare },
   ];
 
@@ -511,6 +551,339 @@ function TabNavigation({ activeTab, setActiveTab }) {
   );
 }
 
+function PersonaCard({ persona, onEdit, onDelete }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showTrainingModal, setShowTrainingModal] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getBadgeColor = (type) => {
+    const colors = {
+      'Angry': 'bg-red-50 text-red-700 border-red-200',
+      'Price Sensitive': 'bg-amber-50 text-amber-700 border-amber-200',
+      'Distrustful': 'bg-purple-50 text-purple-700 border-purple-200',
+      'Silent Resistor': 'bg-slate-50 text-slate-700 border-slate-200',
+      'First-Time Buyer': 'bg-green-50 text-green-700 border-green-200',
+      'Repeat Customer': 'bg-blue-50 text-blue-700 border-blue-200',
+      'Indecisive': 'bg-orange-50 text-orange-700 border-orange-200',
+      'Brand Conscious': 'bg-indigo-50 text-indigo-700 border-indigo-200'
+    };
+    return colors[type] || 'bg-gray-50 text-gray-700 border-gray-200';
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative bg-white rounded-xl border border-gray-100 shadow-sm hover:border-primary/20 hover:shadow-md transition-all p-6 group"
+    >
+      <div className="absolute top-4 right-4" ref={menuRef}>
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <MoreVertical className="w-4 h-4 text-gray-400" />
+        </button>
+
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50"
+          >
+            <button
+              onClick={() => {
+                onEdit(persona);
+                setIsMenuOpen(false);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            >
+              <Edit2 className="w-4 h-4" />
+              Edit
+            </button>
+            <button
+              onClick={() => {
+                onDelete(persona);
+                setIsMenuOpen(false);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          </motion.div>
+        )}
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex items-start gap-4">
+          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/5 to-purple-50/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform text-2xl">
+            {persona.emoji || '👤'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-medium text-gray-900 group-hover:text-primary transition-colors mb-2">{persona.name}</h3>
+            <div className="flex flex-wrap gap-2 mb-3">
+              <Badge variant="outline" className={`${getBadgeColor(persona.personaType)} group-hover:border-current`}>
+                {persona.personaType}
+              </Badge>
+              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 group-hover:border-gray-300">
+                {persona.ageGroup}
+              </Badge>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 group-hover:border-current">
+                {persona.language}
+              </Badge>
+            </div>
+            <p className="text-sm text-gray-600 line-clamp-2 mb-3">{persona.description}</p>
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <MessageCircle className="w-3.5 h-3.5" />
+                Tone: {persona.tone}
+              </span>
+              <span className="flex items-center gap-1">
+                <Shield className="w-3.5 h-3.5" />
+                Style: {persona.objectionStyle}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="h-0 overflow-hidden group-hover:h-auto transition-all duration-200">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Button
+              onClick={() => setShowTrainingModal(true)}
+              className="w-full bg-primary text-white hover:bg-primary/90"
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Start Training
+            </Button>
+          </motion.div>
+        </div>
+      </div>
+
+      {showTrainingModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-xl w-full max-w-5xl h-[80vh] relative"
+          >
+            <div className="absolute top-4 right-4 z-10">
+              <button
+                onClick={() => setShowTrainingModal(false)}
+                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+            <iframe
+              src={`https://training.astrico.ai/agent`}
+              className="w-full h-full rounded-2xl"
+              title="Training Session"
+            />
+          </motion.div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// Add this component before the MiningTraining component
+function CreatePersonaModal({ isOpen, onClose, onSave, initialData }) {
+  const [formData, setFormData] = useState(() => ({
+    id: initialData?.id || null,
+    name: initialData?.name || '',
+    ageGroup: initialData?.ageGroup || AGE_GROUPS[0],
+    personaType: initialData?.personaType || PERSONA_TYPES[0],
+    description: initialData?.description || '',
+    tone: initialData?.tone || TONES[0],
+    objectionStyle: initialData?.objectionStyle || OBJECTION_STYLES[0],
+    language: initialData?.language || LANGUAGES[0]
+  }));
+
+  // Reset form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        id: initialData.id,
+        name: initialData.name,
+        ageGroup: initialData.ageGroup,
+        personaType: initialData.personaType,
+        description: initialData.description,
+        tone: initialData.tone,
+        objectionStyle: initialData.objectionStyle,
+        language: initialData.language
+      });
+    }
+  }, [initialData]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+    onClose();
+    // Only reset if it's not an edit operation
+    if (!initialData) {
+      setFormData({
+        id: null,
+        name: '',
+        ageGroup: AGE_GROUPS[0],
+        personaType: PERSONA_TYPES[0],
+        description: '',
+        tone: TONES[0],
+        objectionStyle: OBJECTION_STYLES[0],
+        language: LANGUAGES[0]
+      });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-purple-50/50">
+          <h2 className="text-2xl font-semibold text-gray-900">
+            {initialData ? 'Edit AI Persona' : 'Create AI Persona'}
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            {initialData ? 'Modify your AI training partner\'s characteristics' : 'Configure your AI training partner\'s characteristics'}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Persona Name</label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800 bg-white/50"
+                placeholder="Enter persona name"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Age Group</label>
+                <select
+                  value={formData.ageGroup}
+                  onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800 bg-white/50"
+                >
+                  {AGE_GROUPS.map(age => (
+                    <option key={age} value={age}>{age}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
+                <select
+                  value={formData.language}
+                  onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800 bg-white/50"
+                >
+                  {LANGUAGES.map(lang => (
+                    <option key={lang} value={lang}>{lang}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Persona Type</label>
+              <select
+                value={formData.personaType}
+                onChange={(e) => setFormData({ ...formData, personaType: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800 bg-white/50"
+              >
+                {PERSONA_TYPES.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <textarea
+                required
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800 bg-white/50 h-24 resize-none"
+                placeholder="Describe the persona's characteristics and behavior..."
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tone</label>
+                <select
+                  value={formData.tone}
+                  onChange={(e) => setFormData({ ...formData, tone: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800 bg-white/50"
+                >
+                  {TONES.map(tone => (
+                    <option key={tone} value={tone}>{tone}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Objection Style</label>
+                <select
+                  value={formData.objectionStyle}
+                  onChange={(e) => setFormData({ ...formData, objectionStyle: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800 bg-white/50"
+                >
+                  {OBJECTION_STYLES.map(style => (
+                    <option key={style} value={style}>{style}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-6 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="px-6"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="px-6 bg-primary text-white hover:bg-primary/90"
+            >
+              {initialData ? 'Save Changes' : 'Create Persona'}
+            </Button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function MiningTraining() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -519,6 +892,13 @@ export default function MiningTraining() {
   const [isIframeModalOpen, setIsIframeModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('scenarios');
   const videoUrl = "https://drive.google.com/file/d/1YbLMB-q8jhMJGB6-HrZrYNIM65HPwe4b/view";
+  const [personas, setPersonas] = useState(() => {
+    const storedPersonas = localStorage.getItem('personas');
+    return storedPersonas ? JSON.parse(storedPersonas) : [];
+  });
+  const [selectedPersona, setSelectedPersona] = useState(null);
+  const [isCreatePersonaOpen, setIsCreatePersonaOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const handleStartScenario = (scenario) => {
     setSelectedScenario(scenario);
@@ -528,6 +908,26 @@ export default function MiningTraining() {
   const handleDownloadReport = (scenario) => {
     setSelectedScenario(scenario);
     setIsReportOpen(true);
+  };
+
+  const handleCreatePersona = (newPersona) => {
+    if (newPersona.id) {
+      setPersonas(prevPersonas => 
+        prevPersonas.map(p => p.id === newPersona.id ? newPersona : p)
+      );
+    } else {
+      setPersonas(prevPersonas => [...prevPersonas, { ...newPersona, id: Date.now() }]);
+    }
+  };
+
+  const handleEditClick = (persona) => {
+    setSelectedPersona(persona);
+    setIsCreatePersonaOpen(true);
+  };
+
+  const handleDeleteClick = (persona) => {
+    setSelectedPersona(persona);
+    setIsDeleteConfirmOpen(true);
   };
 
   return (
@@ -553,6 +953,55 @@ export default function MiningTraining() {
           onClose={() => setIsIframeModalOpen(false)}
           scenario={selectedScenario}
         />
+
+        {/* Create/Edit Persona Modal */}
+        <CreatePersonaModal
+          isOpen={isCreatePersonaOpen}
+          onClose={() => {
+            setIsCreatePersonaOpen(false);
+            setSelectedPersona(null);
+          }}
+          onSave={handleCreatePersona}
+          initialData={selectedPersona}
+        />
+
+        {/* Delete Confirmation Modal */}
+        {isDeleteConfirmOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full mx-4"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Persona</h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete "{selectedPersona?.name}"? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDeleteConfirmOpen(false);
+                    setSelectedPersona(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setPersonas(prevPersonas => prevPersonas.filter(p => p.id !== selectedPersona.id));
+                    setIsDeleteConfirmOpen(false);
+                    setSelectedPersona(null);
+                  }}
+                  className="bg-red-600 text-white hover:bg-red-700"
+                >
+                  Delete
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         {/* Report Modal */}
         <MiningTrainingReportModal
@@ -623,6 +1072,60 @@ export default function MiningTraining() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </>
+                ) : activeTab === 'personas' ? (
+                  <>
+                    <div className="px-8 py-6 border-b border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-lg font-semibold text-gray-900">AI Personas</h2>
+                          <p className="text-sm text-gray-500 mt-1">Create and manage AI personas for training</p>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            setSelectedPersona(null);
+                            setIsCreatePersonaOpen(true);
+                          }}
+                          className="bg-primary text-white hover:bg-primary/90"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create Persona
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="p-8">
+                      {personas.length === 0 ? (
+                        <div className="text-center py-12">
+                          <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/10 to-purple-100 flex items-center justify-center mx-auto mb-4">
+                            <Users className="h-12 w-12 text-primary" />
+                          </div>
+                          <p className="text-lg font-medium text-gray-900">No personas created yet</p>
+                          <p className="text-sm text-gray-500 mt-1">Create your first AI persona to start training</p>
+                          <Button
+                            onClick={() => {
+                              setSelectedPersona(null);
+                              setIsCreatePersonaOpen(true);
+                            }}
+                            className="mt-6 bg-primary text-white hover:bg-primary/90"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Persona
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {personas.map((persona) => (
+                            <PersonaCard
+                              key={persona.id}
+                              persona={persona}
+                              onEdit={handleEditClick}
+                              onDelete={handleDeleteClick}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : (
