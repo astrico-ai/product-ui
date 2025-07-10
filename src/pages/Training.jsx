@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { MainLayout } from "@/components/MainLayout";
-import { Download, Clock, Star, Trophy, CheckCircle, ArrowRight, GraduationCap, UserCircle, List, Plus, X, Users, ChevronDown, MessageCircle, Shield, MoreVertical, Edit2, Trash2, Play, AlertCircle, DollarSign, HelpCircle, UserX, UserPlus, RefreshCw, Brain, Sparkles } from "lucide-react";
+import { Download, Clock, Star, Trophy, CheckCircle, ArrowRight, GraduationCap, UserCircle, List, Plus, X, Users, ChevronDown, MessageCircle, Shield, MoreVertical, Edit2, Trash2, Play, AlertCircle, DollarSign, HelpCircle, UserX, UserPlus, RefreshCw, Brain, Sparkles, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VideoPlayer } from "@/components/VideoPlayer";
@@ -110,6 +110,387 @@ const personaEmojis = {
   'Brand Conscious': '🎯'
 };
 
+// Employee feedback data
+const employeeFeedbacks = [
+  {
+    id: 1,
+    name: "Rahul Sharma",
+    role: "Customer Service Representative",
+    completedScenarios: [
+      { id: 101, title: "Switching Home Loan Provider", date: "2025-06-19" }
+    ]
+  },
+  {
+    id: 2,
+    name: "Priya Patel",
+    role: "Senior Customer Advisor",
+    completedScenarios: [
+      { id: 102, title: "First-Time Borrower Guidance", date: "2025-06-01" }
+    ]
+  },
+  {
+    id: 3,
+    name: "Amit Kumar",
+    role: "Loan Officer",
+    completedScenarios: [
+      { id: 103, title: "Payment Default Resolution", date: "2025-05-22" }
+    ]
+  },
+  {
+    id: 4,
+    name: "Neha Verma",
+    role: "Customer Relations Manager",
+    completedScenarios: [
+      { id: 104, title: "Handling Angry Customer's Credit Card Issue", date: "2025-05-15" }
+    ]
+  }
+];
+
+function CustomerServiceFeedbackModal({ isOpen, onClose, employee, onSubmit }) {
+  const [formData, setFormData] = useState({
+    communication: '',
+    empathy: '',
+    problemSolving: '',
+    productKnowledge: '',
+    professionalism: '',
+    followUp: '',
+    additionalComments: ''
+  });
+
+  // Helper function to get color classes based on option
+  const getOptionColorClasses = (option) => {
+    switch (option.toLowerCase()) {
+      case 'excellent':
+      case 'always':
+        return {
+          radio: 'checked:border-green-500 checked:border-6',
+          text: 'group-hover:text-green-700',
+          bg: 'group-hover:bg-green-50'
+        };
+      case 'poor':
+      case 'never':
+        return {
+          radio: 'checked:border-red-500 checked:border-6',
+          text: 'group-hover:text-red-700',
+          bg: 'group-hover:bg-red-50'
+        };
+      case 'good':
+      case 'sometimes':
+        return {
+          radio: 'checked:border-blue-500 checked:border-6',
+          text: 'group-hover:text-blue-700',
+          bg: 'group-hover:bg-blue-50'
+        };
+      case 'fair':
+      case 'rarely':
+        return {
+          radio: 'checked:border-yellow-500 checked:border-6',
+          text: 'group-hover:text-yellow-700',
+          bg: 'group-hover:bg-yellow-50'
+        };
+      case 'not applicable':
+      case 'not observed':
+        return {
+          radio: 'checked:border-gray-500 checked:border-6',
+          text: 'group-hover:text-gray-700',
+          bg: 'group-hover:bg-gray-50'
+        };
+      default:
+        return {
+          radio: 'checked:border-primary checked:border-6',
+          text: 'group-hover:text-primary',
+          bg: 'group-hover:bg-primary/5'
+        };
+    }
+  };
+
+  // Helper function to render radio options
+  const renderRadioOptions = (options, name, value, onChange) => {
+    return options.map((option) => {
+      const colorClasses = getOptionColorClasses(option);
+      return (
+        <label
+          key={option}
+          className={`relative flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition-all ${colorClasses.bg}`}
+        >
+          <input
+            type="radio"
+            name={name}
+            value={option}
+            checked={value === option}
+            onChange={onChange}
+            className={`w-5 h-5 border-2 border-gray-300 rounded-full appearance-none transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 ${colorClasses.radio}`}
+          />
+          <span className={`text-gray-600 font-medium transition-colors ${colorClasses.text}`}>
+            {option}
+          </span>
+        </label>
+      );
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
+      >
+        <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-blue-500/5 via-primary/10 to-purple-500/5 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-blue-600 via-primary to-purple-600 text-transparent bg-clip-text">Customer Service Feedback</h2>
+            <p className="text-sm text-gray-600 mt-1">Providing feedback for {employee?.name}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/80 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            <div className="grid gap-8">
+              {/* Communication Skills */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  How would you rate this employee's communication skills during customer interactions?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Excellent', 'Good', 'Fair', 'Poor'],
+                    'communication',
+                    formData.communication,
+                    (e) => setFormData({ ...formData, communication: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Empathy & Understanding */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Does the employee show empathy and understanding when dealing with customer concerns?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Always', 'Sometimes', 'Rarely', 'Never'],
+                    'empathy',
+                    formData.empathy,
+                    (e) => setFormData({ ...formData, empathy: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Problem-Solving */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  How effectively does the employee solve customer problems and provide solutions?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Excellent', 'Good', 'Fair', 'Poor'],
+                    'problemSolving',
+                    formData.problemSolving,
+                    (e) => setFormData({ ...formData, problemSolving: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Product Knowledge */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Does the employee demonstrate adequate product knowledge when explaining services to customers?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Excellent', 'Good', 'Fair', 'Poor'],
+                    'productKnowledge',
+                    formData.productKnowledge,
+                    (e) => setFormData({ ...formData, productKnowledge: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Professionalism */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  How would you rate the employee's professionalism and courtesy during customer interactions?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Excellent', 'Good', 'Fair', 'Poor'],
+                    'professionalism',
+                    formData.professionalism,
+                    (e) => setFormData({ ...formData, professionalism: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Follow-up */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Does the employee follow up appropriately with customers after resolving their issues?
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {renderRadioOptions(
+                    ['Always', 'Sometimes', 'Rarely', 'Not Observed'],
+                    'followUp',
+                    formData.followUp,
+                    (e) => setFormData({ ...formData, followUp: e.target.value })
+                  )}
+                </div>
+              </div>
+
+              {/* Additional Comments */}
+              <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100 hover:border-primary/20 transition-colors">
+                <label className="block text-base font-medium text-gray-800 mb-4">
+                  Additional comments or observations:
+                </label>
+                <textarea
+                  value={formData.additionalComments}
+                  onChange={(e) => setFormData({ ...formData, additionalComments: e.target.value })}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white placeholder-gray-400"
+                  rows={4}
+                  placeholder="Enter any additional observations or suggestions for improvement..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="px-6 border-gray-200 hover:bg-gray-50/80"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="px-6 bg-gradient-to-r from-blue-600 via-primary to-purple-600 text-white hover:opacity-90"
+              >
+                Submit Feedback
+              </Button>
+            </div>
+          </form>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function EmployeeFeedbackCard({ employee }) {
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState('pending');
+
+  const handleFeedbackSubmit = (formData) => {
+    console.log('Feedback submitted:', formData);
+    setFeedbackStatus('completed');
+    setShowFeedbackModal(false);
+  };
+
+  return (
+    <>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative bg-white rounded-xl border border-gray-100 shadow-sm hover:border-primary/20 hover:shadow-md transition-all p-6 group"
+      >
+        <div className="space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4 min-w-0">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/5 to-purple-50/30 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                <UserCircle className="w-7 h-7 text-primary/70" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-lg font-medium text-gray-900 group-hover:text-primary transition-colors truncate">{employee.name}</h3>
+                <p className="text-sm text-gray-600">{employee.role}</p>
+              </div>
+            </div>
+
+            {/* Status Badge */}
+            {feedbackStatus === 'completed' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 border border-green-100 flex-shrink-0"
+              >
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-[10px] font-medium text-green-600 whitespace-nowrap">Feedback Submitted</span>
+              </motion.div>
+            )}
+          </div>
+              
+          <div className="space-y-2">
+            {employee.completedScenarios.map((scenario) => (
+              <div key={scenario.id} className="flex items-center justify-between text-sm">
+                <span className="text-gray-700 truncate mr-4">{scenario.title}</span>
+                <span className="text-gray-500 text-xs flex-shrink-0">
+                  {new Date(scenario.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Give Feedback Button - Only visible on hover and when feedback is pending */}
+          {feedbackStatus === 'pending' && (
+            <div className="h-0 overflow-hidden group-hover:h-auto transition-all duration-200">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Button
+                  className="w-full bg-primary text-white hover:bg-primary/90"
+                  onClick={() => setShowFeedbackModal(true)}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Give Feedback
+                </Button>
+              </motion.div>
+            </div>
+          )}
+
+          {/* View Feedback Button - Only visible on hover when feedback is completed */}
+          {feedbackStatus === 'completed' && (
+            <div className="h-0 overflow-hidden group-hover:h-auto transition-all duration-200">
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Button
+                  className="w-full bg-primary text-white hover:bg-primary/90"
+                  onClick={() => setShowFeedbackModal(true)}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  View Feedback
+                </Button>
+              </motion.div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      <CustomerServiceFeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        employee={employee}
+        onSubmit={handleFeedbackSubmit}
+      />
+    </>
+  );
+}
+
 function DifficultyBadge({ difficulty }) {
   const styles = {
     easy: "bg-green-50 text-green-700 border-green-200",
@@ -128,6 +509,7 @@ function TabNavigation({ activeTab, setActiveTab }) {
   const tabs = [
     { id: 'scenarios', label: 'Scenarios', icon: List },
     { id: 'personas', label: 'AI Personas', icon: UserCircle },
+    { id: 'feedback', label: 'Feedback', icon: MessageSquare },
   ];
 
   return (
@@ -711,6 +1093,24 @@ export default function Training() {
                           ))}
                         </div>
                       )}
+                    </div>
+                  </>
+                ) : activeTab === 'feedback' ? (
+                  <>
+                    <div className="px-8 py-6 border-b border-gray-100">
+                      <h2 className="text-lg font-semibold text-gray-900">Employee Feedback</h2>
+                      <p className="text-sm text-gray-500 mt-1">Review and provide feedback on completed training scenarios</p>
+                    </div>
+                    
+                    <div className="p-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {employeeFeedbacks.map((employee) => (
+                          <EmployeeFeedbackCard
+                            key={employee.id}
+                            employee={employee}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </>
                 ) : (
