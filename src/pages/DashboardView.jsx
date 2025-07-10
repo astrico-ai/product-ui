@@ -1523,7 +1523,7 @@ function CalculatedFieldModal({ isOpen, onClose, onSubmit, availableFields, data
 // --- ManualChartBuilder Component ---
 function ManualChartBuilder({ onClose, onSave }) {
   const [selectedDataset, setSelectedDataset] = useState("salesforce");
-  const [chartTitle, setChartTitle] = useState("");
+  const [chartTitle, setChartTitle] = useState("Untitled");
   const [selectedFields, setSelectedFields] = useState({
     xAxis: "",
     yAxis: [], // Changed to array for multi-select
@@ -1533,10 +1533,15 @@ function ManualChartBuilder({ onClose, onSave }) {
   const [filters, setFilters] = useState([]);
   const [calculatedFields, setCalculatedFields] = useState([]);
   const [isCalculatedFieldModalOpen, setIsCalculatedFieldModalOpen] = useState(false);
+  const [isTitleEditModalOpen, setIsTitleEditModalOpen] = useState(false);
   const [formatting, setFormatting] = useState({
     valueFormat: 'auto',
-    decimalPrecision: 2
+    decimalPrecision: 2,
+    xAxisLabel: '',
+    yAxisLabel: '',
+    legendPosition: 'bottom'
   });
+  const [customColors, setCustomColors] = useState({});
   const [isFormattingExpanded, setIsFormattingExpanded] = useState(false);
 
   const datasets = {
@@ -1547,7 +1552,8 @@ function ManualChartBuilder({ onClose, onSave }) {
         { id: "region", name: "Region", type: "text" },
         { id: "industry", name: "Industry", type: "text" },
         { id: "created_date", name: "Created Date", type: "date" },
-        { id: "stage", name: "Stage", type: "text" }
+        { id: "stage", name: "Stage", type: "text" },
+        { id: "is_qualified", name: "Is Qualified", type: "boolean" }
       ],
       metrics: [
         { id: "lead_count", name: "Lead Count", type: "number" },
@@ -1563,7 +1569,8 @@ function ManualChartBuilder({ onClose, onSave }) {
         { id: "ad_group", name: "Ad Group", type: "text" },
         { id: "device", name: "Device", type: "text" },
         { id: "date", name: "Date", type: "date" },
-        { id: "keyword", name: "Keyword", type: "text" }
+        { id: "keyword", name: "Keyword", type: "text" },
+        { id: "is_mobile", name: "Is Mobile", type: "boolean" }
       ],
       metrics: [
         { id: "impressions", name: "Impressions", type: "number" },
@@ -1665,10 +1672,95 @@ function ManualChartBuilder({ onClose, onSave }) {
     return ['bar', 'line', 'table'].includes(chartType);
   };
 
-  // Color palette for multiple metrics
-  const metricColors = [
-    '#3551F3', '#A5B4FC', '#60A5FA', '#93C5FD', '#DBEAFE'
+  // New, more professional color palette
+  const professionalColors = [
+    '#4C6EF5', '#228BE6', '#15AABF', '#12B886', '#40C057', '#82C91E',
+    '#FAB005', '#FD7E14', '#FF6B6B', '#F06595', '#CC5DE8', '#845EF7',
   ];
+
+  // Get legend categories based on current chart configuration
+  const getLegendCategories = () => {
+    const categories = [];
+    
+    if (selectedFields.chartType === 'pie') {
+      // For pie charts, categories are based on X-axis field values
+      if (selectedFields.xAxis) {
+        // Mock data based on the selected field
+        const field = allFields.find(f => f.id === selectedFields.xAxis);
+        if (field) {
+          switch (field.id) {
+            case 'lead_source':
+              categories.push('Organic Search', 'Paid Search', 'Social Media', 'Email', 'Direct');
+              break;
+            case 'region':
+              categories.push('North America', 'Europe', 'Asia Pacific', 'Latin America');
+              break;
+            case 'industry':
+              categories.push('Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Retail');
+              break;
+            case 'stage':
+              categories.push('Lead', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won');
+              break;
+            case 'campaign_name':
+              categories.push('Summer Sale', 'Black Friday', 'Product Launch', 'Brand Awareness');
+              break;
+            case 'device':
+              categories.push('Desktop', 'Mobile', 'Tablet');
+              break;
+            default:
+              categories.push('Category A', 'Category B', 'Category C', 'Category D');
+          }
+        }
+      }
+    } else if (selectedFields.yAxis.length > 1) {
+      // For multi-metric charts, categories are the metric names
+      selectedFields.yAxis.forEach(fieldId => {
+        const field = allFields.find(f => f.id === fieldId);
+        if (field) {
+          categories.push(field.name);
+        }
+      });
+    } else if (selectedFields.xAxis) {
+      // For single metric charts with grouping, categories are X-axis values
+      const field = allFields.find(f => f.id === selectedFields.xAxis);
+      if (field) {
+        switch (field.id) {
+          case 'lead_source':
+            categories.push('Organic Search', 'Paid Search', 'Social Media', 'Email');
+            break;
+          case 'region':
+            categories.push('North America', 'Europe', 'Asia Pacific', 'Latin America');
+            break;
+          case 'industry':
+            categories.push('Technology', 'Healthcare', 'Finance', 'Manufacturing');
+            break;
+          case 'campaign_name':
+            categories.push('Summer Sale', 'Black Friday', 'Product Launch');
+            break;
+          case 'device':
+            categories.push('Desktop', 'Mobile', 'Tablet');
+            break;
+          default:
+            categories.push('Series 1', 'Series 2', 'Series 3');
+        }
+      }
+    }
+    
+    return categories;
+  };
+
+  // Get color for a category (custom or default)
+  const getCategoryColor = (category, index) => {
+    return customColors[category] || professionalColors[index % professionalColors.length];
+  };
+
+  // Update custom color for a category
+  const updateCategoryColor = (category, color) => {
+    setCustomColors(prev => ({
+      ...prev,
+      [category]: color
+    }));
+  };
 
   // Number formatting function
   const formatValue = (value, format = formatting.valueFormat, precision = formatting.decimalPrecision) => {
@@ -1709,296 +1801,254 @@ function ManualChartBuilder({ onClose, onSave }) {
   };
 
   const renderMockChart = () => {
+    const [activeBar, setActiveBar] = useState(null);
+    const [activeSlice, setActiveSlice] = useState(null);
+
     if (!selectedFields.xAxis || !selectedFields.yAxis || selectedFields.yAxis.length === 0) {
       return (
-        <div className="h-80 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+        <div className="h-full flex items-center justify-center text-gray-400 bg-gray-50/50 border-2 border-dashed border-gray-200 rounded-lg">
           <div className="text-center">
-            <div className="text-4xl mb-2">📊</div>
-            <p>Select X-Axis and Y-Axis to preview chart</p>
+            <div className="text-5xl mb-3">📈</div>
+            <h3 className="text-lg font-medium text-gray-700">Chart Preview</h3>
+            <p className="text-sm text-gray-500">Select fields for X and Y axes to build your chart.</p>
           </div>
         </div>
       );
     }
 
-    // Generate mock data for multiple metrics
-    const selectedMetrics = selectedFields.yAxis;
+    const legendCategories = getLegendCategories();
     const mockData = [
-      { name: "Q1", values: [240, 180, 320, 280, 150] },
-      { name: "Q2", values: [300, 220, 280, 350, 200] },
-      { name: "Q3", values: [200, 160, 240, 190, 180] },
-      { name: "Q4", values: [400, 350, 380, 420, 300] }
+      { name: "Q1", values: [290, 210, 180, 150, 100] },
+      { name: "Q2", values: [350, 260, 200, 180, 120] },
+      { name: "Q3", values: [240, 190, 150, 120, 90] },
+      { name: "Q4", values: [420, 400, 320, 280, 200] }
     ];
 
-    switch (selectedFields.chartType) {
-      case "bar":
-        const maxValue = Math.max(...mockData.flatMap(d => d.values));
-        const yAxisTicks = Array.from({ length: 6 }, (_, i) => Math.round((maxValue / 5) * i));
-        
+    const chartMargins = { top: 20, right: 20, bottom: 50, left: 60 };
+    const chartWidth = 500;
+    const chartHeight = 280;
+    const boundedWidth = chartWidth - chartMargins.left - chartMargins.right;
+    const boundedHeight = chartHeight - chartMargins.top - chartMargins.bottom;
+
+    const yMax = Math.max(...mockData.flatMap(d => d.values.slice(0, selectedFields.yAxis.length)));
+    const yTicks = Array.from({ length: 5 }, (_, i) => Math.ceil((yMax / 4) * i / 10) * 10);
+    
+    // --- SVG Components ---
+    const Grid = () => (
+      <>
+        {/* Y-axis grid lines */}
+        {yTicks.map((tick, i) => (
+          (i > 0) && <line
+            key={`grid-${i}`}
+            x1={chartMargins.left}
+            y1={chartMargins.top + boundedHeight - (tick / yMax) * boundedHeight}
+            x2={chartMargins.left + boundedWidth}
+            y2={chartMargins.top + boundedHeight - (tick / yMax) * boundedHeight}
+            stroke="#e9ecef"
+            strokeWidth="1"
+          />
+        ))}
+      </>
+    );
+
+    const Axes = () => (
+      <>
+        {/* Y-axis */}
+        <path d={`M ${chartMargins.left} ${chartMargins.top} L ${chartMargins.left} ${chartMargins.top + boundedHeight}`} stroke="#adb5bd" strokeWidth="1" />
+        {yTicks.map((tick, i) => (
+          <g key={`y-tick-${i}`} transform={`translate(${chartMargins.left - 8}, ${chartMargins.top + boundedHeight - (tick / yMax) * boundedHeight})`}>
+            <text textAnchor="end" alignmentBaseline="middle" className="fill-gray-600" style={{ fontSize: '11px' }}>
+              {formatValue(tick, 'compact')}
+            </text>
+          </g>
+        ))}
+        {/* X-axis */}
+        <path d={`M ${chartMargins.left} ${chartMargins.top + boundedHeight} L ${chartMargins.left + boundedWidth} ${chartMargins.top + boundedHeight}`} stroke="#adb5bd" strokeWidth="1" />
+        {mockData.map((d, i) => (
+          <g key={`x-tick-${i}`} transform={`translate(${chartMargins.left + ((i + 0.5) * boundedWidth / mockData.length)}, ${chartMargins.top + boundedHeight + 18})`}>
+            <text textAnchor="middle" alignmentBaseline="middle" className="fill-gray-700" style={{ fontSize: '12px', fontWeight: '500' }}>
+              {d.name}
+            </text>
+          </g>
+        ))}
+        {/* Axis Labels */}
+        <text transform={`translate(${chartMargins.left / 3}, ${chartMargins.top + boundedHeight / 2}) rotate(-90)`} textAnchor="middle" className="fill-gray-800" style={{ fontSize: '12px', fontWeight: '500' }}>
+          {formatting.yAxisLabel || selectedFields.yAxis.map(id => allFields.find(f => f.id === id)?.name).join(', ')}
+        </text>
+        <text transform={`translate(${chartMargins.left + boundedWidth / 2}, ${chartHeight - 10})`} textAnchor="middle" className="fill-gray-800" style={{ fontSize: '12px', fontWeight: '500' }}>
+          {formatting.xAxisLabel || allFields.find(f => f.id === selectedFields.xAxis)?.name}
+        </text>
+      </>
+    );
+
+    const Tooltip = ({ content }) => {
+        if (!content) return null;
+        const { x, y, category, value, color } = content;
         return (
-          <div className="h-full flex flex-col">
-            <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
-              <svg width="100%" height="100%" viewBox="0 0 600 320" className="overflow-visible">
-                {/* Chart area background */}
-                <rect x="80" y="20" width="480" height="240" fill="#fafafa" stroke="none" />
-                
-                {/* Y-axis */}
-                <line x1="80" y1="20" x2="80" y2="260" stroke="#d1d5db" strokeWidth="1" />
-                {/* X-axis */}
-                <line x1="80" y1="260" x2="560" y2="260" stroke="#d1d5db" strokeWidth="1" />
-                
-                {/* Y-axis labels and grid lines */}
-                {yAxisTicks.map((tick, i) => (
-                  <g key={i}>
-                    <line x1="75" y1={260 - (i * 40)} x2="80" y2={260 - (i * 40)} stroke="#9ca3af" strokeWidth="1" />
-                    <text x="70" y={260 - (i * 40) + 4} textAnchor="end" className="fill-gray-600" style={{ fontSize: '12px', fontFamily: 'system-ui' }}>
-                      {formatValue(tick)}
-                    </text>
-                    {/* Grid lines */}
-                    {i > 0 && <line x1="80" y1={260 - (i * 40)} x2="560" y2={260 - (i * 40)} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="3,3" />}
-                  </g>
-                ))}
-                
-                {/* Bars */}
-                {mockData.map((d, i) => {
-                  const barGroupX = 120 + (i * 100);
-                  const barWidth = selectedMetrics.length === 1 ? 40 : 18;
-                  const barSpacing = 2;
-                  
-                  return (
-                    <g key={i}>
-                      {selectedMetrics.map((metricId, metricIndex) => {
-                        const barHeight = Math.max(2, (d.values[metricIndex] / maxValue) * 240);
-                        const barX = barGroupX + (metricIndex * (barWidth + barSpacing)) - ((selectedMetrics.length * (barWidth + barSpacing) - barSpacing) / 2);
-                        
-                        return (
-                          <g key={metricId}>
-                            <rect
-                              x={barX}
-                              y={260 - barHeight}
-                              width={barWidth}
-                              height={barHeight}
-                              fill={metricColors[metricIndex]}
-                              className="hover:opacity-80 cursor-pointer transition-opacity"
-                              rx="2"
-                            />
-                            {/* Value label on hover */}
-                            <text
-                              x={barX + barWidth / 2}
-                              y={260 - barHeight - 8}
-                              textAnchor="middle"
-                              className="fill-gray-700 opacity-0 hover:opacity-100 transition-opacity pointer-events-none"
-                              style={{ fontSize: '11px', fontWeight: '500', fontFamily: 'system-ui' }}
-                            >
-                              {formatValue(d.values[metricIndex])}
-                            </text>
-                          </g>
-                        );
-                      })}
-                      {/* X-axis labels */}
-                      <text
-                        x={barGroupX}
-                        y={280}
-                        textAnchor="middle"
-                        className="fill-gray-700"
-                        style={{ fontSize: '13px', fontWeight: '500', fontFamily: 'system-ui' }}
-                      >
-                        {d.name}
-                      </text>
-                    </g>
-                  );
-                })}
-                
-                {/* Axis labels */}
-                <text x="40" y="140" textAnchor="middle" className="fill-gray-600" transform="rotate(-90 40 140)" style={{ fontSize: '13px', fontWeight: '500', fontFamily: 'system-ui' }}>
-                  {selectedMetrics.map(metricId => {
-                    const metric = currentDataset.metrics.find(m => m.id === metricId);
-                    return metric?.name;
-                  }).join(', ')}
-                </text>
-                <text x="320" y="310" textAnchor="middle" className="fill-gray-600" style={{ fontSize: '13px', fontWeight: '500', fontFamily: 'system-ui' }}>
-                  {selectedFields.xAxis ? currentDataset.dimensions.find(d => d.id === selectedFields.xAxis)?.name : 'Category'}
-                </text>
-              </svg>
-            </div>
-            {/* Legend */}
-            <div className="flex flex-wrap gap-6 justify-center p-4 bg-gray-50 border-t border-gray-200">
-              {selectedMetrics.map((metricId, index) => {
-                const metric = currentDataset.metrics.find(m => m.id === metricId);
-                return (
-                  <div key={metricId} className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-4 rounded"
-                      style={{ backgroundColor: metricColors[index] }}
-                    ></div>
-                    <span className="text-sm text-gray-700 font-medium">{metric?.name}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <g transform={`translate(${x}, ${y})`}>
+            <rect x="-45" y="-35" width="90" height="30" rx="4" fill="rgba(33, 37, 41, 0.85)" stroke="#fff" strokeWidth="1"/>
+            <text x="0" y="-20" textAnchor="middle" fill="#fff" style={{ fontSize: '11px', fontWeight: 'bold' }}>
+              {category}
+            </text>
+            <text x="0" y="-7" textAnchor="middle" fill={color} style={{ fontSize: '10px', fontWeight: '500' }}>
+              {formatValue(value)}
+            </text>
+          </g>
         );
-      
-      case "line":
-        const lineMaxValue = Math.max(...mockData.flatMap(d => d.values));
-        const lineYAxisTicks = Array.from({ length: 6 }, (_, i) => Math.round((lineMaxValue / 5) * i));
-        
-        return (
-          <div className="h-full flex flex-col">
-            <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
-              <svg width="100%" height="100%" viewBox="0 0 600 320" className="overflow-visible">
-                {/* Chart area background */}
-                <rect x="80" y="20" width="480" height="240" fill="#fafafa" stroke="none" />
-                
-                {/* Y-axis */}
-                <line x1="80" y1="20" x2="80" y2="260" stroke="#d1d5db" strokeWidth="1" />
-                {/* X-axis */}
-                <line x1="80" y1="260" x2="560" y2="260" stroke="#d1d5db" strokeWidth="1" />
-                
-                {/* Y-axis labels and grid lines */}
-                {lineYAxisTicks.map((tick, i) => (
-                  <g key={i}>
-                    <line x1="75" y1={260 - (i * 40)} x2="80" y2={260 - (i * 40)} stroke="#9ca3af" strokeWidth="1" />
-                    <text x="70" y={260 - (i * 40) + 4} textAnchor="end" className="fill-gray-600" style={{ fontSize: '12px', fontFamily: 'system-ui' }}>
-                      {formatValue(tick)}
-                    </text>
-                    {/* Grid lines */}
-                    {i > 0 && <line x1="80" y1={260 - (i * 40)} x2="560" y2={260 - (i * 40)} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="3,3" />}
-                  </g>
-                ))}
-                
-                {/* Lines and data points */}
-                {selectedMetrics.map((metricId, metricIndex) => {
-                  const points = mockData.map((d, i) => {
-                    const x = 120 + (i * 120);
-                    const y = 260 - (d.values[metricIndex] / lineMaxValue) * 240;
-                    return `${x},${y}`;
-                  }).join(' ');
-                  
+      };
+
+    const renderBarChart = () => {
+      const groupWidth = boundedWidth / mockData.length;
+      const numMetrics = selectedFields.yAxis.length;
+      const barPadding = 0.2;
+      const barWidth = groupWidth * (1 - barPadding) / numMetrics;
+
+      return (
+        <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible font-sans">
+          <Grid />
+          {mockData.map((d, i) => {
+            const groupX = chartMargins.left + i * groupWidth;
+            return (
+              <g key={`group-${i}`} transform={`translate(${groupX}, 0)`}>
+                {selectedFields.yAxis.map((metricId, j) => {
+                  const metric = allFields.find(f => f.id === metricId);
+                  const barHeight = (d.values[j] / yMax) * boundedHeight;
+                  const x = (groupWidth * barPadding / 2) + j * barWidth;
+                  const y = chartMargins.top + boundedHeight - barHeight;
+                  const color = getCategoryColor(metric.name, j);
+
                   return (
                     <g key={metricId}>
-                      <polyline
-                        points={points}
-                        fill="none"
-                        stroke={metricColors[metricIndex]}
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                      <defs>
+                        <linearGradient id={`gradient-${j}`} x1="0" x2="0" y1="0" y2="1">
+                          <stop offset="0%" stopColor={color} stopOpacity="0.7" />
+                          <stop offset="100%" stopColor={color} stopOpacity="1" />
+                        </linearGradient>
+                      </defs>
+                      <rect
+                        x={x}
+                        y={y}
+                        width={barWidth - 1}
+                        height={barHeight}
+                        fill={`url(#gradient-${j})`}
+                        rx="2"
+                        onMouseEnter={() => setActiveBar({ group: d.name, category: metric.name, value: d.values[j], color, x: groupX + x + barWidth/2, y: y-5 })}
+                        onMouseLeave={() => setActiveBar(null)}
+                        style={{ transition: 'all 0.2s ease-in-out', filter: activeBar && activeBar.category === metric.name && activeBar.group === d.name ? 'brightness(1.1)' : 'brightness(1)' }}
                       />
-                      {mockData.map((d, i) => {
-                        const x = 120 + (i * 120);
-                        const y = 260 - (d.values[metricIndex] / lineMaxValue) * 240;
-                        
-                        return (
-                          <g key={i}>
-                            <circle
-                              cx={x}
-                              cy={y}
-                              r="5"
-                              fill="white"
-                              stroke={metricColors[metricIndex]}
-                              strokeWidth="3"
-                              className="hover:r-7 transition-all cursor-pointer"
-                            />
-                            <text
-                              x={x}
-                              y={y - 15}
-                              textAnchor="middle"
-                              className="fill-gray-700 opacity-0 hover:opacity-100 transition-opacity pointer-events-none"
-                              style={{ fontSize: '11px', fontWeight: '500', fontFamily: 'system-ui' }}
-                            >
-                              {formatValue(d.values[metricIndex])}
-                            </text>
-                          </g>
-                        );
-                      })}
                     </g>
                   );
                 })}
-                
-                {/* X-axis labels */}
+              </g>
+            );
+          })}
+          <Axes />
+          <Tooltip content={activeBar} />
+        </svg>
+      );
+    };
+
+    const renderLineChart = () => {
+      const xScale = (index) => chartMargins.left + (index + 0.5) * (boundedWidth / mockData.length);
+      const yScale = (value) => chartMargins.top + boundedHeight - (value / yMax) * boundedHeight;
+
+      return (
+        <svg width="100%" height="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible font-sans">
+          <Grid />
+          {selectedFields.yAxis.map((metricId, j) => {
+            const metric = allFields.find(f => f.id === metricId);
+            const color = getCategoryColor(metric.name, j);
+            const pathData = mockData.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)} ${yScale(d.values[j])}`).join(' ');
+
+            return (
+              <g key={metricId}>
+                <path d={pathData} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 {mockData.map((d, i) => (
-                  <text
-                    key={i}
-                    x={120 + (i * 120)}
-                    y={280}
-                    textAnchor="middle"
-                    className="fill-gray-700"
-                    style={{ fontSize: '13px', fontWeight: '500', fontFamily: 'system-ui' }}
-                  >
-                    {d.name}
-                  </text>
+                  <g key={`dot-${i}`}>
+                    <circle cx={xScale(i)} cy={yScale(d.values[j])} r="8" fill={color} fillOpacity="0"
+                      onMouseEnter={() => setActiveBar({ group: d.name, category: metric.name, value: d.values[j], color, x: xScale(i), y: yScale(d.values[j]) - 10 })}
+                      onMouseLeave={() => setActiveBar(null)}
+                    />
+                    <circle cx={xScale(i)} cy={yScale(d.values[j])} r="4" fill="#fff" stroke={color} strokeWidth="2" className="pointer-events-none" />
+                  </g>
                 ))}
-                
-                {/* Axis labels */}
-                <text x="40" y="140" textAnchor="middle" className="fill-gray-600" transform="rotate(-90 40 140)" style={{ fontSize: '13px', fontWeight: '500', fontFamily: 'system-ui' }}>
-                  {selectedMetrics.map(metricId => {
-                    const metric = currentDataset.metrics.find(m => m.id === metricId);
-                    return metric?.name;
-                  }).join(', ')}
-                </text>
-                <text x="320" y="310" textAnchor="middle" className="fill-gray-600" style={{ fontSize: '13px', fontWeight: '500', fontFamily: 'system-ui' }}>
-                  {selectedFields.xAxis ? currentDataset.dimensions.find(d => d.id === selectedFields.xAxis)?.name : 'Category'}
-                </text>
-              </svg>
-            </div>
-            {/* Legend */}
-            <div className="flex flex-wrap gap-6 justify-center p-4 bg-gray-50 border-t border-gray-200">
-              {selectedMetrics.map((metricId, index) => {
-                const metric = currentDataset.metrics.find(m => m.id === metricId);
-                return (
-                  <div key={metricId} className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-1 rounded-full"
-                      style={{ backgroundColor: metricColors[index] }}
-                    ></div>
-                    <span className="text-sm text-gray-700 font-medium">{metric?.name}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      
-      case "pie":
-        if (selectedMetrics.length > 1) {
+              </g>
+            );
+          })}
+          <Axes />
+          <Tooltip content={activeBar} />
+        </svg>
+      );
+    };
+
+    const renderPieChart = () => {
+      if (selectedFields.yAxis.length > 1) {
           return (
-            <div className="h-full flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+            <div className="h-full flex items-center justify-center text-gray-500">
               <div className="text-center">
                 <div className="text-4xl mb-2">🥧</div>
-                <p className="text-sm">Pie charts only support one metric</p>
-                <p className="text-xs text-gray-400 mt-1">Please select only one Y-axis field</p>
+                <p>Pie charts support only one metric.</p>
               </div>
             </div>
           );
-        }
-        return (
-          <div className="h-full flex flex-col">
-            <div className="flex-1 flex items-center justify-center bg-white rounded-lg border border-gray-200">
-              <svg width="200" height="200" viewBox="0 0 200 200">
-                <circle cx="100" cy="100" r="80" fill="#3551F3" />
-                <circle cx="100" cy="100" r="80" fill="#A5B4FC" strokeDasharray="125.6 502.4" strokeDashoffset="0" stroke="#60A5FA" strokeWidth="80" fillOpacity="0" />
-                <circle cx="100" cy="100" r="80" fill="#60A5FA" strokeDasharray="94.2 502.4" strokeDashoffset="-125.6" stroke="#93C5FD" strokeWidth="80" fillOpacity="0" />
-              </svg>
-            </div>
-            {/* Legend */}
-            <div className="flex flex-wrap gap-6 justify-center p-4 bg-gray-50 border-t border-gray-200">
-              {selectedMetrics.map((metricId, index) => {
-                const metric = currentDataset.metrics.find(m => m.id === metricId);
-                return (
-                  <div key={metricId} className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: metricColors[index] }}
-                    ></div>
-                    <span className="text-sm text-gray-700 font-medium">{metric?.name}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
+      }
+      const pieData = mockData.map((d, i) => ({ name: d.name, value: d.values[0] }));
+      const total = pieData.reduce((sum, item) => sum + item.value, 0);
+
+      const PieSlice = ({ data, index, startAngle, endAngle }) => {
+          const color = getCategoryColor(data.name, index);
+          const radius = 100;
+          const innerRadius = 60;
+          
+          const isActive = activeSlice === index;
+          const currentRadius = isActive ? radius * 1.05 : radius;
+
+          const x1 = Math.cos(startAngle) * currentRadius;
+          const y1 = Math.sin(startAngle) * currentRadius;
+          const x2 = Math.cos(endAngle) * currentRadius;
+          const y2 = Math.sin(endAngle) * currentRadius;
+          
+          const ix1 = Math.cos(startAngle) * innerRadius;
+          const iy1 = Math.sin(startAngle) * innerRadius;
+          const ix2 = Math.cos(endAngle) * innerRadius;
+          const iy2 = Math.sin(endAngle) * innerRadius;
+
+          const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0;
+
+          const pathData = `M ${x1} ${y1} A ${currentRadius} ${currentRadius} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${ix1} ${iy1} Z`;
+          
+          return (
+            <path d={pathData} fill={color} stroke="#fff" strokeWidth="2"
+              onMouseEnter={() => setActiveSlice(index)}
+              onMouseLeave={() => setActiveSlice(null)}
+              style={{ transition: 'all 0.2s ease-in-out', transform: isActive ? 'scale(1.05)' : 'scale(1)', transformOrigin: 'center' }}
+            />
+          );
+      };
+
+      let accumulatedAngle = -Math.PI / 2;
       
-      case "table":
+      return (
+          <div className="h-full w-full flex items-center justify-center">
+              <svg viewBox="-120 -120 240 240">
+                  {pieData.map((d, i) => {
+                      const angle = (d.value / total) * 2 * Math.PI;
+                      const slice = <PieSlice key={i} data={d} index={i} startAngle={accumulatedAngle} endAngle={accumulatedAngle + angle} />;
+                      accumulatedAngle += angle;
+                      return slice;
+                  })}
+                  {activeSlice !== null && (
+                    <g className="pointer-events-none">
+                        <text textAnchor="middle" dy="-5" style={{ fontSize: '1.2em', fontWeight: 'bold', fill: '#343a40' }}>{formatValue(pieData[activeSlice].value)}</text>
+                        <text textAnchor="middle" dy="12" fill={getCategoryColor(pieData[activeSlice].name, activeSlice)} style={{ fontSize: '0.9em', fontWeight: '500' }}>{pieData[activeSlice].name}</text>
+                    </g>
+                  )}
+              </svg>
+          </div>
+      );
+    };
+
+    const renderTable = () => {
         return (
           <div className="h-full bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="overflow-auto h-full">
@@ -2006,10 +2056,10 @@ function ManualChartBuilder({ onClose, onSave }) {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      {selectedFields.xAxis ? currentDataset.dimensions.find(d => d.id === selectedFields.xAxis)?.name : 'Period'}
+                      {selectedFields.xAxis ? allFields.find(d => d.id === selectedFields.xAxis)?.name : 'Period'}
                     </th>
-                    {selectedMetrics.map((metricId) => {
-                      const metric = currentDataset.metrics.find(m => m.id === metricId);
+                    {selectedFields.yAxis.map((metricId) => {
+                      const metric = allFields.find(m => m.id === metricId);
                       return (
                         <th key={metricId} className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                           {metric?.name}
@@ -2022,7 +2072,7 @@ function ManualChartBuilder({ onClose, onSave }) {
                   {mockData.map((d, i) => (
                     <tr key={i} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{d.name}</td>
-                      {selectedMetrics.map((metricId, metricIndex) => (
+                      {selectedFields.yAxis.map((metricId, metricIndex) => (
                         <td key={metricId} className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
                           <span className="font-medium">{formatValue(d.values[metricIndex])}</span>
                         </td>
@@ -2034,37 +2084,64 @@ function ManualChartBuilder({ onClose, onSave }) {
             </div>
           </div>
         );
+      };
       
-      default:
-        return null;
+    const ChartContainer = ({ children }) => (
+      <div className="h-full flex flex-col">
+        <div className="flex-1">
+          {children}
+        </div>
+        {formatting.legendPosition !== 'hidden' && legendCategories.length > 0 && (
+          <div className={`flex flex-wrap gap-x-4 gap-y-2 p-3 bg-gray-50/50 border-t border-gray-200 ${
+            formatting.legendPosition === 'left' ? 'justify-start' :
+            formatting.legendPosition === 'right' ? 'justify-end' :
+            'justify-center'
+          }`}>
+            {legendCategories.map((category, index) => (
+              <div key={category} className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: getCategoryColor(category, index) }}></div>
+                <span className="text-xs text-gray-700 font-medium">{category}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+    
+    switch (selectedFields.chartType) {
+      case "bar": return <ChartContainer>{renderBarChart()}</ChartContainer>;
+      case "line": return <ChartContainer>{renderLineChart()}</ChartContainer>;
+      case "pie": return <ChartContainer>{renderPieChart()}</ChartContainer>;
+      case "table": return renderTable();
+      default: return null;
     }
   };
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-2 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors text-sm"
             >
               <ChevronLeft className="w-4 h-4" />
               Back
             </button>
-            <h1 className="text-xl font-semibold text-gray-900">Create Chart Manually</h1>
+            <h1 className="text-lg font-medium text-gray-900">Create Chart Manually</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-[#3551F3] hover:bg-[#2B41D9] text-white rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm bg-[#3551F3] hover:bg-[#2B41D9] text-white rounded-md transition-colors"
               disabled={!chartTitle || !selectedFields.xAxis || !selectedFields.yAxis || selectedFields.yAxis.length === 0}
             >
               Save Chart
@@ -2073,43 +2150,30 @@ function ManualChartBuilder({ onClose, onSave }) {
         </div>
       </div>
 
-      {/* Sub-header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Dataset:</label>
-            <select
-              value={selectedDataset}
-              onChange={(e) => setSelectedDataset(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              {Object.entries(datasets).map(([key, dataset]) => (
-                <option key={key} value={key}>{dataset.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2 flex-1">
-            <label className="text-sm font-medium text-gray-700">Chart Title:</label>
-            <input
-              type="text"
-              value={chartTitle}
-              onChange={(e) => setChartTitle(e.target.value)}
-              placeholder="Enter chart title..."
-              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-        </div>
-      </div>
+
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Data Fields */}
         <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Data</h2>
+          <div className="p-3 border-b border-gray-200">
+            {/* Dataset */}
+            <div className="flex items-center gap-2 mb-3">
+              <label className="text-xs font-medium text-gray-700">Dataset:</label>
+              <select
+                value={selectedDataset}
+                onChange={(e) => setSelectedDataset(e.target.value)}
+                className="px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {Object.entries(datasets).map(([key, dataset]) => (
+                  <option key={key} value={key}>{dataset.name}</option>
+                ))}
+              </select>
+            </div>
+            <h2 className="text-xs font-semibold text-gray-900 mb-2">Data</h2>
             <button
               onClick={() => setIsCalculatedFieldModalOpen(true)}
-              className="w-full mb-3 px-3 py-2 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg transition-colors flex items-center gap-2"
+              className="w-full mb-2 px-2 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-md transition-colors flex items-center gap-2"
             >
               <Plus className="w-3 h-3" />
               Create New Field
@@ -2118,12 +2182,12 @@ function ManualChartBuilder({ onClose, onSave }) {
               <input
                 type="text"
                 placeholder="Search fields..."
-                className="w-full px-3 py-2 pl-8 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full px-2 py-1.5 pl-7 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-primary/20"
               />
-              <div className="absolute left-2 top-2.5 text-gray-400">🔍</div>
+              <div className="absolute left-2 top-2 text-gray-400">🔍</div>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {/* Dimensions */}
             <div>
               <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Dimensions</h3>
@@ -2162,175 +2226,401 @@ function ManualChartBuilder({ onClose, onSave }) {
           </div>
         </div>
 
-        {/* Center Panel - Drag & Drop Configuration */}
-        <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200 bg-white">
-            <h2 className="text-sm font-semibold text-gray-900">Build Your Chart</h2>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Chart Type Selector */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Chart Type</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {chartTypes.map((type) => (
-                  <button
-                    key={type.value}
-                    onClick={() => {
-                      const newChartType = type.value;
-                      setSelectedFields(prev => {
-                        if (newChartType === 'pie' && prev.yAxis.length > 1) {
-                          return {
-                            ...prev,
-                            chartType: newChartType,
-                            yAxis: [prev.yAxis[0]]
-                          };
-                        }
-                        return {
-                          ...prev,
-                          chartType: newChartType
-                        };
-                      });
-                    }}
-                    className={`p-3 rounded-lg border-2 transition-all text-xs font-medium flex flex-col items-center gap-2 ${
-                      selectedFields.chartType === type.value
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    <type.icon className="w-4 h-4" />
-                    {type.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {/* X-Axis */}
-            <DropZone
-              title="X-Axis"
-              subtitle="Drag dimensions here"
-              fields={selectedFields.xAxis ? [selectedFields.xAxis] : []}
-              onDrop={(fieldId) => setSelectedFields(prev => ({ ...prev, xAxis: fieldId }))}
-              onRemove={() => setSelectedFields(prev => ({ ...prev, xAxis: "" }))}
-              acceptTypes={['dimension']}
-              maxFields={1}
-            />
-
-            {/* Y-Axis */}
-            <DropZone
-              title="Y-Axis"
-              subtitle="Drag measures here"
-              fields={selectedFields.yAxis}
-              onDrop={(fieldId) => handleFieldSelect(fieldId, 'yAxis')}
-              onRemove={(fieldId) => handleFieldSelect(fieldId, 'yAxis')}
-              acceptTypes={['measure']}
-              maxFields={selectedFields.chartType === 'pie' ? 1 : 5}
-              colors={metricColors}
-            />
-
-            {/* Filters */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-700">Filters</h3>
-                <button
-                  onClick={addFilter}
-                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors"
-                >
-                  + Add
-                </button>
-              </div>
-              {filters.length === 0 ? (
-                <p className="text-xs text-gray-500">No filters applied</p>
-              ) : (
-                <div className="space-y-2">
-                  {filters.map((filter, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <select
-                        value={filter.field}
-                        onChange={(e) => updateFilter(index, 'field', e.target.value)}
-                        className="flex-1 px-2 py-1 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary/20"
-                      >
-                        <option value="">Field...</option>
-                        {allFields.map((field) => (
-                          <option key={field.id} value={field.id}>{field.name}</option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => removeFilter(index)}
-                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Formatting */}
-            <div className="bg-white rounded-lg border border-gray-200">
-              <button
-                onClick={() => setIsFormattingExpanded(!isFormattingExpanded)}
-                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-              >
-                <h3 className="text-sm font-medium text-gray-700">Formatting</h3>
-                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isFormattingExpanded ? 'rotate-180' : ''}`} />
-              </button>
-              {isFormattingExpanded && (
-                <div className="px-4 pb-4 border-t border-gray-100">
-                  <div className="space-y-3 pt-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Value Format
-                      </label>
-                      <select
-                        value={formatting.valueFormat}
-                        onChange={(e) => setFormatting(prev => ({ ...prev, valueFormat: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      >
-                        <option value="auto">Auto</option>
-                        <option value="percentage">Percentage (%)</option>
-                        <option value="currency">Currency (₹)</option>
-                        <option value="compact">Compact (1.2K, 3M)</option>
-                        <option value="decimal">Decimal Precision</option>
-                      </select>
-                    </div>
-                    {formatting.valueFormat === 'decimal' && (
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Decimal Places
-                        </label>
-                        <select
-                          value={formatting.decimalPrecision}
-                          onChange={(e) => setFormatting(prev => ({ ...prev, decimalPrecision: parseInt(e.target.value) }))}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        >
-                          <option value={0}>0 digits</option>
-                          <option value={1}>1 digit</option>
-                          <option value={2}>2 digits</option>
-                          <option value={3}>3 digits</option>
-                        </select>
-                      </div>
-                    )}
-                    <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      <strong>Preview:</strong> {formatValue(12345.67)} • {formatValue(1234567.89)} • {formatValue(123.45)}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* Right Panel - Chart Preview */}
         <div className="flex-1 flex flex-col overflow-hidden bg-white">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900">Preview</h3>
-            <p className="text-xs text-gray-500 mt-1">
-              {chartTitle || "Untitled Chart"} • {chartTypes.find(t => t.value === selectedFields.chartType)?.label}
-            </p>
+          {/* Chart Configuration - X Axis, Y Axis, Filters */}
+          <div className="border-b border-gray-200 bg-white px-6 py-3">
+            <div className="space-y-2">
+              {/* X Axis */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 w-16">
+                  <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h8m-4-4v8" />
+                  </svg>
+                  <span className="text-xs font-medium text-gray-700">X Axis</span>
+                </div>
+                <div 
+                  className="flex-1 flex items-center gap-1 min-h-[24px] px-2 py-1 border border-dashed border-gray-300 rounded bg-gray-50 text-xs"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                    const data = e.dataTransfer.getData('text/plain');
+                    if (data) {
+                      try {
+                        const { field, type } = JSON.parse(data);
+                        if (type === 'dimension') {
+                          setSelectedFields(prev => ({ ...prev, xAxis: field.id }));
+                        }
+                      } catch (error) {
+                        // Invalid data
+                      }
+                    }
+                  }}
+                >
+                  {selectedFields.xAxis ? (
+                    <div className="flex items-center gap-1 px-1 py-0.5 bg-blue-100 text-blue-800 rounded border border-blue-200">
+                      <span className="font-medium text-xs">{(() => {
+                        const field = [...currentDataset.dimensions, ...currentDataset.metrics].find(f => f.id === selectedFields.xAxis);
+                        return field ? field.name : selectedFields.xAxis;
+                      })()}</span>
+                      <button
+                        onClick={() => setSelectedFields(prev => ({ ...prev, xAxis: "" }))}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <X className="w-2 h-2" />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">Drop field here</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Y Axis */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 w-16">
+                  <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v8m-4-4h8" />
+                  </svg>
+                  <span className="text-xs font-medium text-gray-700">Y Axis</span>
+                </div>
+                <div 
+                  className="flex-1 flex items-center gap-1 min-h-[24px] px-2 py-1 border border-dashed border-gray-300 rounded bg-gray-50 text-xs"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+                  }}
+                  onDragLeave={(e) => {
+                    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                    const data = e.dataTransfer.getData('text/plain');
+                    if (data) {
+                      try {
+                        const { field, type } = JSON.parse(data);
+                        if (type === 'measure') {
+                          handleFieldSelect(field.id, 'yAxis');
+                        }
+                      } catch (error) {
+                        // Invalid data
+                      }
+                    }
+                  }}
+                >
+                  {selectedFields.yAxis.length > 0 ? (
+                    selectedFields.yAxis.map((fieldId, index) => {
+                      const field = [...currentDataset.dimensions, ...currentDataset.metrics, ...calculatedFields].find(f => f.id === fieldId);
+                      return (
+                        <div key={fieldId} className="flex items-center gap-1 px-1 py-0.5 bg-green-100 text-green-800 rounded border border-green-200">
+                          {professionalColors.length > 0 && (
+                            <div 
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ backgroundColor: getCategoryColor(
+                                selectedFields.yAxis.length > 1 
+                                  ? (field ? field.name : fieldId)
+                                  : 'Metric',
+                                index
+                              ) }}
+                            ></div>
+                          )}
+                          <span className="font-medium text-xs">{field ? field.name : fieldId}</span>
+                          <button
+                            onClick={() => handleFieldSelect(fieldId, 'yAxis')}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            <X className="w-2 h-2" />
+                          </button>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <span className="text-gray-500">Drop field here</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 w-16">
+                  <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  <span className="text-xs font-medium text-gray-700">Filters</span>
+                </div>
+                <div 
+                  className="flex-1 flex items-center gap-1 min-h-[24px] px-2 py-1 border border-dashed border-gray-300 rounded bg-gray-50 text-xs"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                      e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                    const data = e.dataTransfer.getData('text/plain');
+                    if (data) {
+                      try {
+                        const { field } = JSON.parse(data);
+                        const newFilter = { field: field.id, operator: 'equals', value: '' };
+                        setFilters(prev => [...prev, newFilter]);
+                      } catch (error) {
+                        // Invalid data
+                      }
+                    }
+                  }}
+                >
+                  {filters.length > 0 ? (
+                    filters.map((filter, index) => {
+                      const field = allFields.find(f => f.id === filter.field);
+                      return (
+                        <div key={index} className="flex items-center gap-1 px-1 py-0.5 bg-purple-100 text-purple-800 rounded border border-purple-200">
+                          <span className="font-medium text-xs">{field ? field.name : 'Unknown Field'}</span>
+                          <button
+                            onClick={() => removeFilter(index)}
+                            className="text-purple-600 hover:text-purple-800"
+                          >
+                            <X className="w-2 h-2" />
+                          </button>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <span className="text-gray-500">Drop field here</span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex-1 p-6 overflow-y-auto">
-            {renderMockChart()}
+          
+          <div className="flex-1 flex overflow-hidden">
+            {/* Chart Preview */}
+            <div className="flex-1 p-6 overflow-y-auto">
+              {/* Chart Title */}
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {chartTitle || "Untitled"}
+                </h2>
+                <button
+                  onClick={() => setIsTitleEditModalOpen(true)}
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              </div>
+              {renderMockChart()}
+            </div>
+            
+            {/* Chart Type and Formatting Sidebar */}
+            <div className="w-64 border-l border-gray-200 bg-gray-50 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-3 space-y-3">
+                {/* Chart Type Selector */}
+                <div className="bg-white rounded-lg border border-gray-200 p-3">
+                  <h3 className="text-xs font-medium text-gray-700 mb-2">Chart Type</h3>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {chartTypes.map((type) => (
+                      <button
+                        key={type.value}
+                        onClick={() => {
+                          const newChartType = type.value;
+                          setSelectedFields(prev => {
+                            if (newChartType === 'pie' && prev.yAxis.length > 1) {
+                              return {
+                                ...prev,
+                                chartType: newChartType,
+                                yAxis: [prev.yAxis[0]]
+                              };
+                            }
+                            return {
+                              ...prev,
+                              chartType: newChartType
+                            };
+                          });
+                        }}
+                        className={`p-2 rounded-md border-2 transition-all text-xs font-medium flex flex-col items-center gap-1 ${
+                          selectedFields.chartType === type.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        <type.icon className="w-3 h-3" />
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Formatting */}
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <button
+                    onClick={() => setIsFormattingExpanded(!isFormattingExpanded)}
+                    className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-xs font-medium text-gray-700">Formatting</h3>
+                    <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${isFormattingExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isFormattingExpanded && (
+                    <div className="px-3 pb-3 border-t border-gray-100">
+                      <div className="space-y-2 pt-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Value Format
+                          </label>
+                          <select
+                            value={formatting.valueFormat}
+                            onChange={(e) => setFormatting(prev => ({ ...prev, valueFormat: e.target.value }))}
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary/20"
+                          >
+                            <option value="auto">Auto</option>
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="currency">Currency (₹)</option>
+                            <option value="compact">Compact (1.2K, 3M)</option>
+                            <option value="decimal">Decimal Precision</option>
+                          </select>
+                        </div>
+                        {formatting.valueFormat === 'decimal' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Decimal Places
+                            </label>
+                            <select
+                              value={formatting.decimalPrecision}
+                              onChange={(e) => setFormatting(prev => ({ ...prev, decimalPrecision: parseInt(e.target.value) }))}
+                              className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary/20"
+                            >
+                              <option value={0}>0 digits</option>
+                              <option value={1}>1 digit</option>
+                              <option value={2}>2 digits</option>
+                              <option value={3}>3 digits</option>
+                            </select>
+                          </div>
+                        )}
+                        
+                        {/* Axis Labels */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            X-Axis Label
+                          </label>
+                          <input
+                            type="text"
+                            value={formatting.xAxisLabel}
+                            onChange={(e) => setFormatting(prev => ({ ...prev, xAxisLabel: e.target.value }))}
+                            placeholder="Auto-generated"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary/20"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Y-Axis Label
+                          </label>
+                          <input
+                            type="text"
+                            value={formatting.yAxisLabel}
+                            onChange={(e) => setFormatting(prev => ({ ...prev, yAxisLabel: e.target.value }))}
+                            placeholder="Auto-generated"
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary/20"
+                          />
+                        </div>
+                        
+                        {/* Legend Position */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Legend Position
+                          </label>
+                          <select
+                            value={formatting.legendPosition}
+                            onChange={(e) => setFormatting(prev => ({ ...prev, legendPosition: e.target.value }))}
+                            className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary/20"
+                          >
+                            <option value="top">Top</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                            <option value="hidden">Hidden</option>
+                          </select>
+                        </div>
+
+                        {/* Color Customization */}
+                        {(() => {
+                          const categories = getLegendCategories();
+                          if (categories.length === 0) return null;
+                          
+                          return (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-2">
+                                Colors
+                              </label>
+                              <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md bg-gray-50 p-2">
+                                <div className="space-y-2">
+                                  {categories.map((category, index) => (
+                                    <div key={category} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-100">
+                                      {/* Category Name */}
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-xs text-gray-700 truncate block" title={category}>
+                                          {category}
+                                        </span>
+                                      </div>
+                                      
+                                      {/* Color Picker */}
+                                      <input
+                                        type="color"
+                                        value={getCategoryColor(category, index)}
+                                        onChange={(e) => updateCategoryColor(category, e.target.value)}
+                                        className="w-6 h-6 rounded border border-gray-300 cursor-pointer flex-shrink-0"
+                                        title={`Color for ${category}`}
+                                      />
+                                      
+                                      {/* Hex Input */}
+                                      <input
+                                        type="text"
+                                        value={getCategoryColor(category, index)}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                                            updateCategoryColor(category, value);
+                                          }
+                                        }}
+                                        className="w-16 px-1 py-1 border border-gray-200 rounded text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary/20 flex-shrink-0"
+                                        placeholder="#000000"
+                                        maxLength={7}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        
+                        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded text-center">
+                          <strong>Preview:</strong><br />
+                          {formatValue(12345.67)} • {formatValue(1234567.89)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2343,6 +2633,187 @@ function ManualChartBuilder({ onClose, onSave }) {
         availableFields={allFields}
         dataset={currentDataset}
       />
+      
+      {/* Title Edit Modal */}
+      <TitleEditModal
+        isOpen={isTitleEditModalOpen}
+        onClose={() => setIsTitleEditModalOpen(false)}
+        title={chartTitle}
+        onSave={setChartTitle}
+      />
+    </div>
+  );
+}
+
+// --- Title Edit Modal Component ---
+function TitleEditModal({ isOpen, onClose, title, onSave }) {
+  const [editedTitle, setEditedTitle] = useState(title || "");
+  const [fontSize, setFontSize] = useState("16");
+  const [fontFamily, setFontFamily] = useState("Arial");
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [textAlign, setTextAlign] = useState("left");
+
+  useEffect(() => {
+    if (isOpen) {
+      setEditedTitle(title || "");
+    }
+  }, [isOpen, title]);
+
+  const handleSave = () => {
+    onSave(editedTitle);
+    onClose();
+  };
+
+  const handleReset = () => {
+    setEditedTitle("");
+    setFontSize("16");
+    setFontFamily("Arial");
+    setIsBold(false);
+    setIsItalic(false);
+    setIsUnderline(false);
+    setTextAlign("left");
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-96 max-w-full mx-4">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Edit Title</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Formatting Toolbar */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center gap-2 mb-3">
+            <select
+              value={fontFamily}
+              onChange={(e) => setFontFamily(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded text-sm"
+            >
+              <option value="Arial">Arial</option>
+              <option value="Helvetica">Helvetica</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Courier New">Courier New</option>
+            </select>
+            <select
+              value={fontSize}
+              onChange={(e) => setFontSize(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded text-sm w-16"
+            >
+              <option value="12">12</option>
+              <option value="14">14</option>
+              <option value="16">16</option>
+              <option value="18">18</option>
+              <option value="20">20</option>
+              <option value="24">24</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setIsBold(!isBold)}
+              className={`px-2 py-1 border rounded text-sm font-bold ${
+                isBold ? 'bg-gray-200 border-gray-400' : 'bg-white border-gray-300'
+              }`}
+            >
+              B
+            </button>
+            <button
+              onClick={() => setIsItalic(!isItalic)}
+              className={`px-2 py-1 border rounded text-sm italic ${
+                isItalic ? 'bg-gray-200 border-gray-400' : 'bg-white border-gray-300'
+              }`}
+            >
+              I
+            </button>
+            <button
+              onClick={() => setIsUnderline(!isUnderline)}
+              className={`px-2 py-1 border rounded text-sm underline ${
+                isUnderline ? 'bg-gray-200 border-gray-400' : 'bg-white border-gray-300'
+              }`}
+            >
+              U
+            </button>
+            <div className="w-px h-6 bg-gray-300 mx-2"></div>
+            <button
+              onClick={() => setTextAlign('left')}
+              className={`px-2 py-1 border rounded text-sm ${
+                textAlign === 'left' ? 'bg-gray-200 border-gray-400' : 'bg-white border-gray-300'
+              }`}
+            >
+              ⬅
+            </button>
+            <button
+              onClick={() => setTextAlign('center')}
+              className={`px-2 py-1 border rounded text-sm ${
+                textAlign === 'center' ? 'bg-gray-200 border-gray-400' : 'bg-white border-gray-300'
+              }`}
+            >
+              ↔
+            </button>
+            <button
+              onClick={() => setTextAlign('right')}
+              className={`px-2 py-1 border rounded text-sm ${
+                textAlign === 'right' ? 'bg-gray-200 border-gray-400' : 'bg-white border-gray-300'
+              }`}
+            >
+              ➡
+            </button>
+          </div>
+        </div>
+
+        {/* Text Input */}
+        <div className="p-4">
+          <textarea
+            value={editedTitle}
+            onChange={(e) => setEditedTitle(e.target.value)}
+            placeholder="Enter title..."
+            className="w-full h-24 px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{
+              fontFamily: fontFamily,
+              fontSize: `${fontSize}px`,
+              fontWeight: isBold ? 'bold' : 'normal',
+              fontStyle: isItalic ? 'italic' : 'normal',
+              textDecoration: isUnderline ? 'underline' : 'none',
+              textAlign: textAlign
+            }}
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between p-4 border-t border-gray-200">
+          <button
+            onClick={handleReset}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            Reset
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2361,18 +2832,39 @@ function DraggableField({ field, type, isCalculated = false }) {
     setIsDragging(false);
   };
 
-  const getFieldIcon = () => {
+  const getFieldTypeIndicator = () => {
     if (isCalculated) {
-      return '🧮'; // Calculator icon for calculated fields
+      return { text: 'fx', color: 'bg-purple-100 text-purple-700 border-purple-200' };
     }
-    switch (type) {
-      case 'dimension':
-        return '🏷️';
-      case 'measure':
-        return '#️⃣';
-      default:
-        return '📊';
+    
+    // Get field type from field metadata
+    const fieldType = field.type;
+    
+    if (type === 'dimension') {
+      switch (fieldType) {
+        case 'text':
+          return { text: 'Abc', color: 'bg-blue-50 text-blue-600 border-blue-200' };
+        case 'date':
+          return { text: 'Date', color: 'bg-green-50 text-green-600 border-green-200' };
+        case 'boolean':
+          return { text: 'T/F', color: 'bg-amber-50 text-amber-600 border-amber-200' };
+        default:
+          return { text: 'Abc', color: 'bg-blue-50 text-blue-600 border-blue-200' };
+      }
+    } else if (type === 'measure') {
+      switch (fieldType) {
+        case 'number':
+          return { text: '#', color: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
+        case 'percentage':
+          return { text: '%', color: 'bg-orange-50 text-orange-600 border-orange-200' };
+        case 'currency':
+          return { text: '$', color: 'bg-teal-50 text-teal-600 border-teal-200' };
+        default:
+          return { text: '#', color: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
+      }
     }
+    
+    return { text: '', color: 'bg-gray-50 text-gray-600 border-gray-200' };
   };
 
   return (
@@ -2387,8 +2879,15 @@ function DraggableField({ field, type, isCalculated = false }) {
       }`}
     >
       <div className="flex items-center gap-2 flex-1">
-        <span className="text-sm">{getFieldIcon()}</span>
-        <div className="flex flex-col">
+        {(() => {
+          const typeIndicator = getFieldTypeIndicator();
+          return (
+            <span className={`text-xs px-1.5 py-0.5 rounded font-mono border ${typeIndicator.color}`}>
+              {typeIndicator.text}
+            </span>
+          );
+        })()}
+        <div className="flex flex-col flex-1">
           <span className={`font-medium truncate ${isCalculated ? 'text-purple-700' : 'text-gray-700'}`}>
             {field.name}
           </span>
@@ -2486,7 +2985,7 @@ function DropZone({ title, subtitle, fields, onDrop, onRemove, acceptTypes, maxF
   const canAcceptDrop = isDragOver && draggedType && acceptTypes.includes(draggedType) && fields.length < maxFields;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+    <div className="bg-white p-4">
       <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="text-sm font-medium text-gray-700">{title}</h3>
@@ -2551,4 +3050,4 @@ function DropZone({ title, subtitle, fields, onDrop, onRemove, acceptTypes, maxF
       </div>
     </div>
   );
-}
+} 
