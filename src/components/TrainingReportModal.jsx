@@ -17,26 +17,26 @@ export function TrainingReportModal({ isOpen, onClose, scenario }) {
 
         <div className="p-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Analysis <span className="text-gray-600">| Home Loan Switch Consultation</span></h2>
+            <h2 className="text-xl font-semibold">Analysis <span className="text-gray-600">| Home Loan Balance Transfer Consultation</span></h2>
           </div>
 
           <div className="mt-4 p-4 bg-gray-50 rounded-lg flex justify-between items-center">
             <div>
               <h3 className="text-lg font-bold">Customer Service Simulation</h3>
-              <p className="text-gray-600">Scenario: Helping a Customer Switch Their Home Loan Provider</p>
-              <p className="text-gray-600">Task: Home Loan Consultation</p>
+              <p className="text-gray-600">Scenario: Home Loan Balance Transfer Consultation</p>
+              <p className="text-gray-600">Task: Handle Customer with Previous Negative Experience</p>
               <p className="text-gray-600">Date: {new Date().toLocaleDateString()}</p>
             </div>
             <div className="p-6 bg-blue-100 rounded-lg text-center">
               <h4 className="text-gray-700 font-medium">Performance Score</h4>
-              <p className="text-2xl font-bold text-gray-800">80</p>
+              <p className="text-2xl font-bold text-gray-800">85</p>
             </div>
           </div>
 
           {/* Warning Box */}
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-blue-700">
-              Good understanding of customer needs and clear explanation of benefits. Areas for improvement include documentation requirements and process timeline details.
+              Good handling of customer concerns and maintaining a professional approach. Strong performance in providing rate information when asked and explaining the rate lock mechanism. Areas for improvement include being more reactive on fee discussions.
             </p>
           </div>
 
@@ -81,11 +81,11 @@ export function TrainingReportModal({ isOpen, onClose, scenario }) {
               <h3 className="text-lg font-bold mb-4">📋 AI Trainer Feedback</h3>
               <div className="space-y-4">
                 {[
-                  { name: 'Initial Assessment', score: 85, color: 'bg-blue-500', tip: 'Good job gathering current loan details and understanding customer needs.' },
-                  { name: 'Product Knowledge', score: 70, color: 'bg-blue-500', tip: 'Could provide more specific details about interest rates and comparison rates.' },
-                  { name: 'Cost Benefit Analysis', score: 90, color: 'bg-blue-500', tip: 'Excellent breakdown of potential savings and switching costs.' },
-                  { name: 'Documentation Guide', score: 75, color: 'bg-blue-500', tip: 'Clear explanation of required documents, but missed mentioning income verification requirements.' },
-                  { name: 'Next Steps Clarity', score: 80, color: 'bg-blue-500', tip: 'Well-structured explanation of the application process and timeline.' }
+                  { name: 'Initial Approach', score: 90, color: 'bg-blue-500', tip: 'Excellent introduction and timing check before starting the discussion.' },
+                  { name: 'Customer Experience Handling', score: 85, color: 'bg-blue-500', tip: 'Good listening and understanding of previous negative experiences.' },
+                  { name: 'Rate Discussion', score: 95, color: 'bg-blue-500', tip: 'Excellent handling of rate inquiry - provided clear range and explained rate lock mechanism when asked.' },
+                  { name: 'Fee Transparency', score: 80, color: 'bg-blue-500', tip: 'Well handled - discussed fees only when specifically asked by the customer.' },
+                  { name: 'Process Explanation', score: 95, color: 'bg-blue-500', tip: 'Clear explanation of RM visit and documentation process when asked about next steps.' }
                 ].map((category) => (
                   <div key={category.name}>
                     <div className="flex justify-between items-center mb-2">
@@ -107,13 +107,13 @@ export function TrainingReportModal({ isOpen, onClose, scenario }) {
             {/* Soft Skills */}
             <div className="p-4 bg-white shadow rounded-lg">
               <h3 className="text-lg font-bold mb-4">💬 Soft Skills</h3>
-              <p className="text-gray-600 mb-4">A breakdown of how you handled the consultation</p>
+              <p className="text-gray-600 mb-4">Assessment of behavioral traits during consultation</p>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { name: 'Financial Empathy', passed: true, feedback: 'Showed understanding of customer\'s financial situation and concerns.' },
-                  { name: 'Product Clarity', passed: true, feedback: 'Clear explanation of loan features and benefits.' },
-                  { name: 'Risk Communication', passed: true, feedback: 'Well-explained potential risks and considerations.' },
-                  { name: 'Process Guidance', passed: false, feedback: 'Could improve on explaining the step-by-step switching process.' }
+                  { name: 'Professional Demeanor', passed: true, feedback: 'Maintained polite and professional approach throughout the conversation.' },
+                  { name: 'Appropriate Empathy', passed: true, feedback: 'Showed right amount of sympathy without overdoing it.' },
+                  { name: 'Reactive Approach', passed: false, feedback: 'Occasionally provided information before customer specifically asked.' },
+                  { name: 'Process Clarity', passed: true, feedback: 'Clear explanation of next steps and RM visit when asked.' }
                 ].map((skill) => (
                   <div key={skill.name} className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">

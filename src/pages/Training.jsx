@@ -57,8 +57,8 @@ const completedScenarios = [
   {
     id: 101,
     title: "Switching Home Loan Provider",
-    completedDate: "2025-06-19",
-    score: 80,
+    completedDate: "2025-07-11",
+    score: 85,
   },
   {
     id: 102,
@@ -117,7 +117,7 @@ const employeeFeedbacks = [
     name: "Rahul Sharma",
     role: "Customer Service Representative",
     completedScenarios: [
-      { id: 101, title: "Switching Home Loan Provider", date: "2025-06-19" }
+      { id: 101, title: "Switching Home Loan Provider", date: "2025-07-11" }
     ]
   },
   {
