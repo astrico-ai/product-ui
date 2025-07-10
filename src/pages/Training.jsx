@@ -6,25 +6,26 @@ import { Badge } from "@/components/ui/badge";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { TrainingReportModal } from "@/components/TrainingReportModal";
 import { TrainingScenario } from "@/components/TrainingScenario";
+import { TrainingIframeModal } from "@/components/TrainingIframeModal";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const pendingScenarios = [
   {
     id: 1,
+    title: "Helping a Customer Switch Their Home Loan Provider",
+    description: "Learn how to speak with a customer who is frustrated with their current home loan lender and is exploring a balance transfer.",
+    difficulty: "medium",
+    timeInMinutes: 12,
+    skills: ["Negotiation", "Product Knowledge", "Value Proposition"]
+  },
+  {
+    id: 2,
     title: "Handling an Angry Customer's Credit Card Issue",
     description: "Learn to manage a heated conversation with a customer who's payment has been debited from their account twice while maintaining professionalism and finding a resolution.",
     difficulty: "hard",
     timeInMinutes: 15,
     skills: ["Conflict Resolution", "Empathy", "Policy Communication"]
-  },
-  {
-    id: 2,
-    title: "Negotiating Two-Wheeler Loan Interest Rates",
-    description: "Practice negotiating interest rates with a customer who's comparing rates with competitors while highlighting your product's unique benefits.",
-    difficulty: "medium",
-    timeInMinutes: 12,
-    skills: ["Negotiation", "Product Knowledge", "Value Proposition"]
   },
   {
     id: 3,
@@ -55,20 +56,20 @@ const pendingScenarios = [
 const completedScenarios = [
   {
     id: 101,
-    title: "Customer Retention Strategies",
-    completedDate: "2024-04-15",
-    score: 92,
+    title: "Switching Home Loan Provider",
+    completedDate: "2025-06-19",
+    score: 80,
   },
   {
     id: 102,
     title: "First-Time Borrower Guidance",
-    completedDate: "2024-04-10",
+    completedDate: "2025-06-01",
     score: 88,
   },
   {
     id: 103,
     title: "Payment Default Resolution",
-    completedDate: "2024-04-05",
+    completedDate: "2025-05-22",
     score: 95,
   }
 ];
@@ -125,8 +126,8 @@ function DifficultyBadge({ difficulty }) {
 
 function TabNavigation({ activeTab, setActiveTab }) {
   const tabs = [
-    { id: 'personas', label: 'AI Personas', icon: UserCircle },
     { id: 'scenarios', label: 'Scenarios', icon: List },
+    { id: 'personas', label: 'AI Personas', icon: UserCircle },
   ];
 
   return (
@@ -489,29 +490,11 @@ function PersonaCard({ persona, onEdit, onDelete }) {
       </div>
 
       {/* Training Modal with iframe */}
-      {showTrainingModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-5xl h-[80vh] relative"
-          >
-            <div className="absolute top-4 right-4 z-10">
-              <button
-                onClick={() => setShowTrainingModal(false)}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
-            </div>
-            <iframe
-              src={`https://training.astrico.ai/agent`}
-              className="w-full h-full rounded-2xl"
-              title="Training Session"
-            />
-          </motion.div>
-        </div>
-      )}
+      <TrainingIframeModal
+        isOpen={showTrainingModal}
+        onClose={() => setShowTrainingModal(false)}
+        scenario={persona}
+      />
     </motion.div>
   );
 }
@@ -521,7 +504,7 @@ export default function Training() {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState(null);
   const [isTrainingOpen, setIsTrainingOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('personas');
+  const [activeTab, setActiveTab] = useState('scenarios');
   const [isCreatePersonaOpen, setIsCreatePersonaOpen] = useState(false);
   const [personas, setPersonas] = useState(() => {
     // Initialize personas from localStorage
@@ -533,6 +516,9 @@ export default function Training() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const videoUrl = "https://drive.google.com/file/d/1YbLMB-q8jhMJGB6-HrZrYNIM65HPwe4b/view";
 
+  // Add new state for iframe modal
+  const [isIframeModalOpen, setIsIframeModalOpen] = useState(false);
+
   // Update localStorage whenever personas change
   useEffect(() => {
     localStorage.setItem('personas', JSON.stringify(personas));
@@ -540,7 +526,7 @@ export default function Training() {
 
   const handleStartScenario = (scenario) => {
     setSelectedScenario(scenario);
-    setIsTrainingOpen(true);
+    setIsIframeModalOpen(true);
   };
 
   const handleDownloadReport = (scenario) => {
@@ -592,6 +578,13 @@ export default function Training() {
         <TrainingScenario
           isOpen={isTrainingOpen}
           onClose={() => setIsTrainingOpen(false)}
+          scenario={selectedScenario}
+        />
+
+        {/* Replace the old iframe modal with TrainingIframeModal */}
+        <TrainingIframeModal
+          isOpen={isIframeModalOpen}
+          onClose={() => setIsIframeModalOpen(false)}
           scenario={selectedScenario}
         />
 
@@ -721,9 +714,9 @@ export default function Training() {
                     </div>
                   </>
                 ) : (
-                  <div className="p-8 space-y-5">
-                    <div className="px-8 py-6 border-b border-gray-100">
-                      <h2 className="text-lg font-semibold text-gray-900">Pending Scenarios</h2>
+                  <div className="p-4 space-y-5">
+                    <div className="px-8 py-3 border-b border-gray-100">
+                      <h2 className="text-lg font-semibold text-gray-900">Training Scenarios</h2>
                       <p className="text-sm text-gray-500 mt-1">Complete these scenarios to improve your customer service skills</p>
                     </div>
                     

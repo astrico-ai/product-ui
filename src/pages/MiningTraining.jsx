@@ -673,29 +673,11 @@ function PersonaCard({ persona, onEdit, onDelete }) {
         </div>
       </div>
 
-      {showTrainingModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-xl w-full max-w-5xl h-[80vh] relative"
-          >
-            <div className="absolute top-4 right-4 z-10">
-              <button
-                onClick={() => setShowTrainingModal(false)}
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
-            </div>
-            <iframe
-              src={`https://training.astrico.ai/agent`}
-              className="w-full h-full rounded-2xl"
-              title="Training Session"
-            />
-          </motion.div>
-        </div>
-      )}
+      <TrainingIframeModal
+        isOpen={showTrainingModal}
+        onClose={() => setShowTrainingModal(false)}
+        scenario={persona}
+      />
     </motion.div>
   );
 }

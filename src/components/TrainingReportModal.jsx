@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ThumbsUp, ThumbsDown, Clock, AlertTriangle } from 'lucide-react';
+import { X, ThumbsUp, ThumbsDown, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 
 export function TrainingReportModal({ isOpen, onClose, scenario }) {
@@ -17,166 +17,116 @@ export function TrainingReportModal({ isOpen, onClose, scenario }) {
 
         <div className="p-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Analysis <span className="text-gray-600">| {scenario?.title}</span></h2>
+            <h2 className="text-xl font-semibold">Analysis <span className="text-gray-600">| Home Loan Switch Consultation</span></h2>
           </div>
 
           <div className="mt-4 p-4 bg-gray-50 rounded-lg flex justify-between items-center">
             <div>
-              <h3 className="text-lg font-bold">Conversation Simulation</h3>
-              <p className="text-gray-600">Course: {scenario?.title}</p>
-              <p className="text-gray-600">Task: {scenario?.task || 'Training Simulation'}</p>
-              <p className="text-gray-600">{scenario?.completedDate}</p>
+              <h3 className="text-lg font-bold">Customer Service Simulation</h3>
+              <p className="text-gray-600">Scenario: Helping a Customer Switch Their Home Loan Provider</p>
+              <p className="text-gray-600">Task: Home Loan Consultation</p>
+              <p className="text-gray-600">Date: {new Date().toLocaleDateString()}</p>
             </div>
-            <div className="p-6 bg-green-200 rounded-lg text-center">
-              <h4 className="text-gray-700 font-medium">AI Score</h4>
-              <p className="text-2xl font-bold text-gray-800">{scenario?.score}</p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 gap-4">
-            <div className="col-span-2 p-4 bg-white shadow rounded-lg">
-              <h3 className="text-lg font-bold">AI Trainer Feedback</h3>
-              <p className="text-gray-700 mt-2">Overall, you performed well in the training simulation, demonstrating strong engagement and clear communication.</p>
-              <ul className="list-disc pl-6 mt-2 text-gray-600">
-                <li>You did a good job introducing yourself and the company, capturing attention effectively.</li>
-                <li>You proposed clear next steps and respected the customer's time.</li>
-                <li>You could improve by stating the purpose of your interaction more clearly.</li>
-                <li>You could make the call-to-action more compelling by offering specific benefits.</li>
-              </ul>
-              <div className="mt-4">
-                <h3 className="text-lg font-bold">Training Video</h3>
-                <iframe 
-                  className="w-full mt-2 rounded-lg shadow" 
-                  height="315" 
-                  src="https://drive.google.com/file/d/1TUmq-167K-jUdcB9yZtoKlmwxNJp4rb7/preview" 
-                  allow="autoplay" 
-                  allowFullScreen
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <div className="p-4 bg-white shadow rounded-lg">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-gray-700 font-bold">Knowledge</h4>
-                  <span className="px-2 py-1 bg-green-200 text-gray-800 font-bold rounded-lg">87</span>
-                </div>
-                <p className="text-sm text-gray-600">70% of total score</p>
-                <div className="mt-4">
-                  <h4 className="text-gray-700 font-medium text-[14px]">Proficiency</h4>
-                  <p className="text-[13px] text-gray-600">How well you know your stuff</p>
-                  <Progress value={80} className="h-2.5 mt-2" />
-                </div>
-              </div>
-
-              <div className="p-4 bg-white shadow rounded-lg">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-gray-700 font-bold">Style</h4>
-                  <span className="px-2 py-1 bg-green-200 text-gray-800 font-bold rounded-lg">100</span>
-                </div>
-                <p className="text-sm text-gray-600">30% of total score</p>
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <h4 className="text-gray-700 font-medium text-[14px]">Clarity</h4>
-                    <p className="text-[13px] text-gray-600">How comprehensible your speech is</p>
-                    <Progress value={100} className="h-2.5 mt-2" />
-                  </div>
-                  <div>
-                    <h4 className="text-gray-700 font-medium text-[14px]">Pace</h4>
-                    <p className="text-[13px] text-gray-600">How optimal your speaking tempo is</p>
-                    <Progress value={90} className="h-2.5 mt-2" />
-                  </div>
-                  <div>
-                    <h4 className="text-gray-700 font-medium text-[14px]">Filler Words</h4>
-                    <p className="text-[13px] text-gray-600">Did you say um-s, you know-s, like-s etc.</p>
-                    <Progress value={85} className="h-2.5 mt-2" />
-                  </div>
-                  <div>
-                    <h4 className="text-gray-700 font-medium text-[14px]">Sentence Length</h4>
-                    <p className="text-[13px] text-gray-600">How straightforward your sentences are</p>
-                    <Progress value={95} className="h-2.5 mt-2" />
-                  </div>
-                  <div>
-                    <h4 className="text-gray-700 font-medium text-[14px]">Energy</h4>
-                    <p className="text-[13px] text-gray-600">How confident you sound</p>
-                    <Progress value={98} className="h-2.5 mt-2" />
-                  </div>
-                </div>
-              </div>
+            <div className="p-6 bg-blue-100 rounded-lg text-center">
+              <h4 className="text-gray-700 font-medium">Performance Score</h4>
+              <p className="text-2xl font-bold text-gray-800">80</p>
             </div>
           </div>
 
-          {/* Style Breakdown Section */}
-          <div className="mt-6 p-6 bg-gray-50 rounded-lg shadow-lg relative">
-            <div className="absolute top-4 right-4 bg-green-200 px-3 py-1 rounded-lg">
-              <p className="text-xl font-bold text-gray-800 text-center">100</p>
+          {/* Warning Box */}
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-700">
+              Good understanding of customer needs and clear explanation of benefits. Areas for improvement include documentation requirements and process timeline details.
+            </p>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4">
+            {/* Audio Recording */}
+            <div className="p-4 bg-white shadow rounded-lg">
+              <h3 className="text-lg font-bold mb-4">🎙️ Conversation Recording</h3>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center gap-4">
+                  <button className="p-2 rounded-full bg-primary text-white hover:bg-primary/90">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  </button>
+                  <div className="flex-1">
+                    <div className="relative h-12 bg-gray-100 rounded-lg overflow-hidden">
+                      {/* Fake waveform visualization */}
+                      <div className="absolute inset-0 flex items-center justify-between px-2">
+                        {[...Array(50)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-1 bg-primary/60"
+                            style={{
+                              height: `${Math.sin(i * 0.5) * 20 + 30}%`,
+                              opacity: i % 2 === 0 ? 0.7 : 1
+                            }}
+                          ></div>
+                        ))}
+                      </div>
+                      {/* Playback progress overlay */}
+                      <div className="absolute inset-y-0 left-0 bg-black/10 w-0"></div>
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-sm text-gray-500">0:00</span>
+                      <span className="text-sm text-gray-500">4:30</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h3 className="text-lg font-bold">Style</h3>
-            <p className="text-gray-700">A breakdown of <strong>how</strong> you handled the conversation </p>
 
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              {/* Pace Section */}
-              <div className="p-4 bg-white shadow rounded-lg">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-md font-semibold">Pace</h4>
-                  <span className="px-2 py-1 bg-green-200 text-gray-800 font-bold rounded-lg">174 WPM</span>
-                </div>
-                <p className="text-gray-600">Keep your sentences 7-30 words long to make your point faster and more accurate.</p>
-                <div className="mt-2">
-                  <p className="text-green-700 flex items-center">✅ Your average pace was good. Keep it up.</p>
-                  <p className="text-yellow-600 flex items-center">⚠️ Review when you spoke the fastest (at 278 WPM) - <a href="#" className="text-blue-600 underline">02:59</a></p>
-                </div>
-                <div className="w-full mt-2">
-                  <div className="relative w-full flex">
-                    <div className="w-1/6 bg-orange-500 h-2.5 rounded-l-full"></div>
-                    <div className="w-2/4 bg-green-500 h-2.5"></div>
-                    <div className="w-1/6 bg-orange-500 h-2.5"></div>
-                    <div className="w-1/6 bg-red-500 h-2.5 rounded-r-full"></div>
-                    <div className="absolute left-1/3 transform -translate-x-1/2 -top-3 text-black text-xs font-semibold">▼</div>
+            {/* AI Trainer Feedback */}
+            <div className="p-4 bg-white shadow rounded-lg">
+              <h3 className="text-lg font-bold mb-4">📋 AI Trainer Feedback</h3>
+              <div className="space-y-4">
+                {[
+                  { name: 'Initial Assessment', score: 85, color: 'bg-blue-500', tip: 'Good job gathering current loan details and understanding customer needs.' },
+                  { name: 'Product Knowledge', score: 70, color: 'bg-blue-500', tip: 'Could provide more specific details about interest rates and comparison rates.' },
+                  { name: 'Cost Benefit Analysis', score: 90, color: 'bg-blue-500', tip: 'Excellent breakdown of potential savings and switching costs.' },
+                  { name: 'Documentation Guide', score: 75, color: 'bg-blue-500', tip: 'Clear explanation of required documents, but missed mentioning income verification requirements.' },
+                  { name: 'Next Steps Clarity', score: 80, color: 'bg-blue-500', tip: 'Well-structured explanation of the application process and timeline.' }
+                ].map((category) => (
+                  <div key={category.name}>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-gray-700 font-medium">{category.name}</h4>
+                      <span className="text-sm font-medium text-gray-600">{category.score}%</span>
+                    </div>
+                    <div className="h-2.5 mb-2 rounded-full bg-gray-200 overflow-hidden">
+                      <div 
+                        className={`h-full ${category.color} transition-all duration-500 ease-in-out`}
+                        style={{ width: `${category.score}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600">{category.tip}</p>
                   </div>
-                  <div className="flex justify-between text-xs text-gray-600 mt-1">
-                    <span>&lt; 6</span>
-                    <span>7 - 30</span>
-                    <span>31 - 42</span>
-                    <span>&gt; 43</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Soft Skills */}
+            <div className="p-4 bg-white shadow rounded-lg">
+              <h3 className="text-lg font-bold mb-4">💬 Soft Skills</h3>
+              <p className="text-gray-600 mb-4">A breakdown of how you handled the consultation</p>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { name: 'Financial Empathy', passed: true, feedback: 'Showed understanding of customer\'s financial situation and concerns.' },
+                  { name: 'Product Clarity', passed: true, feedback: 'Clear explanation of loan features and benefits.' },
+                  { name: 'Risk Communication', passed: true, feedback: 'Well-explained potential risks and considerations.' },
+                  { name: 'Process Guidance', passed: false, feedback: 'Could improve on explaining the step-by-step switching process.' }
+                ].map((skill) => (
+                  <div key={skill.name} className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      {skill.passed ? (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-500" />
+                      )}
+                      <h4 className="font-medium">{skill.name}</h4>
+                    </div>
+                    <p className="text-sm text-gray-600">{skill.feedback}</p>
                   </div>
-                </div>
-              </div>
-
-              {/* Clarity Section */}
-              <div className="p-4 bg-white shadow rounded-lg">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-md font-semibold">Clarity</h4>
-                  <span className="px-2 py-1 bg-green-200 text-gray-800 font-bold rounded-lg">97% Clarity</span>
-                </div>
-                <p className="text-gray-600">Speak clearly to ensure your message is effectively communicated.</p>
-                <div className="mt-2">
-                  <p className="text-green-700 flex items-center">✅ Your clarity is good, meaning people can understand you well. Keep up the good work!</p>
-                </div>
-              </div>
-
-              {/* Sentence Length Section */}
-              <div className="p-4 bg-white shadow rounded-lg">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-md font-semibold">Sentence Length</h4>
-                  <span className="px-2 py-1 bg-green-200 text-gray-800 font-bold rounded-lg">14 Words</span>
-                </div>
-                <p className="text-gray-600">Keep your sentences 7-30 words long to make your point faster and more accurate.</p>
-                <div className="mt-2">
-                  <p className="text-green-700 flex items-center">✅ Your average sentence length is good.</p>
-                </div>
-              </div>
-
-              {/* Filler Words Section */}
-              <div className="p-4 bg-white shadow rounded-lg">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-md font-semibold">Filler Words</h4>
-                  <span className="px-2 py-1 bg-green-200 text-gray-800 font-bold rounded-lg">4 Words</span>
-                </div>
-                <p className="text-gray-600">Using filler words diminishes your credibility and distracts from your message.</p>
-                <div className="mt-2">
-                  <p className="text-green-700 flex items-center">✅ Good job! You are not using too many filler words.</p>
-                </div>
+                ))}
               </div>
             </div>
           </div>

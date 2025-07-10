@@ -175,24 +175,59 @@ export function MiningTrainingReportModal({ isOpen, onClose, scenario }) {
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4">
+        {/* Audio Recording */}
+        <div className="p-4 bg-white shadow rounded-lg">
+          <h3 className="text-lg font-bold mb-4">🎙️ Conversation Recording</h3>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center gap-4">
+              <button className="p-2 rounded-full bg-primary text-white hover:bg-primary/90">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </button>
+              <div className="flex-1">
+                <div className="relative h-12 bg-gray-100 rounded-lg overflow-hidden">
+                  {/* Fake waveform visualization */}
+                  <div className="absolute inset-0 flex items-center justify-between px-2">
+                    {[...Array(50)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-1 bg-primary/60"
+                        style={{
+                          height: `${Math.sin(i * 0.5) * 20 + 30}%`,
+                          opacity: i % 2 === 0 ? 0.7 : 1
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                  {/* Playback progress overlay */}
+                  <div className="absolute inset-y-0 left-0 bg-black/10 w-0"></div>
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-sm text-gray-500">0:00</span>
+                  <span className="text-sm text-gray-500">3:45</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         {/* AI Trainer Feedback */}
         <div className="p-4 bg-white shadow rounded-lg">
           <h3 className="text-lg font-bold mb-4">📋 AI Trainer Feedback</h3>
           <div className="space-y-4">
             {[
-              { name: 'Opening Position', score: 65, tip: 'You could have highlighted the impact on maintenance schedule and production costs.' },
-              { name: 'Trading Variables', score: 75, tip: 'You traded variables well except for the credit period, where you readily agreed without negotiating.' },
-              { name: 'Objection Handling', score: 90, tip: 'You did an excellent job of handling objections and making your case.' },
-              { name: 'Negotiation Outcomes', score: 50, tip: 'You could have extracted better price & credit terms, especially that the major concerns of the customer were addressed.' },
-              { name: 'Value Proposition', score: 70, tip: 'Good presentation of benefits, but could be more specific about ROI and long-term savings.' }
+              { name: 'Opening Position', score: 65, color: 'bg-blue-500', tip: 'You could have highlighted the impact on maintenance schedule and production costs.' },
+              { name: 'Trading Variables', score: 75, color: 'bg-blue-500', tip: 'You traded variables well except for the credit period, where you readily agreed without negotiating.' },
+              { name: 'Objection Handling', score: 90, color: 'bg-blue-500', tip: 'You did an excellent job of handling objections and making your case.' },
+              { name: 'Negotiation Outcomes', score: 50, color: 'bg-blue-500', tip: 'You could have extracted better price & credit terms, especially that the major concerns of the customer were addressed.' },
+              { name: 'Value Proposition', score: 70, color: 'bg-blue-500', tip: 'Good presentation of benefits, but could be more specific about ROI and long-term savings.' }
             ].map((category) => (
               <div key={category.name}>
                 <div className="flex justify-between items-center mb-2">
                   <h4 className="text-gray-700 font-medium">{category.name}</h4>
+                  <span className="text-sm font-medium text-gray-600">{category.score}%</span>
                 </div>
-                <div className="h-2.5 mb-2 rounded-full overflow-hidden">
+                <div className="h-2.5 mb-2 rounded-full bg-gray-200 overflow-hidden">
                   <div 
-                    className={`h-full ${category.color}`}
+                    className={`h-full ${category.color} transition-all duration-500 ease-in-out`}
                     style={{ width: `${category.score}%` }}
                   ></div>
                 </div>
