@@ -108,7 +108,7 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-const getPreviewData = (type) => {
+const getPreviewData = (type, dashboardType) => {
   switch (type) {
     case "kpi":
       return {
@@ -151,6 +151,20 @@ const getPreviewData = (type) => {
       };
 
     case "pie":
+      if (dashboardType === 'mining') {
+        return {
+          title: "Total Taxable Value by Channel",
+          data: [
+            { name: "Spares and Accessories Shop", value: 251149073.6 },
+            { name: "Lube Shop", value: 101564396.8 },
+            { name: "Motul Rural Distributor", value: 85420882.6 },
+            { name: "Independent Workshops (IWS)", value: 75593589.4 },
+            { name: "PCMO Premium Club", value: 38475754.8 },
+            { name: "Motul Garage - PCMO", value: 30482495.78 },
+            { name: "Motul Garage - MCO", value: 30150311.68 }
+          ]
+        };
+      }
       return {
         title: "Premium Distribution",
         data: [
@@ -283,8 +297,8 @@ export default function AddWidgetModal({
   }, [isOpen, initialData]);
 
   useEffect(() => {
-    setPreviewData(getPreviewData(chartType));
-  }, [chartType]);
+    setPreviewData(getPreviewData(chartType, dashboardType));
+  }, [chartType, dashboardType]);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -298,7 +312,7 @@ export default function AddWidgetModal({
   };
 
   const handleSubmit = () => {
-    let data = getPreviewData(chartType);
+    let data = getPreviewData(chartType, dashboardType);
     
     // If it's a table widget, use CSV data if available, otherwise use preview data
     if (chartType === 'table') {
@@ -328,7 +342,7 @@ export default function AddWidgetModal({
   };
 
   function renderPreview(type) {
-    const data = getPreviewData(type);
+    const data = getPreviewData(type, dashboardType);
     if (!data) return null;
 
     switch (type) {
@@ -416,13 +430,27 @@ export default function AddWidgetModal({
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
-                label={(entry) => entry.name}
+                label={(entry) => {
+                  if (dashboardType === 'mining') {
+                    const total = data.data.reduce((sum, item) => sum + item.value, 0);
+                    const percentage = ((entry.value / total) * 100).toFixed(2);
+                    return `${percentage}%`;
+                  }
+                  return entry.name;
+                }}
               >
                 {data.data.map((entry, index) => (
                   <Cell key={index} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <RechartsTooltip />
+              <RechartsTooltip 
+                formatter={(value) => {
+                  if (dashboardType === 'mining') {
+                    return ['₹' + value.toLocaleString(), 'Total Taxable Value'];
+                  }
+                  return [value, 'Value'];
+                }}
+              />
               <Legend />
             </PieChart>
           </ResponsiveContainer>

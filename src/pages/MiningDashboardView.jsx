@@ -8,6 +8,11 @@ import {
   Presentation,
   MoreVertical,
   MessageSquare,
+  BarChart,
+  LineChart,
+  PieChart,
+  Table,
+  Map,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +47,41 @@ const CHART_COLORS = {
   bar: ['#3551F3', '#7C3AED', '#059669', '#DC2626', '#D97706'],
   pie: ['#3551F3', '#7C3AED', '#059669', '#DC2626', '#D97706'],
   line: ['#3551F3', '#7C3AED', '#059669', '#DC2626']
+};
+
+const OUTLET_DATA = {
+  labels: [
+    'Spares and Accessories Shop',
+    'Independent Workshops (IWS)',
+    'Lube Shop',
+    'Motul Garage - PCMO',
+    'Motul Garage - MCO',
+    'Motul Rural Distributor',
+    'PCMO Premium Club',
+  ],
+  active: [11427, 5090, 3670, 1616, 1243, 611, 551],
+  inactive: [24979, 12308, 8258, 4567, 1387, 720, 944]
+};
+
+const TAXABLE_VALUE_DATA = {
+  labels: [
+    'Spares and Accessories Shop',
+    'Lube Shop',
+    'Motul Rural Distributor',
+    'Independent Workshops (IWS)',
+    'PCMO Premium Club',
+    'Motul Garage - PCMO',
+    'Motul Garage - MCO'
+  ],
+  values: [
+    251149073.6,
+    101564396.8,
+    85420882.6,
+    75593589.4,
+    38475754.8,
+    30482495.78,
+    30150311.68
+  ]
 };
 
 function CustomTooltip({ active, payload, label }) {
@@ -207,10 +247,105 @@ export default function MiningDashboardView() {
   const handleWidgetSubmit = (widgetData) => {
     if (!dashboard) return;
 
-    // Ensure the data structure is correct
+    // Handle Total Taxable Value pie chart
+    if (widgetData.type === 'pie' && widgetData.title === 'Total Taxable Value by Channel') {
+      const totalValue = TAXABLE_VALUE_DATA.values.reduce((a, b) => a + b, 0);
+      const percentages = TAXABLE_VALUE_DATA.values.map(val => (val / totalValue) * 100);
+
+      const taxableValueConfig = {
+        series: percentages,
+        options: {
+          chart: {
+            type: 'pie',
+            height: 400,
+            background: 'transparent'
+          },
+          labels: TAXABLE_VALUE_DATA.labels,
+          colors: ['#3551F3', '#DC2626', '#059669', '#7C3AED', '#D97706', '#2563EB', '#9333EA'],
+          legend: {
+            position: 'bottom',
+            horizontalAlign: 'center',
+            fontSize: '13px',
+            fontWeight: '400',
+            markers: {
+              width: 12,
+              height: 12,
+              radius: 3
+            },
+            itemMargin: {
+              horizontal: 15
+            }
+          },
+          dataLabels: {
+            enabled: true,
+            formatter: function(val) {
+              return val.toFixed(2) + '%';
+            },
+            style: {
+              fontSize: '13px',
+              fontWeight: '500',
+              colors: ['#ffffff']
+            },
+            dropShadow: {
+              enabled: true,
+              color: '#000000',
+              top: 0,
+              left: 0,
+              blur: 3,
+              opacity: 0.3
+            }
+          },
+          tooltip: {
+            y: {
+              formatter: function(val) {
+                const originalValue = TAXABLE_VALUE_DATA.values[TAXABLE_VALUE_DATA.labels.indexOf(this.w.globals.labels[this.seriesIndex])];
+                return '₹' + originalValue.toLocaleString();
+              }
+            }
+          },
+          stroke: {
+            show: true,
+            width: 2,
+            colors: ['#ffffff']
+          },
+          plotOptions: {
+            pie: {
+              donut: {
+                size: '0%'
+              },
+              expandOnClick: false
+            }
+          }
+        }
+      };
+
+      const newWidget = {
+        id: Math.random().toString(36).substring(7),
+        type: 'pie',
+        title: widgetData.title,
+        chartConfig: taxableValueConfig,
+        config: { chartType: 'pie' },
+        position: (dashboard.widgets?.length || 0)
+      };
+
+      const updatedDashboard = {
+        ...dashboard,
+        widgets: [...(dashboard.widgets || []), newWidget]
+      };
+
+      setDashboard(updatedDashboard);
+      updateMiningDashboard(id, updatedDashboard);
+      setIsAddWidgetModalOpen(false);
+      return;
+    }
+
+    // Handle other widgets
     const processedData = {
       ...widgetData,
-      data: widgetData.data || { value: 0, data: [] }  // Provide default values
+      title: widgetData.title === "Total Outlets by Channel - Active vs Inactive" 
+        ? "Outlets by Channel - Total vs Active"
+        : widgetData.title,
+      data: widgetData.data || { value: 0, data: [] }
     };
 
     const newWidget = {
@@ -224,13 +359,8 @@ export default function MiningDashboardView() {
       widgets: [...(dashboard.widgets || []), newWidget]
     };
 
-    // Update local state
     setDashboard(updatedDashboard);
-
-    // Save to storage
     updateMiningDashboard(id, updatedDashboard);
-    
-    // Close modal
     setIsAddWidgetModalOpen(false);
   };
 
@@ -271,15 +401,263 @@ export default function MiningDashboardView() {
         widgets: [...(dashboard.widgets || []), ...newWidgets]
       };
 
-      
       setDashboard(updatedDashboard);
       updateMiningDashboard(id, updatedDashboard);
-      window.location.href = '/chat/mining';
     }
     
+    // Handle Outlet comparison chart click
+    if (title && (title.toLowerCase().includes('outlet') || title.toLowerCase().includes('channel'))) {
+      // Create drop size chart configuration
+      const dropSizeConfig = {
+        series: [{
+          name: 'Average Drop Size',
+          data: [49, 44, 68, 61, 54, 158, 113]
+        }],
+        options: {
+          chart: {
+            type: 'bar',
+            height: 500,
+            toolbar: { show: false }
+          },
+          plotOptions: {
+            bar: {
+              horizontal: false,
+              columnWidth: '60%',
+              dataLabels: {
+                position: 'top'
+              }
+            }
+          },
+          colors: ['#3551F3'],
+          dataLabels: {
+            enabled: true,
+            formatter: function(val) {
+              return val + ' L';
+            },
+            style: {
+              fontSize: '12px',
+              fontWeight: '500',
+              colors: ['#000000']
+            },
+            offsetY: -20
+          },
+          xaxis: {
+            categories: OUTLET_DATA.labels,
+            labels: {
+              style: {
+                fontSize: '12px',
+                fontWeight: '400'
+              },
+              rotate: -45,
+              offsetY: 5,
+              maxHeight: 150,
+              trim: false
+            }
+          },
+          yaxis: {
+            labels: {
+              formatter: function(val) {
+                return val + ' L';
+              },
+              style: {
+                fontSize: '12px',
+                fontWeight: '400'
+              }
+            }
+          },
+          grid: {
+            yaxis: {
+              lines: {
+                show: true
+              }
+            },
+            xaxis: {
+              lines: {
+                show: false
+              }
+            }
+          }
+        }
+      };
 
-    // Redirect immediately to chat page
-    
+      // Inside handleChatIconClick function, update the billingConfig
+      const billingConfig = {
+        series: [{
+          name: 'Billing Percentage',
+          data: [45.8, 41.4, 44.4, 35.4, 89.6, 84.9, 58.4]
+        }],
+        options: {
+          chart: {
+            type: 'bar',
+            height: 400,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            toolbar: {
+              show: false
+            }
+          },
+          plotOptions: {
+            bar: {
+              horizontal: true,
+              columnWidth: '60%',
+              dataLabels: {
+                position: 'right'
+              }
+            }
+          },
+          colors: ['#D97706'],  // Changed to orange
+          dataLabels: {
+            enabled: false
+          },
+          xaxis: {
+            categories: OUTLET_DATA.labels,
+            labels: {
+              style: {
+                fontSize: '12px',
+                fontWeight: '400'
+              }
+            },
+            axisBorder: {
+              show: false
+            },
+            axisTicks: {
+              show: false
+            }
+          },
+          yaxis: {
+            labels: {
+              style: {
+                fontSize: '12px',
+                fontWeight: '400'
+              },
+              maxWidth: undefined,
+              minHeight: undefined,
+              trim: false
+            }
+          },
+          grid: {
+            xaxis: {
+              lines: {
+                show: true
+              }
+            },
+            yaxis: {
+              lines: {
+                show: false
+              }
+            }
+          },
+          tooltip: {
+            y: {
+              formatter: function(val) {
+                return val.toFixed(1) + '%';
+              }
+            }
+          }
+        }
+      };
+
+      // Inside handleChatIconClick function, update the taxableValueConfig
+      const totalValue = TAXABLE_VALUE_DATA.values.reduce((a, b) => a + b, 0);
+      const percentages = TAXABLE_VALUE_DATA.values.map(val => (val / totalValue) * 100);
+
+      const taxableValueConfig = {
+        series: percentages,
+        options: {
+          chart: {
+            type: 'pie',
+            height: 400,
+            background: 'transparent'
+          },
+          labels: TAXABLE_VALUE_DATA.labels,
+          colors: ['#3551F3', '#DC2626', '#059669', '#7C3AED', '#D97706', '#2563EB', '#9333EA'],
+          legend: {
+            position: 'bottom',
+            horizontalAlign: 'center',
+            fontSize: '13px',
+            fontWeight: '400',
+            markers: {
+              width: 12,
+              height: 12,
+              radius: 3
+            },
+            itemMargin: {
+              horizontal: 15
+            }
+          },
+          dataLabels: {
+            enabled: true,
+            formatter: function(val) {
+              return val.toFixed(2) + '%';
+            },
+            style: {
+              fontSize: '13px',
+              fontWeight: '500',
+              colors: ['#ffffff']
+            },
+            dropShadow: {
+              enabled: true,
+              color: '#000000',
+              top: 0,
+              left: 0,
+              blur: 3,
+              opacity: 0.3
+            }
+          },
+          tooltip: {
+            y: {
+              formatter: function(val) {
+                const originalValue = TAXABLE_VALUE_DATA.values[TAXABLE_VALUE_DATA.labels.indexOf(this.w.globals.labels[this.seriesIndex])];
+                return '₹' + originalValue.toLocaleString();
+              }
+            }
+          },
+          stroke: {
+            show: true,
+            width: 2,
+            colors: ['#ffffff']
+          },
+          plotOptions: {
+            pie: {
+              donut: {
+                size: '0%'
+              },
+              expandOnClick: false
+            }
+          }
+        }
+      };
+
+      const newWidgets = [
+        {
+          id: Math.random().toString(36).substring(7),
+          type: 'bar',
+          title: '% of Outlets Billed by Channel',
+          chartConfig: billingConfig,
+          config: { chartType: 'bar' },
+          position: (dashboard.widgets?.length || 0)
+        },
+        {
+          id: Math.random().toString(36).substring(7),
+          type: 'bar',
+          title: 'Average Drop Size Per Order',
+          chartConfig: dropSizeConfig,
+          config: { chartType: 'bar' },
+          position: (dashboard.widgets?.length || 0) + 1
+        }
+      ];
+
+      // Create updated dashboard with outlet-related widgets
+      const updatedDashboard = {
+        ...dashboard,
+        widgets: [...(dashboard.widgets || []), ...newWidgets]
+      };
+
+      setDashboard(updatedDashboard);
+      updateMiningDashboard(id, updatedDashboard);
+    }
+
+    // Redirect to chat page
+    window.location.href = '/chat/mining';
   };
 
   const handleDeleteWidget = (widgetId) => {
@@ -385,7 +763,8 @@ export default function MiningDashboardView() {
               yaxis: {
                 labels: {
                   style: {
-                    colors: '#000000'
+                    colors: '#000000',
+                    fontSize: '12px'
                   },
                   formatter: function(value) {
                     return '₹' + value.toFixed(2) + ' Cr';
@@ -430,6 +809,154 @@ export default function MiningDashboardView() {
           );
 
         case "bar":
+          // If widget has chartConfig, use it directly
+          if (widget.chartConfig) {
+            return (
+              <div className="p-4">
+                <Suspense fallback={<div>Loading chart...</div>}>
+                  <Chart
+                    options={widget.chartConfig.options}
+                    series={widget.chartConfig.series}
+                    type="bar"
+                    height={widget.chartConfig.options.chart.height || 450}
+                    width="100%"
+                  />
+                </Suspense>
+              </div>
+            );
+          }
+
+          // Handle outlet comparison chart
+          if (widget.title && (widget.title.toLowerCase().includes('outlet') || widget.title.toLowerCase().includes('channel'))) {
+            const outletData = {
+              series: [
+                {
+                  name: 'Total Outlets',
+                  data: OUTLET_DATA.inactive
+                },
+                {
+                  name: 'Active Outlets',
+                  data: OUTLET_DATA.active
+                }
+              ],
+              options: {
+                chart: {
+                  type: 'bar',
+                  height: 550,
+                  stacked: false,
+                  toolbar: {
+                    show: false
+                  },
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  parentHeightOffset: 0
+                },
+                plotOptions: {
+                  bar: {
+                    horizontal: true,
+                    barHeight: '80%',
+                    rangeBarOverlap: true,
+                    distributed: false
+                  }
+                },
+                colors: ['#DC2626', '#4F46E5'],  // Red for Total, Blue for Active
+                dataLabels: {
+                  enabled: false
+                },
+                stroke: {
+                  width: 0
+                },
+                grid: {
+                  show: true,
+                  xaxis: {
+                    lines: {
+                      show: true
+                    }
+                  },
+                  yaxis: {
+                    lines: {
+                      show: false
+                    }
+                  },
+                  padding: {
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    left: 0
+                  }
+                },
+                yaxis: {
+                  labels: {
+                    style: {
+                      fontSize: '13px',
+                      fontWeight: '400'
+                    },
+                    maxWidth: 300,
+                    trim: false,
+                    minHeight: 50
+                  }
+                },
+                xaxis: {
+                  categories: OUTLET_DATA.labels,
+                  labels: {
+                    style: {
+                      fontSize: '13px',
+                      fontWeight: '400'
+                    }
+                  },
+                  axisBorder: {
+                    show: false
+                  },
+                  axisTicks: {
+                    show: false
+                  }
+                },
+                legend: {
+                  show: true,
+                  position: 'bottom',
+                  horizontalAlign: 'center',
+                  fontSize: '13px',
+                  fontWeight: '400',
+                  markers: {
+                    width: 12,
+                    height: 12,
+                    radius: 3
+                  },
+                  itemMargin: {
+                    horizontal: 15
+                  }
+                },
+                tooltip: {
+                  enabled: true,
+                  shared: true,
+                  intersect: false,
+                  style: {
+                    fontSize: '13px'
+                  },
+                  y: {
+                    formatter: function(val) {
+                      return val.toLocaleString() + " outlets";
+                    }
+                  }
+                }
+              }
+            };
+            
+            return (
+              <div className="p-4">
+                <Suspense fallback={<div>Loading chart...</div>}>
+                  <Chart
+                    options={outletData.options}
+                    series={outletData.series}
+                    type="bar"
+                    height={450}
+                    width="100%"
+                  />
+                </Suspense>
+              </div>
+            );
+          }
+
+          // Original bar chart code continues here
           const barData = {
             series: [{
               name: "Production (tons)",
@@ -512,6 +1039,24 @@ export default function MiningDashboardView() {
           );
 
         case "pie":
+          // If widget has chartConfig, use it directly
+          if (widget.chartConfig) {
+            return (
+              <div className="p-4">
+                <Suspense fallback={<div>Loading chart...</div>}>
+                  <Chart
+                    options={widget.chartConfig.options}
+                    series={widget.chartConfig.series}
+                    type="pie"
+                    height={widget.chartConfig.options.chart.height || 400}
+                    width="100%"
+                  />
+                </Suspense>
+              </div>
+            );
+          }
+
+          // Default pie chart for other cases
           const pieData = {
             series: [27.63, 23.68, 19.74, 15.79, 13.16],
             options: {
@@ -786,6 +1331,122 @@ export default function MiningDashboardView() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          );
+
+        case "outlet_comparison":
+          const outletData = {
+            series: [
+              {
+                name: 'Active Outlets',
+                data: OUTLET_DATA.active
+              },
+              {
+                name: 'Inactive Outlets',
+                data: OUTLET_DATA.inactive
+              }
+            ],
+            options: {
+              chart: {
+                type: 'bar',
+                height: 450,
+                stacked: false,
+                toolbar: {
+                  show: true,
+                  tools: {
+                    download: true,
+                    selection: false,
+                    zoom: false,
+                    zoomin: false,
+                    zoomout: false,
+                    pan: false,
+                    reset: false
+                  }
+                }
+              },
+              plotOptions: {
+                bar: {
+                  horizontal: true,
+                  dataLabels: {
+                    position: 'top',
+                  },
+                }
+              },
+              colors: ['#3551F3', '#DC2626'],
+              dataLabels: {
+                enabled: true,
+                formatter: function(val) {
+                  return val.toLocaleString();
+                },
+                style: {
+                  fontSize: '12px',
+                }
+              },
+              stroke: {
+                width: 1,
+                colors: ['#fff']
+              },
+              grid: {
+                show: true,
+                xaxis: {
+                  lines: {
+                    show: false
+                  }
+                },
+                yaxis: {
+                  lines: {
+                    show: false
+                  }
+                }
+              },
+              yaxis: {
+                labels: {
+                  style: {
+                    colors: '#000000',
+                    fontSize: '12px'
+                  }
+                }
+              },
+              xaxis: {
+                categories: OUTLET_DATA.labels,
+                labels: {
+                  style: {
+                    colors: '#000000',
+                    fontSize: '12px'
+                  },
+                  formatter: function(val) {
+                    return val.toLocaleString();
+                  }
+                }
+              },
+              legend: {
+                position: 'top',
+                horizontalAlign: 'left',
+                offsetY: 10
+              },
+              tooltip: {
+                shared: true,
+                intersect: false,
+                y: {
+                  formatter: function(val) {
+                    return val.toLocaleString() + " outlets";
+                  }
+                }
+              }
+            }
+          };
+          
+          return (
+            <div className="p-4">
+              <Suspense fallback={<div>Loading chart...</div>}>
+                <Chart
+                  options={outletData.options}
+                  series={outletData.series}
+                  type="bar"
+                  height={450}
+                  width="100%"
+                />
+              </Suspense>
             </div>
           );
 
