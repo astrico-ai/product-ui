@@ -1,12 +1,31 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Chart from 'react-apexcharts';
 import { Pin } from 'lucide-react';
 
 const MiningDataVisualization = ({ show = false, onPin, chartConfig }) => {
-  if (!show || !chartConfig) return null;
+  const chartRef = useRef(null);
+  
+  console.log('🔍 Debug - MiningDataVisualization props:', { show, chartConfig: !!chartConfig });
+  if (!show || !chartConfig) {
+    console.log('🔍 Debug - MiningDataVisualization returning null:', { show, hasChartConfig: !!chartConfig });
+    return null;
+  }
+
+  useEffect(() => {
+    // Force chart to redraw after component mounts
+    if (chartRef.current) {
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 100);
+    }
+  }, [chartConfig]);
 
   // Determine the title based on the data
   const getTitle = () => {
+    // Check if it's the copper chart by looking at the chart type
+    if (chartConfig.options.chart.type === 'line') {
+      return "Copper Price Trend";
+    }
     // Check if it's the billing percentage chart by looking at the data format
     if (chartConfig.series[0].data.some(val => val > 100)) {
       return "Average Drop Size Per Order";
@@ -27,14 +46,15 @@ const MiningDataVisualization = ({ show = false, onPin, chartConfig }) => {
           </button>
         </div>
       </div>
-      <div className="p-6">
-        <Chart
-          options={chartConfig.options}
-          series={chartConfig.series}
-          type="bar"
-          height={400}
-          width="100%"
-        />
+      <div className="p-6 w-full">
+        <div className="w-full" style={{ minWidth: '100%' }} ref={chartRef}>
+          <Chart
+            options={chartConfig.options}
+            series={chartConfig.series}
+            type={chartConfig.options.chart.type}
+            height={400}
+          />
+        </div>
       </div>
     </div>
   );

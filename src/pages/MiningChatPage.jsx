@@ -39,6 +39,129 @@ const chatHistory = {
 // Mock chat messages for each chat
 const mockChatMessages = {};
 
+// Add copper chart configuration
+const getCopperChartConfig = () => {
+  // Generate more realistic price variations
+  const basePrice = 8916;
+  const priceData = [];
+  for (let i = 0; i < 45; i++) {
+    const trend = Math.sin(i * 0.3) * 50; // Add sine wave variation
+    const random = (Math.random() - 0.5) * 100; // Add random variation
+    const price = basePrice + (i * 20) + trend + random; // Overall upward trend with variations
+    priceData.push(Math.round(price));
+  }
+  
+  return {
+    series: [{
+      name: 'Copper Price',
+      data: priceData
+    }],
+    options: {
+      chart: {
+        type: 'line',
+        height: 400,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        toolbar: {
+          show: false
+        },
+        padding: {
+          top: 20,
+          right: 20,
+          bottom: 60,
+          left: 60
+        },
+        animations: {
+          enabled: true,
+          easing: 'easeinout',
+          speed: 800
+        },
+        redrawOnWindowResize: true,
+        redrawOnParentResize: true,
+        zoom: {
+          enabled: false
+        },
+        sparkline: {
+          enabled: false
+        },
+        background: 'transparent'
+      },
+      stroke: {
+        width: 3,
+        curve: 'smooth',
+        colors: ['#DC2626']
+      },
+      colors: ['#DC2626'],
+      dataLabels: {
+        enabled: false
+      },
+              xaxis: {
+          categories: [
+            'Jan 1', 'Jan 3', 'Jan 5', 'Jan 7', 'Jan 9', 'Jan 11', 'Jan 13', 'Jan 15', 'Jan 17', 'Jan 19',
+            'Jan 21', 'Jan 23', 'Jan 25', 'Jan 27', 'Jan 29', 'Jan 31', 'Feb 2', 'Feb 4', 'Feb 6', 'Feb 8',
+            'Feb 10', 'Feb 12', 'Feb 14', 'Feb 16', 'Feb 18', 'Feb 20', 'Feb 22', 'Feb 24', 'Feb 26', 'Feb 28',
+            'Mar 2', 'Mar 4', 'Mar 6', 'Mar 8', 'Mar 10', 'Mar 12', 'Mar 14', 'Mar 16', 'Mar 18', 'Mar 20',
+            'Mar 22', 'Mar 24', 'Mar 26', 'Mar 28', 'Mar 30'
+          ],
+          labels: {
+            style: {
+              fontSize: '12px',
+              fontWeight: '400'
+            },
+            rotate: -45,
+            maxHeight: 80
+          },
+          tickAmount: 45,
+          tickPlacement: 'on',
+          axisBorder: {
+            show: true
+          },
+          axisTicks: {
+            show: true
+          }
+        },
+      yaxis: {
+        min: 8900,
+        max: 9750,
+        tickAmount: 10,
+        labels: {
+          formatter: function(val) {
+            return '$' + val.toLocaleString();
+          },
+          style: {
+            fontSize: '12px',
+            fontWeight: '400'
+          }
+        },
+        title: {
+          text: 'Price per Metric Ton ($)',
+          style: {
+            color: '#000000'
+          }
+        }
+      },
+      grid: {
+        yaxis: {
+          lines: {
+            show: true
+          }
+        },
+        xaxis: {
+          lines: {
+            show: false
+          }
+        }
+      },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return '$' + val.toLocaleString() + ' per metric ton';
+          }
+        }
+      }
+    }
+  };
+};
+
 // New hybrid matching system
 const topicMatcher = {
   smart_eps: {
@@ -101,7 +224,7 @@ const topicMatcher = {
             showVisualization: true,
             showFollowUp: false,
             showFeedback: true,
-            visualizationType: "copper"
+            chartConfig: getCopperChartConfig()
           }
         }
       }
@@ -1138,6 +1261,14 @@ export default function MiningChatPage() {
       const matchedResponse = topicMatcher[match.topic].subtopics[match.subtopic].response[language] || 
                             topicMatcher[match.topic].subtopics[match.subtopic].response.en;
       
+      console.log('🔍 Debug - Matched Response:', {
+        topic: match.topic,
+        subtopic: match.subtopic,
+        showVisualization: matchedResponse.showVisualization,
+        chartConfig: matchedResponse.chartConfig,
+        visualizationType: matchedResponse.visualizationType
+      });
+      
       const customSteps = getCustomLoadingSteps(query.trim());
       
       const progressInterval = setInterval(() => {
@@ -1169,15 +1300,33 @@ export default function MiningChatPage() {
         showFollowUp: matchedResponse.showFollowUp,
         showFeedback: matchedResponse.showFeedback,
         visualizationType: matchedResponse.visualizationType,
+        chartConfig: matchedResponse.chartConfig,
         followUpQuestions: matchedResponse.followUpQuestions
       };
+      
+      console.log('🔍 Debug - Search Response:', {
+        id: searchResponse.id,
+        showVisualization: searchResponse.showVisualization,
+        chartConfig: searchResponse.chartConfig,
+        visualizationType: searchResponse.visualizationType
+      });
       
       await new Promise(resolve => setTimeout(resolve, 500));
       setMessages(prev => [...prev, searchResponse]);
       
       setIsTyping(false);
-      if (searchResponse.showVisualization && (searchResponse.visualizationType === 'copper' || searchResponse.visualizationType === 'monthly_sales')) {
+      console.log('🔍 Debug - Before setShowVisualization check:', {
+        showVisualization: searchResponse.showVisualization,
+        visualizationType: searchResponse.visualizationType,
+        chartConfig: !!searchResponse.chartConfig,
+        condition: searchResponse.showVisualization && (searchResponse.visualizationType === 'copper' || searchResponse.visualizationType === 'monthly_sales' || searchResponse.visualizationType === 'lost_customers' || searchResponse.visualizationType === 'aramid_contribution' || searchResponse.chartConfig)
+      });
+      
+      if (searchResponse.showVisualization && (searchResponse.visualizationType === 'copper' || searchResponse.visualizationType === 'monthly_sales' || searchResponse.visualizationType === 'lost_customers' || searchResponse.visualizationType === 'aramid_contribution' || searchResponse.chartConfig)) {
+        console.log('🔍 Debug - Setting showVisualization to true');
         setShowVisualization(true);
+      } else {
+        console.log('🔍 Debug - NOT setting showVisualization to true');
       }
       setCurrentStep(customSteps.length - 1);
       setCompletedSteps(customSteps.map((_, index) => index));
@@ -1587,6 +1736,14 @@ export default function MiningChatPage() {
                                       vizElement.style.transform = 'translateY(0)';
                                     }
                                   }
+                                  if (msg.videoUrl) {
+                                    const videoElement = document.querySelector(`#video-${msg.id}`);
+                                    if (videoElement) {
+                                      videoElement.style.display = 'block';
+                                      videoElement.style.opacity = '1';
+                                      videoElement.style.transform = 'translateY(0)';
+                                    }
+                                  }
                                   const actionsElement = document.querySelector(`#actions-${msg.id}`);
                                   if (actionsElement) {
                                     actionsElement.style.opacity = '1';
@@ -1624,9 +1781,10 @@ export default function MiningChatPage() {
                               {msg.showVisualization && msg.chartConfig ? (
                                 <div 
                                   id={`viz-${msg.id}`}
-                                  className="transition-all duration-500"
-                                  style={{ opacity: 0, transform: 'translateY(20px)' }}
+                                  className="transition-all duration-500 w-full"
+                                  style={{ opacity: 0, transform: 'translateY(20px)', width: '100%' }}
                                 >
+                                  {console.log('🔍 Debug - Rendering chart with chartConfig:', msg.chartConfig)}
                                   <ErrorBoundary>
                                     <MiningDataVisualization
                                       show={true}
@@ -1635,26 +1793,15 @@ export default function MiningChatPage() {
                                     />
                                   </ErrorBoundary>
                                 </div>
-                              ) : null}
-                              {msg.showVisualization && msg.visualizationType && !msg.chartConfig && (
-                                <>
-                                  {msg.visualizationType === 'copper' && (
-                                    <div 
-                                      className="mt-6 transition-all duration-500"
-                                      style={{ 
-                                        opacity: showVisualization ? 1 : 0,
-                                        transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
-                                        display: showVisualization ? 'block' : 'none'
-                                      }}
-                                    >
-                                      <MiningDataVisualization 
-                                        show={showVisualization}
-                                        onPin={handlePin}
-                                      />
-                                    </div>
-                                  )}
-                                </>
-                              )}
+                              ) : (() => {
+                                console.log('🔍 Debug - Chart rendering condition failed:', {
+                                  showVisualization: msg.showVisualization,
+                                  hasChartConfig: !!msg.chartConfig,
+                                  chartConfig: msg.chartConfig
+                                });
+                                return null;
+                              })()}
+
                               {msg.showVisualization && msg.visualizationType === 'monthly_sales' && (
                                 <div 
                                   className="mt-6 transition-all duration-500"
