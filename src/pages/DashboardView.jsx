@@ -183,28 +183,24 @@ export default function DashboardView() {
     const renderChart = () => {
       switch (widget.type) {
         case "kpi":
-          let value;
-          let trend;
           let displayValue;
+          let trend;
           
           // Determine value based on widget title
           if (widget.title === "Total Leads") {
-            value = Math.floor(Math.random() * (500 - 100 + 1)) + 100; // Random between 100-500
             trend = 12.5;
-            displayValue = value.toLocaleString();
+            displayValue = "12,349";
           } else if (widget.title === "Total Cost") {
-            value = widget.value || 1500000000; // 15 Cr
             trend = 8.3;
             displayValue = "₹15 Cr";
           } else if (widget.title === "Conversion Rate") {
-            value = widget.value || 35; // 35%
             trend = -2.8;
             displayValue = "35%";
           } else {
             // For other KPI cards
-            value = Math.floor(Math.random() * (100 - 30 + 1)) + 30;
+            const otherValue = Math.floor(Math.random() * (100 - 30 + 1)) + 30;
             trend = Math.random() > 0.5 ? 5.2 : -3.1;
-            displayValue = value.toLocaleString();
+            displayValue = otherValue.toLocaleString();
           }
           
           return (
