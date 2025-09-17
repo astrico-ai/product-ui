@@ -31,6 +31,82 @@ export const getDashboard = (id) => {
   return dashboard;
 };
 
+// Default widgets for new dashboards
+const getDefaultWidgets = () => [
+  {
+    id: "widget-1",
+    type: "kpi",
+    title: "Total Leads",
+    description: "Current active leads",
+    position: 0
+  },
+  {
+    id: "widget-2",
+    type: "kpi", 
+    title: "Total Cost",
+    description: "Cost incurred in this month",
+    position: 1,
+    value: 1500000000 // 15 Cr in rupees
+  },
+  {
+    id: "widget-3",
+    type: "kpi",
+    title: "Conversion Rate",
+    description: "Lead to customer conversion",
+    position: 2,
+    value: 35 // 35%
+  },
+  {
+    id: "widget-4",
+    type: "line",
+    title: "Campaign Performance Trend",
+    description: "Monthly campaign ROI across channels",
+    position: 3
+  },
+  {
+    id: "widget-5",
+    type: "bar",
+    title: "Marketing Spend by Channel",
+    description: "Budget allocation across marketing channels",
+    position: 4
+  },
+  {
+    id: "widget-6",
+    type: "pie",
+    title: "Traffic Source Distribution",
+    description: "Website traffic by marketing channel",
+    position: 5
+  },
+  {
+    id: "widget-7",
+    type: "table",
+    title: "Campaign Performance Metrics",
+    description: "Detailed campaign analytics and KPIs",
+    position: 6
+  },
+  {
+    id: "widget-8",
+    type: "scatter",
+    title: "Cost vs Conversion Analysis",
+    description: "Marketing spend vs conversion correlation",
+    position: 7
+  },
+  {
+    id: "widget-9",
+    type: "bubble",
+    title: "Channel Effectiveness Matrix",
+    description: "Multi-dimensional channel performance view",
+    position: 8
+  },
+  {
+    id: "widget-10",
+    type: "heatmap",
+    title: "Campaign Activity Heatmap",
+    description: "Marketing campaign activity patterns",
+    position: 9
+  }
+];
+
 // Create a new dashboard
 export const createDashboard = (data) => {
   const dashboards = getDashboards();
@@ -38,7 +114,7 @@ export const createDashboard = (data) => {
     id: Math.random().toString(36).substring(7),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    widgets: [],
+    widgets: getDefaultWidgets(),
     ...data,
   };
   

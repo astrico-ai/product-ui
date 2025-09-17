@@ -16,7 +16,7 @@ export default function AlertModal({ isOpen, onClose, widgetTitle }) {
     condition: "",
     threshold: "",
     frequency: "",
-    emails: [""]
+    emails: []
   });
   // Add state for custom date
   const [scheduledForm, setScheduledForm] = useState({
@@ -25,7 +25,7 @@ export default function AlertModal({ isOpen, onClose, widgetTitle }) {
     time: "",
     day: "",
     customDate: "",
-    emails: [""]
+    emails: []
   });
 
   const handleThresholdAiInterpret = () => {
@@ -35,7 +35,7 @@ export default function AlertModal({ isOpen, onClose, widgetTitle }) {
       condition: "gt",
       threshold: "100000",
       frequency: "6",
-      emails: [""]
+      emails: []
     });
   };
 
@@ -46,7 +46,7 @@ export default function AlertModal({ isOpen, onClose, widgetTitle }) {
       frequency: "daily",
       time: "09:00",
       day: "",
-      emails: [""]
+      emails: []
     });
   };
 
