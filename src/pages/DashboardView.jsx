@@ -1,8 +1,11 @@
-import { useState, useEffect, Suspense, lazy } from "react";
+import { useState, useEffect, Suspense, lazy, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Plus, ChevronLeft, ChevronRight, Presentation, LayoutDashboard, MessageCircle, Share2 } from "lucide-react";
+import { MoreVertical, Plus, ChevronLeft, ChevronRight, Presentation, LayoutDashboard, MessageCircle, Share2, Download, ArrowRight, X, ChevronDown, ThumbsUp, ThumbsDown, BarChart, LineChart, PieChart, Table, GripVertical, Brush, X as LucideX } from "lucide-react";
+import { FaWandMagicSparkles } from "react-icons/fa6";
 import AddWidgetModal from "@/components/dashboard/AddWidgetModal";
+import ManualChartBuilder from "@/components/dashboard/ManualChartBuilder";
+import AIChartModal from "@/components/dashboard/AIChartModal";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { MainLayout } from "@/components/MainLayout";
 import {
@@ -15,6 +18,10 @@ import { getDashboard, updateDashboard } from "@/utils/dashboardStorage";
 import { cn } from "@/lib/utils";
 import Papa from 'papaparse';
 
+import React from "react";
+import AlertModal from "@/components/dashboard/AlertModal";
+import ShareDashboardModal from "@/components/dashboard/ShareDashboardModal";
+
 // Lazy load ApexCharts
 const Chart = lazy(() => import('react-apexcharts'));
 
@@ -26,6 +33,38 @@ export default function DashboardView() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [loadingWidgets, setLoadingWidgets] = useState({});
   const [tableData, setTableData] = useState([]);
+  const [addWidgetStep, setAddWidgetStep] = useState(null); // null | 'manual'
+  const [alertModalWidget, setAlertModalWidget] = useState(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [aiSearchQuery, setAiSearchQuery] = useState('');
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  const handleAiSearch = (e) => {
+    e.preventDefault();
+    if (!aiSearchQuery.trim()) return;
+    setIsAiModalOpen(true);
+  };
+
+  const handleAddAiChartToDashboard = () => {
+    // TODO: Add chart to dashboard
+    console.log('Adding AI chart to dashboard');
+    setAiSearchQuery('');
+  };
+
+  const handleExportPDF = () => {
+    console.log('Exporting dashboard as PDF');
+    // TODO: Implement PDF export
+  };
+
+  const handleExportPPT = () => {
+    console.log('Exporting dashboard as PPT');
+    // TODO: Implement PPT export
+  };
+
+  const handleExportImage = () => {
+    console.log('Exporting dashboard as Image');
+    // TODO: Implement Image export
+  };
 
   // Handle presentation navigation
   const handleNextSlide = () => {
@@ -144,31 +183,31 @@ export default function DashboardView() {
     const renderChart = () => {
       switch (widget.type) {
         case "kpi":
-          let value;
+          let displayValue;
           let trend;
           
           // Determine value based on widget title
           if (widget.title === "Total Leads") {
-            value = Math.floor(Math.random() * (500 - 100 + 1)) + 100; // Random between 100-500
             trend = 12.5;
-          } else if (widget.title === "Total Live Agents") {
-            const maxValue = value || 400; // Use previous value or 400 if undefined
-            value = Math.floor(Math.random() * (maxValue - 50 + 1)) + 50; // Random but less than first card
+            displayValue = "12,349";
+          } else if (widget.title === "Total Cost") {
             trend = 8.3;
-          } else {
-            // For third card: between 30-75 and less than first card
-            const firstCardValue = value || 500; // Use first card value or max possible value
-            const maxAllowed = Math.min(75, firstCardValue); // Take the smaller of 75 or first card value
-            const minValue = 30;
-            value = Math.floor(Math.random() * (maxAllowed - minValue + 1)) + minValue;
+            displayValue = "₹15 Cr";
+          } else if (widget.title === "Conversion Rate") {
             trend = -2.8;
+            displayValue = "35%";
+          } else {
+            // For other KPI cards
+            const otherValue = Math.floor(Math.random() * (100 - 30 + 1)) + 30;
+            trend = Math.random() > 0.5 ? 5.2 : -3.1;
+            displayValue = otherValue.toLocaleString();
           }
           
           return (
             <div className="h-full flex items-center justify-center p-6">
               <div className="text-center">
                 <div className="text-4xl font-bold text-gray-900">
-                  {value.toLocaleString()}
+                  {displayValue}
                 </div>
                 <div className={cn(
                   "text-sm mt-2 flex items-center justify-center gap-1",
@@ -349,67 +388,67 @@ export default function DashboardView() {
           const displayData = tableData.length > 0 ? tableData : [
             { 
               id: 1, 
-              name: "Rajesh Kumar", 
-              value: 7500000, 
-              change: 12.5,
-              target: 8500000,
-              achievement: 88.2
+              campaign: "Google Search Campaign", 
+              spend: 4500000, 
+              ctr: 12.5,
+              conversions: 850,
+              roas: 4.2
             },
             { 
               id: 2, 
-              name: "Priya Patel", 
-              value: 9200000, 
-              change: -5.2,
-              target: 8000000,
-              achievement: 115.0
+              campaign: "Facebook Brand Campaign", 
+              spend: 3200000, 
+              ctr: 8.7,
+              conversions: 640,
+              roas: 3.8
             },
             { 
               id: 3, 
-              name: "Suresh Reddy", 
-              value: 6800000, 
-              change: 8.4,
-              target: 7500000,
-              achievement: 90.7
+              campaign: "LinkedIn B2B Campaign", 
+              spend: 2800000, 
+              ctr: 6.4,
+              conversions: 420,
+              roas: 3.2
             },
             { 
               id: 4, 
-              name: "Meera Sharma", 
-              value: 5500000, 
-              change: -2.8,
-              target: 7000000,
-              achievement: 78.6
+              campaign: "Email Newsletter", 
+              spend: 1500000, 
+              ctr: 15.8,
+              conversions: 320,
+              roas: 5.6
             },
             { 
               id: 5, 
-              name: "Arun Verma", 
-              value: 9800000, 
-              change: 15.7,
-              target: 9000000,
-              achievement: 108.9
+              campaign: "YouTube Video Ads", 
+              spend: 3800000, 
+              ctr: 9.7,
+              conversions: 760,
+              roas: 4.1
             },
             { 
               id: 6, 
-              name: "Deepak Kumar", 
-              value: 8200000, 
-              change: 10.3,
-              target: 8500000,
-              achievement: 96.5
+              campaign: "Instagram Stories", 
+              spend: 2200000, 
+              ctr: 11.3,
+              conversions: 440,
+              roas: 3.9
             },
             { 
               id: 7, 
-              name: "Anita Desai", 
-              value: 7100000, 
-              change: -3.5,
-              target: 7500000,
-              achievement: 94.7
+              campaign: "Content Marketing", 
+              spend: 1800000, 
+              ctr: 7.5,
+              conversions: 280,
+              roas: 3.4
             },
             { 
               id: 8, 
-              name: "Vikram Singh", 
-              value: 6500000, 
-              change: 7.8,
-              target: 7000000,
-              achievement: 92.9
+              campaign: "Retargeting Campaign", 
+              spend: 2600000, 
+              ctr: 14.8,
+              conversions: 520,
+              roas: 4.7
             }
           ];
 
@@ -434,22 +473,24 @@ export default function DashboardView() {
                             key={key} 
                             className={cn(
                               "px-6 py-4 whitespace-nowrap",
-                              key === 'change' || key === 'achievement' 
-                                ? Number(value) >= 0 ? 'text-green-600' : 'text-red-600'
+                              key === 'ctr' || key === 'roas' 
+                                ? Number(value) >= 4 ? 'text-green-600' : Number(value) >= 2 ? 'text-yellow-600' : 'text-red-600'
                                 : 'text-gray-900',
-                              key === 'value' || key === 'target' ? 'text-right' : ''
+                              key === 'spend' ? 'text-right' : ''
                             )}
                           >
-                            {key === 'value' || key === 'target'
+                            {key === 'spend'
                               ? new Intl.NumberFormat('en-IN', {
                                   style: 'currency',
                                   currency: 'INR',
                                   minimumFractionDigits: 0,
                                   maximumFractionDigits: 0
                                 }).format(value)
-                              : key === 'change' || key === 'achievement'
-                                ? `${Number(value) >= 0 ? '+' : ''}${value}%`
-                                : value
+                              : key === 'ctr'
+                                ? `${value}%`
+                              : key === 'roas'
+                                ? `${value}x`
+                              : value
                             }
                           </td>
                         ))}
@@ -465,43 +506,43 @@ export default function DashboardView() {
           const lineData = [
             {
               month: "Oct'24",
-              Ramesh: 1100000,
-              Ankur: 1500000,
-              Gaurav: 1600000,
-              Rahul: 1300000,
-              Roshan: 1800000
+              "Google Ads": 2200000,
+              "Facebook Ads": 1800000,
+              "LinkedIn Ads": 1400000,
+              "Email Marketing": 900000,
+              "Content Marketing": 1100000
             },
             {
               month: "Nov'24",
-              Ramesh: 800000,
-              Ankur: 1500000,
-              Gaurav: 1800000,
-              Rahul: 500000,
-              Roshan: 700000
+              "Google Ads": 2500000,
+              "Facebook Ads": 2100000,
+              "LinkedIn Ads": 1600000,
+              "Email Marketing": 1200000,
+              "Content Marketing": 1300000
             },
             {
               month: "Dec'24",
-              Ramesh: 1700000,
-              Ankur: 1200000,
-              Gaurav: 1000000,
-              Rahul: 1500000,
-              Roshan: 1600000
+              "Google Ads": 2800000,
+              "Facebook Ads": 2300000,
+              "LinkedIn Ads": 1800000,
+              "Email Marketing": 1400000,
+              "Content Marketing": 1500000
             },
             {
               month: "Jan'25",
-              Ramesh: 1900000,
-              Ankur: 900000,
-              Gaurav: 600000,
-              Rahul: 1500000,
-              Roshan: 1100000
+              "Google Ads": 3100000,
+              "Facebook Ads": 2600000,
+              "LinkedIn Ads": 2000000,
+              "Email Marketing": 1600000,
+              "Content Marketing": 1700000
             },
             {
               month: "Feb'25",
-              Ramesh: 1500000,
-              Ankur: 800000,
-              Gaurav: 1600000,
-              Rahul: 1900000,
-              Roshan: 800000
+              "Google Ads": 2900000,
+              "Facebook Ads": 2400000,
+              "LinkedIn Ads": 1900000,
+              "Email Marketing": 1500000,
+              "Content Marketing": 1600000
             }
           ];
 
@@ -538,24 +579,24 @@ export default function DashboardView() {
                   }}
                   series={[
                     {
-                      name: 'Ramesh',
-                      data: lineData.map(d => d.Ramesh)
+                      name: 'Google Ads',
+                      data: lineData.map(d => d["Google Ads"])
                     },
                     {
-                      name: 'Ankur',
-                      data: lineData.map(d => d.Ankur)
+                      name: 'Facebook Ads',
+                      data: lineData.map(d => d["Facebook Ads"])
                     },
                     {
-                      name: 'Gaurav',
-                      data: lineData.map(d => d.Gaurav)
+                      name: 'LinkedIn Ads',
+                      data: lineData.map(d => d["LinkedIn Ads"])
                     },
                     {
-                      name: 'Rahul',
-                      data: lineData.map(d => d.Rahul)
+                      name: 'Email Marketing',
+                      data: lineData.map(d => d["Email Marketing"])
                     },
                     {
-                      name: 'Roshan',
-                      data: lineData.map(d => d.Roshan)
+                      name: 'Content Marketing',
+                      data: lineData.map(d => d["Content Marketing"])
                     }
                   ]}
                   type="line"
@@ -567,11 +608,11 @@ export default function DashboardView() {
 
         case "pie":
           const pieData = [
-            { type: 'Rural Vehicle Finance', amount: 48000000 },
-            { type: 'Business Loan', amount: 27000000 },
-            { type: 'Two Wheeler Loan', amount: 13000000 },
-            { type: 'Loan against Property', amount: 34000000 },
-            { type: 'Pre Owned Car Loan', amount: 23000000 }
+            { type: 'Google Ads', amount: 48000000 },
+            { type: 'Facebook Ads', amount: 27000000 },
+            { type: 'LinkedIn Ads', amount: 13000000 },
+            { type: 'Email Marketing', amount: 34000000 },
+            { type: 'Content Marketing', amount: 23000000 }
           ];
 
           return (
@@ -606,11 +647,11 @@ export default function DashboardView() {
 
         case "bar":
           const barData = [
-            { agent: 'Amit Sharma', amount: 600000 },
-            { agent: 'Priya Iyer', amount: 1400000 },
-            { agent: 'Rahul Verma', amount: 1300000 },
-            { agent: 'Sneha Nair', amount: 1400000 },
-            { agent: 'Vikram Singh', amount: 900000 }
+            { channel: 'Google Ads', amount: 4500000 },
+            { channel: 'Facebook Ads', amount: 3200000 },
+            { channel: 'LinkedIn Ads', amount: 2800000 },
+            { channel: 'Email Marketing', amount: 3800000 },
+            { channel: 'Content Marketing', amount: 2200000 }
           ];
 
           return (
@@ -632,7 +673,7 @@ export default function DashboardView() {
                       },
                     },
                     xaxis: {
-                      categories: barData.map(d => d.agent),
+                      categories: barData.map(d => d.channel),
                       labels: {
                         rotate: -45,
                         style: {
@@ -654,7 +695,7 @@ export default function DashboardView() {
                     }
                   }}
                   series={[{
-                    name: 'Overdue Amount (>1 Year)',
+                    name: 'Marketing Spend',
                     data: barData.map(d => d.amount)
                   }]}
                   type="bar"
@@ -680,6 +721,18 @@ export default function DashboardView() {
             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-50 mr-1">
               <MessageCircle className="h-4 w-4 text-gray-500" />
             </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 hover:bg-gray-50 mr-1"
+              onClick={() => setAlertModalWidget(widget)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.0196 2.91016C8.7096 2.91016 6.0196 5.60016 6.0196 8.91016V11.8002C6.0196 12.4102 5.7596 13.3402 5.4496 13.8602L4.2996 15.7702C3.5896 16.9502 4.0796 18.2602 5.3796 18.7002C9.6896 20.1402 14.3396 20.1402 18.6496 18.7002C19.8596 18.3002 20.3896 16.8702 19.7296 15.7702L18.5796 13.8602C18.2796 13.3402 18.0196 12.4102 18.0196 11.8002V8.91016C18.0196 5.61016 15.3196 2.91016 12.0196 2.91016Z" stroke="#6B7280" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round"/>
+                <path d="M13.8699 3.19994C13.5599 3.10994 13.2399 3.03994 12.9099 2.99994C11.9499 2.87994 11.0299 2.94994 10.1699 3.19994C10.4599 2.45994 11.1799 1.93994 12.0199 1.93994C12.8599 1.93994 13.5799 2.45994 13.8699 3.19994Z" stroke="#6B7280" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M15.0195 19.0601C15.0195 20.7101 13.6695 22.0601 12.0195 22.0601C11.1995 22.0601 10.4395 21.7201 9.89953 21.1801C9.35953 20.6401 9.01953 19.8801 9.01953 19.0601" stroke="#6B7280" strokeWidth="1.5" strokeMiterlimit="10"/>
+              </svg>
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-50">
@@ -688,7 +741,7 @@ export default function DashboardView() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>Edit</DropdownMenuItem>
-                <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                <DropdownMenuItem>Manage Alerts</DropdownMenuItem>
                 <DropdownMenuItem 
                   className="text-red-600"
                   onClick={() => handleDeleteWidget(widget.id)}
@@ -787,28 +840,103 @@ export default function DashboardView() {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                className="gap-2"
+                size="icon"
+                className="h-10 w-10"
                 onClick={() => setIsPresentationMode(!isPresentationMode)}
               >
                 <Presentation className="h-4 w-4" />
-                {isPresentationMode ? 'Exit Presentation' : 'Present'}
               </Button>
               <Button
                 variant="outline"
-                className="gap-2"
+                size="icon"
+                className="h-10 w-10"
+                onClick={() => setIsShareModalOpen(true)}
               >
                 <Share2 className="h-4 w-4" />
-                Share
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleExportPDF}>
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M16 13H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M16 17H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M10 9H9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      PDF
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPPT}>
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 7V17C3 18.1046 3.89543 19 5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M8 9L16 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M16 9L8 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      PPT
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportImage}>
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M21 15L16 10L5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Image
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button 
-                onClick={() => setIsAddWidgetModalOpen(true)}
-                className="bg-[#3551F3] hover:bg-[#2B41D9] text-white gap-2"
+                onClick={() => setAddWidgetStep('manual')}
+                className="bg-[#3551F3] hover:bg-[#2B41D9] text-white gap-2 h-10"
               >
                 <Plus className="h-4 w-4" />
                 Add Widget
               </Button>
             </div>
           </div>
+
+          {/* AI Search Bar */}
+          <form onSubmit={handleAiSearch} className="mb-8">
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-gray-400">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="currentColor"/>
+                    <path d="M19 15L19.74 17.74L22.5 18.5L19.74 19.26L19 22L18.26 19.26L15.5 18.5L18.26 17.74L19 15Z" fill="currentColor"/>
+                    <path d="M5 6L5.5 7.5L7 8L5.5 8.5L5 10L4.5 8.5L3 8L4.5 7.5L5 6Z" fill="currentColor"/>
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  value={aiSearchQuery}
+                  onChange={(e) => setAiSearchQuery(e.target.value)}
+                  placeholder="Ask a question like 'Total Cost by Campaign Type'"
+                  className="w-full h-10 px-12 rounded-lg shadow-sm bg-white text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#3551F3]/20 focus:border-[#3551F3]/40"
+                />
+              </div>
+              <Button
+                type="submit"
+                size="icon"
+                className="h-10 w-10 bg-[#3551F3] hover:bg-[#2B41D9] text-white rounded-lg flex-shrink-0"
+              >
+                <FaWandMagicSparkles className="h-4 w-4" />
+              </Button>
+            </div>
+          </form>
 
           {/* Empty State */}
           {(!dashboard.widgets || dashboard.widgets.length === 0) && (
@@ -822,7 +950,7 @@ export default function DashboardView() {
                   Start building your dashboard by adding widgets. You can add various types of visualizations to track your metrics.
                 </p>
                 <Button 
-                  onClick={() => setIsAddWidgetModalOpen(true)}
+                  onClick={() => setAddWidgetStep('manual')}
                   className="bg-[#3551F3] hover:bg-[#2B41D9] text-white gap-2"
                 >
                   <Plus className="h-4 w-4" />
@@ -872,13 +1000,36 @@ export default function DashboardView() {
         </div>
       )}
 
-      <AddWidgetModal
-        isOpen={isAddWidgetModalOpen}
-        onClose={setIsAddWidgetModalOpen}
-        onSubmit={handleWidgetSubmit}
-        dashboardType="regular"
-        initialData={null}
+
+
+
+      {/* Manual Chart Builder - Full Screen */}
+      {addWidgetStep === 'manual' && (
+        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+          <ManualChartBuilder onClose={() => setAddWidgetStep(null)} onSave={handleWidgetSubmit} />
+        </div>
+      )}
+      <AlertModal 
+        isOpen={alertModalWidget !== null}
+        onClose={() => setAlertModalWidget(null)}
+        widgetTitle={alertModalWidget?.title}
+      />
+      <ShareDashboardModal 
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+      />
+
+      {/* AI Chart Modal */}
+      <AIChartModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        searchQuery={aiSearchQuery}
+        onAddToDashboard={() => {
+          // TODO: Add chart to dashboard
+          console.log('Adding chart to dashboard');
+          setAiSearchQuery('');
+        }}
       />
     </MainLayout>
   );
-} 
+}
