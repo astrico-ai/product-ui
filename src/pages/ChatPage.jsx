@@ -898,20 +898,6 @@ export default function ChatPage() {
                       )}
                       {showSteps[msg.id] && (
                         <div className="w-full mb-3 bg-white rounded-2xl p-6 space-y-5 border border-gray-100 shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-base font-semibold text-gray-900">Sources:</h3>
-                            <div className="flex gap-3">
-                              {getCustomSources(msg.language === 'mr' ? 'कार' : 'car').map((source, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium"
-                                >
-                                  {source.icon}
-                                  {source.text}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
                           
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
@@ -1033,20 +1019,6 @@ export default function ChatPage() {
 
                   {isLoading && (
                     <div className="bg-white rounded-2xl p-6 space-y-5 border border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-base font-semibold text-gray-900">Sources:</h3>
-                        <div className="flex gap-3">
-                          {getCustomSources(inputValue || chatHistorySearch).map((source, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-2 bg-[#3551F3] text-white px-4 py-2 rounded-xl text-sm font-medium"
-                            >
-                              {source.icon}
-                              {source.text}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
                       
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
