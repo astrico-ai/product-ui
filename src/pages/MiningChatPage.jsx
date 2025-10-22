@@ -16,6 +16,7 @@ import AramidContributionVisualization from "@/components/AramidContributionVisu
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/components/ui/use-toast";
 import ErrorBoundary from '../components/ErrorBoundary';
+import Chart from "react-apexcharts";
 
 
 // Mock chat history data
@@ -37,6 +38,129 @@ const chatHistory = {
 
 // Mock chat messages for each chat
 const mockChatMessages = {};
+
+// Add copper chart configuration
+const getCopperChartConfig = () => {
+  // Generate more realistic price variations
+  const basePrice = 8916;
+  const priceData = [];
+  for (let i = 0; i < 45; i++) {
+    const trend = Math.sin(i * 0.3) * 50; // Add sine wave variation
+    const random = (Math.random() - 0.5) * 100; // Add random variation
+    const price = basePrice + (i * 20) + trend + random; // Overall upward trend with variations
+    priceData.push(Math.round(price));
+  }
+  
+  return {
+    series: [{
+      name: 'Copper Price',
+      data: priceData
+    }],
+    options: {
+      chart: {
+        type: 'line',
+        height: 400,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        toolbar: {
+          show: false
+        },
+        padding: {
+          top: 20,
+          right: 20,
+          bottom: 60,
+          left: 60
+        },
+        animations: {
+          enabled: true,
+          easing: 'easeinout',
+          speed: 800
+        },
+        redrawOnWindowResize: true,
+        redrawOnParentResize: true,
+        zoom: {
+          enabled: false
+        },
+        sparkline: {
+          enabled: false
+        },
+        background: 'transparent'
+      },
+      stroke: {
+        width: 3,
+        curve: 'smooth',
+        colors: ['#DC2626']
+      },
+      colors: ['#DC2626'],
+      dataLabels: {
+        enabled: false
+      },
+              xaxis: {
+          categories: [
+            'Jan 1', 'Jan 3', 'Jan 5', 'Jan 7', 'Jan 9', 'Jan 11', 'Jan 13', 'Jan 15', 'Jan 17', 'Jan 19',
+            'Jan 21', 'Jan 23', 'Jan 25', 'Jan 27', 'Jan 29', 'Jan 31', 'Feb 2', 'Feb 4', 'Feb 6', 'Feb 8',
+            'Feb 10', 'Feb 12', 'Feb 14', 'Feb 16', 'Feb 18', 'Feb 20', 'Feb 22', 'Feb 24', 'Feb 26', 'Feb 28',
+            'Mar 2', 'Mar 4', 'Mar 6', 'Mar 8', 'Mar 10', 'Mar 12', 'Mar 14', 'Mar 16', 'Mar 18', 'Mar 20',
+            'Mar 22', 'Mar 24', 'Mar 26', 'Mar 28', 'Mar 30'
+          ],
+          labels: {
+            style: {
+              fontSize: '12px',
+              fontWeight: '400'
+            },
+            rotate: -45,
+            maxHeight: 80
+          },
+          tickAmount: 45,
+          tickPlacement: 'on',
+          axisBorder: {
+            show: true
+          },
+          axisTicks: {
+            show: true
+          }
+        },
+      yaxis: {
+        min: 8900,
+        max: 9750,
+        tickAmount: 10,
+        labels: {
+          formatter: function(val) {
+            return '$' + val.toLocaleString();
+          },
+          style: {
+            fontSize: '12px',
+            fontWeight: '400'
+          }
+        },
+        title: {
+          text: 'Price per Metric Ton ($)',
+          style: {
+            color: '#000000'
+          }
+        }
+      },
+      grid: {
+        yaxis: {
+          lines: {
+            show: true
+          }
+        },
+        xaxis: {
+          lines: {
+            show: false
+          }
+        }
+      },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return '$' + val.toLocaleString() + ' per metric ton';
+          }
+        }
+      }
+    }
+  };
+};
 
 // New hybrid matching system
 const topicMatcher = {
@@ -100,7 +224,7 @@ const topicMatcher = {
             showVisualization: true,
             showFollowUp: false,
             showFeedback: true,
-            visualizationType: "copper"
+            chartConfig: getCopperChartConfig()
           }
         }
       }
@@ -239,6 +363,262 @@ const topicMatcher = {
   }
 };
 
+// Add this constant at the top of the file with other constants
+const BILLING_DATA = {
+  labels: [
+    'Spares and Accessories Shop',
+    'Independent Workshops (IWS)',
+    'Lube Shop',
+    'Motul Garage - PCMO',
+    'Motul Garage - MCO',
+    'Motul Rural Distributor',
+    'PCMO Premium Club'
+  ],
+  percentages: [45.75, 41.36, 44.44, 35.38, 89.62, 84.86, 58.37]
+};
+
+// Add this function to generate the pie chart configuration
+const getBillingChartConfig = () => {
+  return {
+    series: [{
+      name: 'Billing Percentage',
+      data: BILLING_DATA.percentages
+    }],
+    options: {
+      chart: {
+        type: 'bar',
+        height: 400,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        toolbar: {
+          show: false
+        }
+      },
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          barHeight: '70%'
+        }
+      },
+      colors: ['#D97706'],  // Changed to orange
+      dataLabels: {
+        enabled: true,
+        formatter: function(val) {
+          return val.toFixed(1) + '%';
+        },
+        style: {
+          fontSize: '13px',
+          fontWeight: '500',
+          colors: ['#ffffff']
+        },
+        textAnchor: 'start',
+        offsetX: 5,
+        dropShadow: {
+          enabled: false
+        },
+        background: {
+          enabled: false
+        }
+      },
+      xaxis: {
+        categories: BILLING_DATA.labels,
+        labels: {
+          style: {
+            fontSize: '13px',
+            fontWeight: '400'
+          }
+        },
+        axisBorder: {
+          show: false
+        },
+        axisTicks: {
+          show: false
+        },
+        max: 100
+      },
+      yaxis: {
+        labels: {
+          style: {
+            fontSize: '13px',
+            fontWeight: '400'
+          },
+          maxWidth: undefined,
+          minHeight: undefined,
+          trim: false
+        }
+      },
+      grid: {
+        xaxis: {
+          lines: {
+            show: true
+          }
+        },
+        yaxis: {
+          lines: {
+            show: false
+          }
+        }
+      },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return val.toFixed(1) + '%';
+          }
+        }
+      }
+    }
+  };
+};
+
+// Update the response function to use the new chart configuration
+const getBillingAnalysisResponse = () => {
+  const highestBilling = Math.max(...BILLING_DATA.percentages);
+  const lowestBilling = Math.min(...BILLING_DATA.percentages);
+  const avgBilling = BILLING_DATA.percentages.reduce((a, b) => a + b, 0) / BILLING_DATA.percentages.length;
+  
+  const highestChannel = BILLING_DATA.labels[BILLING_DATA.percentages.indexOf(highestBilling)];
+  const lowestChannel = BILLING_DATA.labels[BILLING_DATA.percentages.indexOf(lowestBilling)];
+
+  return {
+    text: `Based on the **July'25** billing data analysis:
+
+• The average billing percentage across all channels is **${avgBilling.toFixed(2)}%**
+• **${highestChannel}** shows the highest billing rate at **${highestBilling}%**, demonstrating strong performance in payment collection.
+• **${lowestChannel}** has the lowest billing rate at **${lowestBilling}%**, indicating potential areas for improvement in payment collection.
+• Most traditional channels (**Spares Shops**, **Lube Shops**) maintain moderate billing rates (**40-50%**)`,
+    showVisualization: true,
+    chartConfig: getBillingChartConfig()
+  };
+};
+
+// Add after the BILLING_DATA constant
+const DROP_SIZE_DATA = {
+  labels: [
+    'Spares and Accessories Shop',
+    'Independent Workshops (IWS)',
+    'Lube Shop',
+    'Motul Garage - PCMO',
+    'Motul Garage - MCO',
+    'Motul Rural Distributor',
+    'PCMO Premium Club'
+  ],
+  values: [49, 44, 68, 61, 54, 158, 113]
+};
+
+// Add the new chart configuration function
+const getDropSizeChartConfig = () => {
+  return {
+    series: [{
+      name: 'Average Drop Size',
+      data: DROP_SIZE_DATA.values
+    }],
+    options: {
+      chart: {
+        type: 'bar',
+        height: 500,  // Increased height to accommodate labels
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        toolbar: {
+          show: false
+        }
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          columnWidth: '60%',
+          dataLabels: {
+            position: 'top'
+          }
+        }
+      },
+      colors: ['#3551F3'],
+      dataLabels: {
+        enabled: true,
+        formatter: function(val) {
+          return val + ' L';
+        },
+        style: {
+          fontSize: '12px',
+          fontWeight: '500',
+          colors: ['#000000']
+        },
+        offsetY: -20
+      },
+      xaxis: {
+        categories: DROP_SIZE_DATA.labels,
+        labels: {
+          style: {
+            fontSize: '12px',
+            fontWeight: '400'
+          },
+          rotate: -45,
+          offsetY: 5,
+          maxHeight: 150,
+          trim: false
+        },
+        axisBorder: {
+          show: false
+        },
+        axisTicks: {
+          show: false
+        }
+      },
+      yaxis: {
+        labels: {
+          style: {
+            fontSize: '12px',
+            fontWeight: '400'
+          },
+          formatter: function(val) {
+            return val + ' L';
+          }
+        }
+      },
+      grid: {
+        yaxis: {
+          lines: {
+            show: true
+          }
+        },
+        xaxis: {
+          lines: {
+            show: false
+          }
+        },
+        padding: {
+          bottom: 20  // Added padding at bottom
+        }
+      },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return val + ' L';
+          }
+        }
+      }
+    }
+  };
+};
+
+// Add the response function for drop size query
+const getDropSizeAnalysisResponse = () => {
+  const highestDrop = Math.max(...DROP_SIZE_DATA.values);
+  const lowestDrop = Math.min(...DROP_SIZE_DATA.values);
+  const avgDrop = DROP_SIZE_DATA.values.reduce((a, b) => a + b, 0) / DROP_SIZE_DATA.values.length;
+  
+  const highestChannel = DROP_SIZE_DATA.labels[DROP_SIZE_DATA.values.indexOf(highestDrop)];
+  const lowestChannel = DROP_SIZE_DATA.labels[DROP_SIZE_DATA.values.indexOf(lowestDrop)];
+
+  return {
+    text: `Based on the analysis of **Average Drop Size Per Order** by channel:
+
+• The overall average drop size across all channels is **${avgDrop.toFixed(0)} L.**
+• **${highestChannel}** shows the highest average drop size at **${highestDrop} L**, indicating larger bulk orders.
+• **${lowestChannel}** has the lowest average drop size at **${lowestDrop} L**, suggesting smaller, more frequent orders.
+• **Traditional channels** (Spares Shops, Lube Shops) maintain moderate drop sizes between **44-68 L** per order.`,
+    showVisualization: true,
+    chartConfig: getDropSizeChartConfig()
+  };
+};
+
 // Utility functions for the hybrid matching system
 const normalizeText = (text) => {
   return text.toLowerCase().trim();
@@ -373,7 +753,7 @@ export default function MiningChatPage() {
           title: "आपका सवाल समझा जा रहा है..."
         },
         {
-          title: "Mining डेटा को ध्यान से देखा जा रहा है ताकि ज़रूरी बातें निकाली जा सकें..."
+          title: "Mining डेटा को ध्यान से देखा रहा है ताकि ज़रूरी बातें निकाली जा सकें..."
         },
         {
           title: "सही संदर्भ में डेटा का विश्लेषण किया जा रहा है..."
@@ -387,6 +767,30 @@ export default function MiningChatPage() {
       ];
     }
     
+    if (normalizedQuery.includes('billed') || normalizedQuery.includes('billing') || 
+        normalizedQuery.includes('drop size') || normalizedQuery.includes('average drop')) {
+      return [
+        {
+          title: "Checking conversation context..."
+        },
+        {
+          title: "Parsing the user query..."
+        },
+        {
+          title: "Analyzing formulas and calculations..."
+        },
+        {
+          title: "Retrieving and analyzing data..."
+        },
+        {
+          title: "Generating a response..."
+        },
+        {
+          title: "Generating visualizations..."
+        }
+      ];
+    }
+
     if (normalizedQuery.includes('monthly') && normalizedQuery.includes('sales')) {
       return [
         {
@@ -565,6 +969,16 @@ export default function MiningChatPage() {
       ];
     }
     
+    if (normalizedQuery.includes('billed') || normalizedQuery.includes('billing') || 
+        normalizedQuery.includes('drop size') || normalizedQuery.includes('average drop')) {
+      return [
+        {
+          icon: <FileText className="w-4 h-4" />,
+          text: "Secondary_Data.csv"
+        }
+      ];
+    }
+    
     if (normalizedQuery.includes('monthly') && normalizedQuery.includes('sales') ||
         normalizedQuery.includes('lost') || normalizedQuery.includes('customers') ||
         normalizedQuery.includes('contribution') || normalizedQuery.includes('mohit')) {
@@ -716,6 +1130,108 @@ export default function MiningChatPage() {
     setCompletedSteps([]);
     setCurrentQuery(query.trim());
     
+    if (query.toLowerCase().includes('billed') || query.toLowerCase().includes('billing')) {
+      const customSteps = getCustomLoadingSteps(query.trim());
+      
+      const progressInterval = setInterval(() => {
+        setLoadingProgress(prev => {
+          const newProgress = prev + 2;  // Increase by 2 instead of 1
+          if (newProgress >= 100) {
+            clearInterval(progressInterval);
+            return 100;
+          }
+          return newProgress;
+        });
+      }, 50);
+
+      const stepInterval = setInterval(() => {
+        setCurrentStep(prev => {
+          if (prev >= customSteps.length - 1) {
+            clearInterval(stepInterval);
+            setLoadingProgress(100);  // Ensure we reach 100%
+            return prev;
+          }
+          setCompletedSteps(current => [...current, prev]);
+          return prev + 1;
+        });
+      }, 1000);
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const response = getBillingAnalysisResponse();
+      const messageResponse = {
+        id: Date.now(),
+        text: response.text,
+        sender: 'assistant',
+        showVisualization: response.showVisualization,
+        chartConfig: response.chartConfig,
+        showFollowUp: false,
+        showFeedback: true
+      };
+      
+      setMessages(prev => [...prev, messageResponse]);
+      setIsLoading(false);
+      setShowVisualization(true);
+      setCurrentStep(customSteps.length - 1);
+      setCompletedSteps(customSteps.map((_, index) => index));
+      setLoadingProgress(100);  // Ensure 100% when complete
+      
+      clearInterval(progressInterval);
+      clearInterval(stepInterval);
+      return;
+    }
+
+    if (query.toLowerCase().includes('drop size') || query.toLowerCase().includes('average drop')) {
+      const customSteps = getCustomLoadingSteps(query.trim());
+      
+      const progressInterval = setInterval(() => {
+        setLoadingProgress(prev => {
+          const newProgress = prev + 2;  // Increase by 2 instead of 1
+          if (newProgress >= 100) {
+            clearInterval(progressInterval);
+            return 100;
+          }
+          return newProgress;
+        });
+      }, 50);
+
+      const stepInterval = setInterval(() => {
+        setCurrentStep(prev => {
+          if (prev >= customSteps.length - 1) {
+            clearInterval(stepInterval);
+            setLoadingProgress(100);  // Ensure we reach 100%
+            return prev;
+          }
+          setCompletedSteps(current => [...current, prev]);
+          return prev + 1;
+        });
+      }, 1000);
+
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const response = getDropSizeAnalysisResponse();
+      const messageResponse = {
+        id: Date.now(),
+        text: response.text,
+        sender: 'assistant',
+        showVisualization: response.showVisualization,
+        chartConfig: response.chartConfig,
+        showFollowUp: false,
+        showFeedback: true
+      };
+      
+      setMessages(prev => [...prev, messageResponse]);
+      setIsLoading(false);
+      setShowVisualization(true);
+      setCurrentStep(customSteps.length - 1);
+      setCompletedSteps(customSteps.map((_, index) => index));
+      setLoadingProgress(100);  // Ensure 100% when complete
+      
+      clearInterval(progressInterval);
+      clearInterval(stepInterval);
+      return;
+    }
+
     try {
       const match = findBestMatch(query, currentContext);
       const language = detectLanguage(query);
@@ -744,6 +1260,14 @@ export default function MiningChatPage() {
       
       const matchedResponse = topicMatcher[match.topic].subtopics[match.subtopic].response[language] || 
                             topicMatcher[match.topic].subtopics[match.subtopic].response.en;
+      
+      console.log('🔍 Debug - Matched Response:', {
+        topic: match.topic,
+        subtopic: match.subtopic,
+        showVisualization: matchedResponse.showVisualization,
+        chartConfig: matchedResponse.chartConfig,
+        visualizationType: matchedResponse.visualizationType
+      });
       
       const customSteps = getCustomLoadingSteps(query.trim());
       
@@ -776,15 +1300,33 @@ export default function MiningChatPage() {
         showFollowUp: matchedResponse.showFollowUp,
         showFeedback: matchedResponse.showFeedback,
         visualizationType: matchedResponse.visualizationType,
+        chartConfig: matchedResponse.chartConfig,
         followUpQuestions: matchedResponse.followUpQuestions
       };
+      
+      console.log('🔍 Debug - Search Response:', {
+        id: searchResponse.id,
+        showVisualization: searchResponse.showVisualization,
+        chartConfig: searchResponse.chartConfig,
+        visualizationType: searchResponse.visualizationType
+      });
       
       await new Promise(resolve => setTimeout(resolve, 500));
       setMessages(prev => [...prev, searchResponse]);
       
       setIsTyping(false);
-      if (searchResponse.showVisualization && (searchResponse.visualizationType === 'copper' || searchResponse.visualizationType === 'monthly_sales')) {
+      console.log('🔍 Debug - Before setShowVisualization check:', {
+        showVisualization: searchResponse.showVisualization,
+        visualizationType: searchResponse.visualizationType,
+        chartConfig: !!searchResponse.chartConfig,
+        condition: searchResponse.showVisualization && (searchResponse.visualizationType === 'copper' || searchResponse.visualizationType === 'monthly_sales' || searchResponse.visualizationType === 'lost_customers' || searchResponse.visualizationType === 'aramid_contribution' || searchResponse.chartConfig)
+      });
+      
+      if (searchResponse.showVisualization && (searchResponse.visualizationType === 'copper' || searchResponse.visualizationType === 'monthly_sales' || searchResponse.visualizationType === 'lost_customers' || searchResponse.visualizationType === 'aramid_contribution' || searchResponse.chartConfig)) {
+        console.log('🔍 Debug - Setting showVisualization to true');
         setShowVisualization(true);
+      } else {
+        console.log('🔍 Debug - NOT setting showVisualization to true');
       }
       setCurrentStep(customSteps.length - 1);
       setCompletedSteps(customSteps.map((_, index) => index));
@@ -1117,7 +1659,7 @@ export default function MiningChatPage() {
                         }}
                         className="p-2 rounded-lg transition-colors bg-[#3551F3] text-white hover:bg-[#2B41D9]"
                       >
-                        <Send className="w-5 h-5" />
+                        <Send className="h-5 w-5" />
                       </button>
                     </div>
                   </div>
@@ -1188,16 +1730,18 @@ export default function MiningChatPage() {
                                 delay={5} 
                                 onComplete={() => {
                                   if (msg.showVisualization) {
-                                    setShowVisualization(true);
+                                    const vizElement = document.querySelector(`#viz-${msg.id}`);
+                                    if (vizElement) {
+                                      vizElement.style.opacity = '1';
+                                      vizElement.style.transform = 'translateY(0)';
+                                    }
                                   }
                                   if (msg.videoUrl) {
-                                    const videoContainer = document.querySelector(`#video-${msg.id}`);
-                                    if (videoContainer) {
-                                      videoContainer.style.display = 'block';
-                                      setTimeout(() => {
-                                        videoContainer.style.opacity = '1';
-                                        videoContainer.style.transform = 'translateY(0)';
-                                      }, 100);
+                                    const videoElement = document.querySelector(`#video-${msg.id}`);
+                                    if (videoElement) {
+                                      videoElement.style.display = 'block';
+                                      videoElement.style.opacity = '1';
+                                      videoElement.style.transform = 'translateY(0)';
                                     }
                                   }
                                   const actionsElement = document.querySelector(`#actions-${msg.id}`);
@@ -1234,70 +1778,75 @@ export default function MiningChatPage() {
                                   </div>
                                 </div>
                               )}
-                              {msg.showVisualization && (
-                                <>
-                                  {msg.visualizationType === 'copper' && (
-                                    <div 
-                                      className="mt-6 transition-all duration-500"
-                                      style={{ 
-                                        opacity: showVisualization ? 1 : 0,
-                                        transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
-                                        display: showVisualization ? 'block' : 'none'
-                                      }}
-                                    >
-                                      <MiningDataVisualization 
-                                        show={showVisualization}
-                                        onPin={handlePin}
-                                      />
-                                    </div>
-                                  )}
-                                  {msg.visualizationType === 'monthly_sales' && (
-                                    <div 
-                                      className="mt-6 transition-all duration-500"
-                                      style={{ 
-                                        opacity: showVisualization ? 1 : 0,
-                                        transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
-                                        display: showVisualization ? 'block' : 'none'
-                                      }}
-                                    >
-                                      <MonthlySalesVisualization 
-                                        show={showVisualization}
-                                        onPin={handlePin}
-                                        chatQuery={currentQuery}
-                                      />
-                                    </div>
-                                  )}
-                                  {msg.visualizationType === 'lost_customers' && (
-                                    <div 
-                                      className="mt-6 transition-all duration-500"
-                                      style={{ 
-                                        opacity: showVisualization ? 1 : 0,
-                                        transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
-                                        display: showVisualization ? 'block' : 'none'
-                                      }}
-                                    >
-                                      <LostCustomersVisualization 
-                                        show={showVisualization}
-                                        onPin={handlePin}
-                                      />
-                                    </div>
-                                  )}
-                                  {msg.visualizationType === 'aramid_contribution' && (
-                                    <div 
-                                      className="mt-6 transition-all duration-500"
-                                      style={{ 
-                                        opacity: showVisualization ? 1 : 0,
-                                        transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
-                                        display: showVisualization ? 'block' : 'none'
-                                      }}
-                                    >
-                                      <AramidContributionVisualization 
-                                        show={showVisualization}
-                                        onPin={handlePin}
-                                      />
-                                    </div>
-                                  )}
-                                </>
+                              {msg.showVisualization && msg.chartConfig ? (
+                                <div 
+                                  id={`viz-${msg.id}`}
+                                  className="transition-all duration-500 w-full"
+                                  style={{ opacity: 0, transform: 'translateY(20px)', width: '100%' }}
+                                >
+                                  {console.log('🔍 Debug - Rendering chart with chartConfig:', msg.chartConfig)}
+                                  <ErrorBoundary>
+                                    <MiningDataVisualization
+                                      show={true}
+                                      chartConfig={msg.chartConfig}
+                                      onPin={handlePin}
+                                    />
+                                  </ErrorBoundary>
+                                </div>
+                              ) : (() => {
+                                console.log('🔍 Debug - Chart rendering condition failed:', {
+                                  showVisualization: msg.showVisualization,
+                                  hasChartConfig: !!msg.chartConfig,
+                                  chartConfig: msg.chartConfig
+                                });
+                                return null;
+                              })()}
+
+                              {msg.showVisualization && msg.visualizationType === 'monthly_sales' && (
+                                <div 
+                                  className="mt-6 transition-all duration-500"
+                                  style={{ 
+                                    opacity: showVisualization ? 1 : 0,
+                                    transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
+                                    display: showVisualization ? 'block' : 'none'
+                                  }}
+                                >
+                                  <MonthlySalesVisualization 
+                                    show={showVisualization}
+                                    onPin={handlePin}
+                                    chatQuery={currentQuery}
+                                  />
+                                </div>
+                              )}
+                              {msg.showVisualization && msg.visualizationType === 'lost_customers' && (
+                                <div 
+                                  className="mt-6 transition-all duration-500"
+                                  style={{ 
+                                    opacity: showVisualization ? 1 : 0,
+                                    transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
+                                    display: showVisualization ? 'block' : 'none'
+                                  }}
+                                >
+                                  <LostCustomersVisualization 
+                                    show={showVisualization}
+                                    onPin={handlePin}
+                                  />
+                                </div>
+                              )}
+                              {msg.showVisualization && msg.visualizationType === 'aramid_contribution' && (
+                                <div 
+                                  className="mt-6 transition-all duration-500"
+                                  style={{ 
+                                    opacity: showVisualization ? 1 : 0,
+                                    transform: showVisualization ? 'translateY(0)' : 'translateY(20px)',
+                                    display: showVisualization ? 'block' : 'none'
+                                  }}
+                                >
+                                  <AramidContributionVisualization 
+                                    show={showVisualization}
+                                    onPin={handlePin}
+                                  />
+                                </div>
                               )}
                             </div>
                             <div 
