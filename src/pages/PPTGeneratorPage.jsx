@@ -15,7 +15,9 @@ import {
   Presentation,
   Loader2,
   Database,
-  Search
+  Search,
+  Clock,
+  Mail
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,7 +59,9 @@ export default function PPTGeneratorPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [isComplete, setIsComplete] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(0);
   const fileInputRef = useRef(null);
+  const startTimeRef = useRef(null);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -81,6 +85,7 @@ export default function PPTGeneratorPage() {
           file: file
         });
         setIsComplete(false);
+        setRemainingTime(6900000); // Initialize to 1 hour 55 minutes
       } else {
         alert('Please upload a valid Excel file (.xls, .xlsx, or .csv)');
       }
@@ -95,6 +100,7 @@ export default function PPTGeneratorPage() {
     setLoadingProgress(0);
     setCurrentStep(0);
     setCompletedSteps([]);
+    setRemainingTime(0);
   };
 
   const handleDragOver = (e) => {
@@ -126,6 +132,7 @@ export default function PPTGeneratorPage() {
           file: file
         });
         setIsComplete(false);
+        setRemainingTime(6900000); // Initialize to 1 hour 55 minutes
       } else {
         alert('Please upload a valid Excel file (.xls, .xlsx, or .csv)');
       }
@@ -140,6 +147,17 @@ export default function PPTGeneratorPage() {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const formatRemainingTime = (milliseconds) => {
+    const totalSeconds = Math.ceil(milliseconds / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    
+    if (hours > 0) {
+      return `${hours}hr ${minutes}min${minutes !== 1 ? 's' : ''}`;
+    }
+    return `${minutes}min${minutes !== 1 ? 's' : ''}`;
+  };
+
   const handleGeneratePPT = async () => {
     if (!uploadedFile) return;
 
@@ -149,10 +167,18 @@ export default function PPTGeneratorPage() {
     setCompletedSteps([]);
     setIsComplete(false);
 
-    // Total duration: 2 minutes (120 seconds)
-    const totalDuration = 120000; // 2 minutes in milliseconds
+    // Total duration: 1 hour 55 minutes (115 minutes = 6900 seconds)
+    const totalDuration = 6900000; // 1 hour 55 minutes in milliseconds
     const progressInterval = 100; // Update progress every 100ms
     const stepInterval = totalDuration / LOADING_STEPS.length; // Time per step
+    startTimeRef.current = Date.now();
+
+    // Remaining time calculation
+    const timeUpdateInterval = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const remaining = Math.max(0, totalDuration - elapsed);
+      setRemainingTime(remaining);
+    }, 100);
 
     // Progress bar animation
     const progressTimer = setInterval(() => {
@@ -178,7 +204,9 @@ export default function PPTGeneratorPage() {
       } else {
         clearInterval(stepTimer);
         clearInterval(progressTimer);
+        clearInterval(timeUpdateInterval);
         setLoadingProgress(100);
+        setRemainingTime(0);
         setCompletedSteps(Array.from({ length: LOADING_STEPS.length }, (_, i) => i));
         setIsGenerating(false);
         setIsComplete(true);
@@ -189,6 +217,7 @@ export default function PPTGeneratorPage() {
     return () => {
       clearInterval(progressTimer);
       clearInterval(stepTimer);
+      clearInterval(timeUpdateInterval);
     };
   };
 
@@ -310,6 +339,22 @@ export default function PPTGeneratorPage() {
                     </Button>
                   </div>
 
+                  {/* Estimated Time & Email Notification */}
+                  {remainingTime > 0 && (
+                    <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                      <Clock className="h-5 w-5 text-[#3551F3] flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900 mb-1">
+                          Estimated Processing Time: <span className="text-[#3551F3]">{formatRemainingTime(remainingTime)}</span>
+                        </p>
+                        <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                          <Mail className="h-4 w-4 text-[#3551F3]" />
+                          <span>The PPT will be shared on your email ID once generated</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Generate Button */}
                   <Button
                     onClick={handleGeneratePPT}
@@ -348,6 +393,29 @@ export default function PPTGeneratorPage() {
                       {Math.round(loadingProgress)}%
                     </div>
                     <div className="text-xs text-gray-500">Complete</div>
+                  </div>
+                </div>
+
+                {/* Remaining Time */}
+                {remainingTime > 0 && (
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <Clock className="h-4 w-4 text-[#3551F3] flex-shrink-0" />
+                    <span className="text-sm text-gray-700">
+                      Estimated time remaining: <span className="font-semibold text-[#3551F3]">{formatRemainingTime(remainingTime)}</span>
+                    </span>
+                  </div>
+                )}
+
+                {/* Email Notification */}
+                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                  <Mail className="h-5 w-5 text-[#3551F3] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      Email Notification
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Your PPT will be automatically shared to your email ID once the generation is complete.
+                    </p>
                   </div>
                 </div>
 
