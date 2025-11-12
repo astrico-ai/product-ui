@@ -16,7 +16,8 @@ import {
   PieChart,
   TrendingUp,
   Mail,
-  Trophy
+  Trophy,
+  FileText
 } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -24,6 +25,7 @@ import { cn } from "../lib/utils";
 const mainNavItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: MessageSquare, label: "Chat", path: "/chat" },
+  { icon: FileText, label: "PDF Manager", path: "/pdf-manager" },
   { icon: GraduationCap, label: "Training", path: "/training" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: Users2, label: "Sources", path: "/sources" },

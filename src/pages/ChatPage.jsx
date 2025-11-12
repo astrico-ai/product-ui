@@ -10,6 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingSteps } from "@/components/LoadingSteps";
 import { useLocation } from "react-router-dom";
 import { DataVisualization } from "@/components/DataVisualization";
+import { PDFMentionDropdown } from "@/components/PDFMentionDropdown";
+import { PDFReferenceBadgeList } from "@/components/PDFReferenceBadge";
+import { usePDFMention } from "@/hooks/usePDFMention";
+import { analyzePDFs } from "@/services/pdfService";
 
 // Mock chat history data
 const chatHistory = {
@@ -57,6 +61,11 @@ export default function ChatPage() {
   const [attachments, setAttachments] = useState([]);
   const [tableVisibleByMessageId, setTableVisibleByMessageId] = useState({});
   const fileInputRef = useRef(null);
+  const chatInputRef = useRef(null);
+
+  // Agent 4: PDF @ mention system
+  // Agent 5: Now using Zustand store for state management (useStore: true by default)
+  const pdfMention = usePDFMention({ useStore: true });
 
   const loadingSteps = [
     {
@@ -344,8 +353,42 @@ export default function ChatPage() {
 
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Hardcoded queries and their responses
-      const queries = {
+      // Agent 4: Check if PDFs are referenced and call analyze API
+      let searchResponse;
+      if (pdfMention.hasSelectedPdfs) {
+        try {
+          const pdfIds = pdfMention.getSelectedPdfIds();
+          debugLog('Calling PDF analyze API from search', { pdfIds, query });
+          
+          const analysisResult = await analyzePDFs(pdfIds, query, query);
+          
+          searchResponse = {
+            id: Date.now() + 1,
+            text: analysisResult.analysis || "AI analysis completed.",
+            sender: 'assistant',
+            showFollowUp: false,
+            showFeedback: true,
+            pdfReferences: analysisResult.referencedPdfs || pdfMention.selectedPdfs,
+            tokensUsed: analysisResult.tokensUsed
+          };
+          
+          debugLog('PDF analysis result from search', analysisResult);
+          
+          // Clear selected PDFs after search
+          pdfMention.clearSelectedPDFs();
+        } catch (error) {
+          console.error('Error analyzing PDFs:', error);
+          searchResponse = {
+            id: Date.now() + 1,
+            text: `Error analyzing PDFs: ${error.message}. Please try again.`,
+            sender: 'assistant',
+            showFollowUp: false,
+            showFeedback: false
+          };
+        }
+      } else {
+        // Hardcoded queries and their responses
+        const queries = {
         "I spoke with Mr John Doe and he was interested in getting 5L loan for a new Maruti Suzuki Car Swift Desire. He will put a down payment of 2L and he wants the loan for 5 years. Please push this to @SFDC": {
           text: "Great, I will push this to SFDC. Before that, I will need to know the interest at which you have agreed to the transaction. And, I will also need a few documents:\n\n1. Pan card of the owner\n2. Income proof",
           showFollowUp: false,
@@ -361,54 +404,53 @@ export default function ChatPage() {
           showFollowUp: false,
           showFeedback: true
         },
-        [HARD_CODED_HINDI_QUERY]: HINDI_TRUCK_RESPONSE
-      };
-      
-      let searchResponse;
-      
-      // Check for exact match first
-      const exactMatch = Object.keys(queries).find(key => query.trim() === key.trim());
-      if (exactMatch) {
-        const response = queries[exactMatch];
-        searchResponse = {
-          id: Date.now() + 1,
-          text: response.text,
-          sender: 'assistant',
-          showFollowUp: response.showFollowUp,
-          showFeedback: response.showFeedback,
-          language: queryLanguage,
-          tableColumns: response.tableColumns,
-          tableData: response.tableData
+          [HARD_CODED_HINDI_QUERY]: HINDI_TRUCK_RESPONSE
         };
-      } else {
-        // Check for Hindi truck query with normalization
-        const normalizedQuery = normalize(query);
-        const normalizedHardCoded = normalize(HARD_CODED_HINDI_QUERY);
-        const isHindiTruck = isHindiTruckQuery(query);
         
-        if (normalizedQuery === normalizedHardCoded || isHindiTruck) {
-          const response = HINDI_TRUCK_RESPONSE;
+        // Check for exact match first
+        const exactMatch = Object.keys(queries).find(key => query.trim() === key.trim());
+        if (exactMatch) {
+          const response = queries[exactMatch];
           searchResponse = {
             id: Date.now() + 1,
             text: response.text,
             sender: 'assistant',
             showFollowUp: response.showFollowUp,
             showFeedback: response.showFeedback,
-            language: 'hi',
+            language: queryLanguage,
             tableColumns: response.tableColumns,
             tableData: response.tableData
           };
         } else {
-          searchResponse = {
-            id: Date.now() + 1,
-            text: queryLanguage === 'mr' 
-              ? "नवीन कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीसाठी दोन प्रकारचे कागदपत्रे लागतात.\n\n📌 सामान्य कागदपत्रे:\n\nअर्ज फॉर्म (Application Form)\nप्रोफॉर्मा इनव्हॉइस (Performa Invoice)\nपासपोर्ट साइज फोटो\nKYC प्रूफ\n\n📑 याशिवाय लागणारी अतिरिक्त कागदपत्रे:\n\nमागील दोन वर्षांचे ऑडिटेड बॅलन्स शीट\nशेवटच्या तीन महिन्यांचे बॅलन्स शीट\nMSME नोंदणी प्रमाणपत्र / आस्थापना प्रमाणपत्र\nशेअरहोल्डिंग पॅटर्न"
-              : `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`,
-          sender: 'assistant',
-          showFollowUp: true,
-          showFeedback: true,
-          language: queryLanguage
-        };
+          // Check for Hindi truck query with normalization
+          const normalizedQuery = normalize(query);
+          const normalizedHardCoded = normalize(HARD_CODED_HINDI_QUERY);
+          const isHindiTruck = isHindiTruckQuery(query);
+          
+          if (normalizedQuery === normalizedHardCoded || isHindiTruck) {
+            const response = HINDI_TRUCK_RESPONSE;
+            searchResponse = {
+              id: Date.now() + 1,
+              text: response.text,
+              sender: 'assistant',
+              showFollowUp: response.showFollowUp,
+              showFeedback: response.showFeedback,
+              language: 'hi',
+              tableColumns: response.tableColumns,
+              tableData: response.tableData
+            };
+          } else {
+            searchResponse = {
+              id: Date.now() + 1,
+              text: queryLanguage === 'mr' 
+                ? "नवीन कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीसाठी दोन प्रकारचे कागदपत्रे लागतात.\n\n📌 सामान्य कागदपत्रे:\n\nअर्ज फॉर्म (Application Form)\nप्रोफॉर्मा इनव्हॉइस (Performa Invoice)\nपासपोर्ट साइज फोटो\nKYC प्रूफ\n\n📑 याशिवाय लागणारी अतिरिक्त कागदपत्रे:\n\nमागील दोन वर्षांचे ऑडिटेड बॅलन्स शीट\nशेवटच्या तीन महिन्यांचे बॅलन्स शीट\nMSME नोंदणी प्रमाणपत्र / आस्थापना प्रमाणपत्र\nशेअरहोल्डिंग पॅटर्न"
+                : `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`,
+            sender: 'assistant',
+            showFollowUp: true,
+            showFeedback: true,
+            language: queryLanguage
+          };
+          }
         }
       }
       
@@ -444,23 +486,28 @@ export default function ChatPage() {
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
+    // Agent 4: Include PDF references in message
     const newMessage = {
       id: Date.now(),
       text: inputValue.trim(),
-      sender: 'user'
+      sender: 'user',
+      pdfReferences: pdfMention.hasSelectedPdfs ? [...pdfMention.selectedPdfs] : undefined
     };
 
     setMessages(prev => [...prev, newMessage]);
+    const messageText = inputValue.trim();
     setInputValue("");
     setIsLoading(true);
     setLoadingProgress(0);
     setShowVisualization(false);
 
-    const customSteps = getCustomLoadingSteps(inputValue);
+    const customSteps = getCustomLoadingSteps(messageText);
     debugLog('handleSendMessage:start', { 
-      inputValue, 
+      inputValue: messageText, 
       customSteps,
-      stepsLength: customSteps.length
+      stepsLength: customSteps.length,
+      hasPdfReferences: pdfMention.hasSelectedPdfs,
+      pdfCount: pdfMention.selectedPdfs.length
     });
 
     try {
@@ -489,8 +536,39 @@ export default function ChatPage() {
 
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Use the same query matching logic as handleSearch
-      const queries = {
+      // Agent 4: Check if PDFs are referenced and call analyze API
+      let response;
+      if (pdfMention.hasSelectedPdfs) {
+        try {
+          const pdfIds = pdfMention.getSelectedPdfIds();
+          debugLog('Calling PDF analyze API', { pdfIds, query: messageText });
+          
+          const analysisResult = await analyzePDFs(pdfIds, messageText, messageText);
+          
+          response = {
+            id: Date.now() + 1,
+            text: analysisResult.analysis || "AI analysis completed.",
+            sender: 'assistant',
+            showFollowUp: false,
+            showFeedback: true,
+            pdfReferences: analysisResult.referencedPdfs || pdfMention.selectedPdfs,
+            tokensUsed: analysisResult.tokensUsed
+          };
+          
+          debugLog('PDF analysis result', analysisResult);
+        } catch (error) {
+          console.error('Error analyzing PDFs:', error);
+          response = {
+            id: Date.now() + 1,
+            text: `Error analyzing PDFs: ${error.message}. Please try again.`,
+            sender: 'assistant',
+            showFollowUp: false,
+            showFeedback: false
+          };
+        }
+      } else {
+        // Use the same query matching logic as handleSearch
+        const queries = {
         "I spoke with Mr John Doe and he was interested in getting 5L loan for a new Maruti Suzuki Car Swift Desire. He will put a down payment of 2L and he wants the loan for 5 years. Please push this to @SFDC": {
           text: "Great, I will push this to SFDC. Before that, I will need to know the interest at which you have agreed to the transaction. And, I will also need a few documents:\n\n1. Pan card of the owner\n2. Income proof",
           showFollowUp: false,
@@ -506,32 +584,13 @@ export default function ChatPage() {
           showFollowUp: false,
           showFeedback: true
         },
-        [HARD_CODED_HINDI_QUERY]: HINDI_TRUCK_RESPONSE
-      };
-      
-      let response;
-      
-      // Check for exact match first
-      const exactMatch = Object.keys(queries).find(key => inputValue.trim() === key.trim());
-      if (exactMatch) {
-        const matchedResponse = queries[exactMatch];
-        response = {
-          id: Date.now() + 1,
-          text: matchedResponse.text,
-          sender: 'assistant',
-          showFollowUp: matchedResponse.showFollowUp,
-          showFeedback: matchedResponse.showFeedback,
-          tableColumns: matchedResponse.tableColumns,
-          tableData: matchedResponse.tableData
+          [HARD_CODED_HINDI_QUERY]: HINDI_TRUCK_RESPONSE
         };
-      } else {
-        // Check for Hindi truck query with normalization
-        const normalizedQuery = normalize(inputValue);
-        const normalizedHardCoded = normalize(HARD_CODED_HINDI_QUERY);
-        const isHindiTruck = isHindiTruckQuery(inputValue);
-        
-        if (normalizedQuery === normalizedHardCoded || isHindiTruck) {
-          const matchedResponse = HINDI_TRUCK_RESPONSE;
+      
+        // Check for exact match first
+        const exactMatch = Object.keys(queries).find(key => messageText === key.trim());
+        if (exactMatch) {
+          const matchedResponse = queries[exactMatch];
           response = {
             id: Date.now() + 1,
             text: matchedResponse.text,
@@ -542,22 +601,45 @@ export default function ChatPage() {
             tableData: matchedResponse.tableData
           };
         } else {
-          const defaultResponse = detectLanguage(inputValue) === 'mr' 
-            ? "नवीन कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीसाठी दोन प्रकारचे कागदपत्रे लागतात.\n\n📌 सामान्य कागदपत्रे:\n\nअर्ज फॉर्म (Application Form)\nप्रोफॉर्मा इनव्हॉइस (Performa Invoice)\nपासपोर्ट साइज फोटो\nKYC प्रूफ\n\n📑 याशिवाय लागणारी अतिरिक्त कागदपत्रे:\n\nमागील दोन वर्षांचे ऑडिटेड बॅलन्स शीट\nशेवटच्या तीन महिन्यांचे बॅलन्स शीट\nMSME नोंदणी प्रमाणपत्र / आस्थापना प्रमाणपत्र\nशेअरहोल्डिंग पॅटर्न"
-            : `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`;
+          // Check for Hindi truck query with normalization
+          const normalizedQuery = normalize(messageText);
+          const normalizedHardCoded = normalize(HARD_CODED_HINDI_QUERY);
+          const isHindiTruck = isHindiTruckQuery(messageText);
+          
+          if (normalizedQuery === normalizedHardCoded || isHindiTruck) {
+            const matchedResponse = HINDI_TRUCK_RESPONSE;
+            response = {
+              id: Date.now() + 1,
+              text: matchedResponse.text,
+              sender: 'assistant',
+              showFollowUp: matchedResponse.showFollowUp,
+              showFeedback: matchedResponse.showFeedback,
+              tableColumns: matchedResponse.tableColumns,
+              tableData: matchedResponse.tableData
+            };
+          } else {
+            const defaultResponse = detectLanguage(messageText) === 'mr' 
+              ? "नवीन कार लोनसाठी प्रायव्हेट लिमिटेड कंपनीसाठी दोन प्रकारचे कागदपत्रे लागतात.\n\n📌 सामान्य कागदपत्रे:\n\nअर्ज फॉर्म (Application Form)\nप्रोफॉर्मा इनव्हॉइस (Performa Invoice)\nपासपोर्ट साइज फोटो\nKYC प्रूफ\n\n📑 याशिवाय लागणारी अतिरिक्त कागदपत्रे:\n\nमागील दोन वर्षांचे ऑडिटेड बॅलन्स शीट\nशेवटच्या तीन महिन्यांचे बॅलन्स शीट\nMSME नोंदणी प्रमाणपत्र / आस्थापना प्रमाणपत्र\nशेअरहोल्डिंग पॅटर्न"
+              : `**There are two sets of documents that you'll need to take for a new car loan for a Pvt Ltd company.**\n\n**📌 General documents are:**\n1. Application Form\n2. Performa Invoice\n3. Passport size photo\n4. KYC proof\n\n**📑 Apart from these, you'll also need:**\n1. Audited balance sheet for last two years\n2. Last three months' balance sheet\n3. MSME registration certificate / Establishment certificate\n4. Shareholding pattern`;
 
-          response = {
-            id: Date.now() + 1,
-            text: defaultResponse,
-            sender: 'assistant',
-            showFollowUp: true,
-            showFeedback: true
-          };
+            response = {
+              id: Date.now() + 1,
+              text: defaultResponse,
+              sender: 'assistant',
+              showFollowUp: true,
+              showFeedback: true
+            };
+          }
         }
       }
       
       setIsTyping(true);
       setMessages(prev => [...prev, response]);
+      
+      // Agent 4: Clear selected PDFs after sending message
+      if (pdfMention.hasSelectedPdfs) {
+        pdfMention.clearSelectedPDFs();
+      }
       
       if (currentChat) {
         mockChatMessages[currentChat.id] = [
@@ -570,8 +652,8 @@ export default function ChatPage() {
       setTimeout(() => {
         setIsTyping(false);
         setShowVisualization(true);
-        setCurrentStep(getCustomLoadingSteps(inputValue).length - 1);
-        setCompletedSteps(getCustomLoadingSteps(inputValue).map((_, index) => index));
+        setCurrentStep(getCustomLoadingSteps(messageText).length - 1);
+        setCompletedSteps(getCustomLoadingSteps(messageText).map((_, index) => index));
       }, 500);
 
       // Make sure to clear both intervals
@@ -778,59 +860,31 @@ export default function ChatPage() {
         </div>
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col bg-[#FAFBFD]">
+        <div className="flex-1 flex flex-col relative bg-gradient-to-b from-white to-gray-50/50">
           {!currentChat ? (
             // New Chat View
-            <div className="h-full flex flex-col items-center justify-center max-w-[800px] mx-auto px-6">
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">Hello, Vraj</h1>
-              <p className="text-lg text-gray-500 mb-8 text-center">Ask me anything or search through your knowledge base</p>
-              <div className="w-full">
-                <div className="relative flex flex-col gap-3">
-                  <div className="relative flex items-center">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <div className="w-full flex items-center gap-2 pl-12 pr-24 py-2 bg-white border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-[#3551F3] focus-within:border-transparent transition-all">
-                      {attachments.map((file) => (
-                        <div
-                          key={file.name}
-                          className="flex items-center gap-1.5 bg-[#EEF2FF] text-[#3551F3] px-2 py-1 rounded-full text-sm"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span className="max-w-[100px] truncate">{file.name}</span>
-                          <button
-                            onClick={() => removeAttachment(file.name)}
-                            className="hover:bg-[#3551F3] hover:text-white p-0.5 rounded-full transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                      <input
-                        type="text"
-                        value={chatHistorySearch}
-                        onChange={(e) => setChatHistorySearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && chatHistorySearch.trim()) {
-                            const newMessage = {
-                              id: Date.now(),
-                              text: chatHistorySearch.trim(),
-                              sender: 'user',
-                              attachments: attachments
-                            };
-                            const newChat = {
-                              id: Date.now(),
-                              title: chatHistorySearch.length > 30 ? `${chatHistorySearch.slice(0, 30)}...` : chatHistorySearch
-                            };
-                            setCurrentChat(newChat);
-                            setMessages([newMessage]);
-                            handleSearch(chatHistorySearch);
-                            setAttachments([]);
-                          }
-                        }}
-                        placeholder="Search for information, documents, people, and more..."
-                        className="flex-1 text-base text-gray-900 placeholder-gray-500 focus:outline-none bg-transparent"
-                      />
-                    </div>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <div className="h-full flex flex-col items-center justify-center px-6 bg-gradient-to-b from-white via-gray-50/30 to-white">
+              <div className="mb-8 text-center">
+                <h1 className="text-3xl font-medium text-gray-800">How can I help you today?</h1>
+              </div>
+              <div className="w-full max-w-[850px] mx-auto">
+                {/* Agent 4: PDF Mention Dropdown */}
+                {pdfMention.showDropdown && (
+                  <PDFMentionDropdown
+                    pdfs={pdfMention.availablePdfs}
+                    selectedPdfs={pdfMention.selectedPdfs}
+                    onSelect={(pdf) => pdfMention.selectPDF(pdf, chatHistorySearch, setChatHistorySearch)}
+                    onClose={pdfMention.closeDropdown}
+                    searchQuery={pdfMention.searchQuery}
+                    position={pdfMention.dropdownPosition}
+                    loading={pdfMention.loading}
+                    highlightedIndex={pdfMention.highlightedIndex}
+                  />
+                )}
+                
+                <div className="relative bg-white rounded-3xl border border-gray-300 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex flex-col gap-2 px-5 py-3">
+                    <div className="flex items-center gap-2">
                       <input
                         type="file"
                         ref={fileInputRef}
@@ -838,20 +892,31 @@ export default function ChatPage() {
                         className="hidden"
                         multiple
                       />
-                      <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-2 rounded-lg transition-colors text-[#3551F3] hover:bg-[#EEF2FF]"
-                      >
-                        <Paperclip className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (chatHistorySearch.trim()) {
+                      
+                      <textarea
+                        value={chatHistorySearch}
+                        onChange={(e) => {
+                          setChatHistorySearch(e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+                          pdfMention.handleInputChange(
+                            e.target.value,
+                            e.target.selectionStart,
+                            e.target
+                          );
+                        }}
+                        onKeyDown={(e) => {
+                          const handled = pdfMention.handleKeyDown(e, chatHistorySearch, setChatHistorySearch);
+                          if (handled) return;
+                          
+                          if (e.key === 'Enter' && !e.shiftKey && chatHistorySearch.trim()) {
+                            e.preventDefault();
                             const newMessage = {
                               id: Date.now(),
                               text: chatHistorySearch.trim(),
                               sender: 'user',
-                              attachments: attachments
+                              attachments: attachments,
+                              pdfReferences: pdfMention.hasSelectedPdfs ? [...pdfMention.selectedPdfs] : undefined
                             };
                             const newChat = {
                               id: Date.now(),
@@ -861,13 +926,63 @@ export default function ChatPage() {
                             setMessages([newMessage]);
                             handleSearch(chatHistorySearch);
                             setAttachments([]);
+                            e.target.style.height = 'auto';
                           }
                         }}
-                        className="p-2 rounded-lg transition-colors bg-[#3551F3] text-white hover:bg-[#2B41D9]"
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
+                        placeholder="Ask anything"
+                        rows="1"
+                        className="flex-1 text-base text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent resize-none overflow-hidden py-1"
+                      />
+                      
+                      <div className="flex items-center gap-1">
+                        <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+                          <Paperclip className="w-5 h-5 text-gray-600" />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (chatHistorySearch.trim()) {
+                              const newMessage = {
+                                id: Date.now(),
+                                text: chatHistorySearch.trim(),
+                                sender: 'user',
+                                attachments: attachments,
+                                pdfReferences: pdfMention.hasSelectedPdfs ? [...pdfMention.selectedPdfs] : undefined
+                              };
+                              const newChat = {
+                                id: Date.now(),
+                                title: chatHistorySearch.length > 30 ? `${chatHistorySearch.slice(0, 30)}...` : chatHistorySearch
+                              };
+                              setCurrentChat(newChat);
+                              setMessages([newMessage]);
+                              handleSearch(chatHistorySearch);
+                              setAttachments([]);
+                            }
+                          }}
+                          disabled={!chatHistorySearch.trim()}
+                          className="p-2 bg-[#3551F3] hover:bg-[#2B41D9] disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-all"
+                        >
+                          <Send className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
                     </div>
+                    
+                    {/* Agent 4: PDF Reference Badges inside input */}
+                    {pdfMention.hasSelectedPdfs && (
+                      <div className="flex flex-wrap gap-1.5 pt-2">
+                        {pdfMention.selectedPdfs.map(pdf => (
+                          <div key={pdf.s3Key} className="flex items-center gap-1 bg-[#EEF2FF] text-[#3551F3] px-2 py-1 rounded-full text-xs">
+                            <FileText className="w-3 h-3" />
+                            <span>{pdf.filename}</span>
+                            <button
+                              onClick={() => pdfMention.removePDF(pdf.s3Key)}
+                              className="hover:bg-[#3551F3] hover:text-white p-0.5 rounded-full transition-colors ml-0.5"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -876,8 +991,8 @@ export default function ChatPage() {
             // Chat View
             <>
               {/* Messages */}
-              <ScrollArea className="flex-1 p-6">
-                <div className="space-y-4 max-w-5xl mx-auto">
+              <ScrollArea className="h-full w-full absolute inset-0 p-6">
+                <div className="space-y-4 max-w-5xl mx-auto pb-32">
                   {messages.map((msg, index) => (
                     <div
                       key={msg.id}
@@ -912,13 +1027,13 @@ export default function ChatPage() {
                           <LoadingSteps steps={getCustomLoadingSteps(msg.language === 'mr' ? 'कार' : 'car')} currentStep={currentStep} />
                         </div>
                       )}
-                      <div
-                        className={`max-w-[85%] rounded-2xl py-2.5 px-4 ${
-                          msg.sender === 'user'
-                            ? 'bg-[#EEF2FF] text-gray-900'
-                            : 'text-gray-900'
-                        }`}
-                      >
+                       <div
+                         className={`max-w-[85%] rounded-2xl py-3 px-5 ${
+                           msg.sender === 'user'
+                             ? 'bg-[#EEF2FF] text-gray-900'
+                             : 'bg-gray-50/80 text-gray-900'
+                         }`}
+                       >
                         {msg.sender === 'assistant' ? (
                           <div>
                             <div className="whitespace-pre-wrap leading-relaxed">
@@ -1009,8 +1124,23 @@ export default function ChatPage() {
                             )}
                           </div>
                         ) : (
-                          <div className="whitespace-pre-wrap leading-relaxed">
-                            {msg.text}
+                          <div className="space-y-2">
+                            <div className="whitespace-pre-wrap leading-relaxed">
+                              {msg.text}
+                            </div>
+                            {/* Agent 4: Show PDF references in user messages */}
+                             {msg.pdfReferences && msg.pdfReferences.length > 0 && (
+                               <div className="pt-2 mt-2">
+                                 <div className="flex flex-wrap gap-1.5">
+                                   {msg.pdfReferences.map(pdf => (
+                                     <div key={pdf.s3Key} className="flex items-center gap-1 bg-[#3551F3] text-white px-2 py-1 rounded-full text-xs">
+                                       <FileText className="w-3 h-3" />
+                                       <span>{pdf.filename}</span>
+                                     </div>
+                                   ))}
+                                 </div>
+                               </div>
+                             )}
                           </div>
                         )}
                       </div>
@@ -1049,36 +1179,98 @@ export default function ChatPage() {
               </ScrollArea>
 
               {/* Input Area */}
-              <div className="border-t p-6">
-                <div className="max-w-5xl mx-auto relative flex items-center">
-                  <Input
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                    placeholder="Type your message..."
-                    className="w-full pl-4 pr-24 py-4 text-base rounded-xl bg-white border-gray-200 focus:ring-[#3551F3]"
-                    disabled={isLoading}
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileSelect}
-                      className="hidden"
-                      multiple
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white from-60% via-white/95 via-70% to-transparent pb-4 pt-8 px-6 pointer-events-none">
+                <div className="max-w-[850px] mx-auto pointer-events-auto">
+                  {/* Agent 4: PDF Mention Dropdown */}
+                  {pdfMention.showDropdown && (
+                    <PDFMentionDropdown
+                      pdfs={pdfMention.availablePdfs}
+                      selectedPdfs={pdfMention.selectedPdfs}
+                      onSelect={(pdf) => pdfMention.selectPDF(pdf, inputValue, setInputValue)}
+                      onClose={pdfMention.closeDropdown}
+                      searchQuery={pdfMention.searchQuery}
+                      position={pdfMention.dropdownPosition}
+                      loading={pdfMention.loading}
+                      highlightedIndex={pdfMention.highlightedIndex}
                     />
-                    <button 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 rounded-lg transition-colors text-[#3551F3] hover:bg-[#EEF2FF]"
-                    >
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={handleSendMessage}
-                      className="p-2 rounded-lg transition-colors bg-[#3551F3] text-white hover:bg-[#2B41D9]"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
+                  )}
+                  
+                  <div className="relative bg-white rounded-3xl border border-gray-300 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex flex-col gap-2 px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          multiple
+                        />
+                        
+                        <textarea
+                          ref={chatInputRef}
+                          value={inputValue}
+                          onChange={(e) => {
+                            setInputValue(e.target.value);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+                            pdfMention.handleInputChange(
+                              e.target.value,
+                              e.target.selectionStart,
+                              e.target
+                            );
+                          }}
+                          onKeyDown={(e) => {
+                            const handled = pdfMention.handleKeyDown(e, inputValue, setInputValue);
+                            if (handled) return;
+                            
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                              setTimeout(() => {
+                                if (chatInputRef.current) {
+                                  chatInputRef.current.style.height = 'auto';
+                                }
+                              }, 0);
+                            }
+                          }}
+                          placeholder="Ask anything"
+                          rows="1"
+                          className="flex-1 text-base text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent resize-none overflow-hidden py-1"
+                          disabled={isLoading}
+                        />
+                        
+                        <div className="flex items-center gap-1">
+                          <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+                            <Paperclip className="w-5 h-5 text-gray-600" />
+                          </button>
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={!inputValue.trim() && !pdfMention.hasSelectedPdfs}
+                            className="p-2 bg-[#3551F3] hover:bg-[#2B41D9] disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-all"
+                          >
+                            <Send className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Agent 4: PDF Reference Badges inside input */}
+                      {pdfMention.hasSelectedPdfs && (
+                        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-200">
+                          {pdfMention.selectedPdfs.map(pdf => (
+                            <div key={pdf.s3Key} className="flex items-center gap-1 bg-[#EEF2FF] text-[#3551F3] px-2 py-1 rounded-full text-xs">
+                              <FileText className="w-3 h-3" />
+                              <span>{pdf.filename}</span>
+                              <button
+                                onClick={() => pdfMention.removePDF(pdf.s3Key)}
+                                className="hover:bg-[#3551F3] hover:text-white p-0.5 rounded-full transition-colors ml-0.5"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

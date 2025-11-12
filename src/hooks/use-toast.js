@@ -1,52 +1,31 @@
-import { useEffect, useState } from "react";
 import { toast as sonnerToast } from "sonner";
 
-const TOAST_LIMIT = 1;
-
+/**
+ * useToast hook - wrapper around sonner toast
+ * Provides a consistent API for showing toast notifications
+ */
 export function useToast() {
-  const [toasts, setToasts] = useState([]);
-  const toastTimeouts = new Map();
-
-  useEffect(() => {
-    return () => {
-      toastTimeouts.forEach((timeout) => clearTimeout(timeout));
-    };
-  }, []);
-
-  const toast = ({ title, description, action, ...props }) => {
-    const toastId = Math.random().toString(36).substring(7);
-
-    if (toastTimeouts.has(toastId)) {
-      clearTimeout(toastTimeouts.get(toastId));
+  const toast = ({ title, description, variant, ...props }) => {
+    // Map variant to sonner toast types
+    const toastType = variant === "destructive" ? "error" : "success";
+    
+    // If variant is default or not specified, use normal toast
+    if (!variant || variant === "default") {
+      return sonnerToast(title, {
+        description,
+        ...props,
+      });
     }
-
-    const timeout = setTimeout(() => {
-      setToasts((state) => ({
-        toasts: state.toasts.filter((t) => t.id !== toastId),
-      }));
-    }, 5000);
-
-    toastTimeouts.set(toastId, timeout);
-
-    setToasts((state) => ({
-      toasts: [action, ...state.toasts].slice(0, TOAST_LIMIT),
-    }));
-
-    sonnerToast({
-      title,
+    
+    // Use the appropriate sonner toast type
+    return sonnerToast[toastType](title, {
       description,
       ...props,
     });
-
-    return toastId;
   };
 
   const dismiss = (toastId) => {
-    setToasts((state) => ({
-      toasts: state.toasts.map((t) =>
-        t.id === toastId ? { ...t, open: false } : t
-      ),
-    }));
+    sonnerToast.dismiss(toastId);
   };
 
   return {

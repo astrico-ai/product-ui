@@ -31,6 +31,7 @@ import MiningTraining from '@/pages/MiningTraining';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import MessageHistoryPage from '@/pages/MessageHistoryPage';
 import PPTGeneratorPage from '@/pages/PPTGeneratorPage';
+import PDFManagerPage from '@/pages/PDFManagerPage';
 import { MainLayout } from '@/components/MainLayout';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
         <Route path="/analytics" element={<MainLayout><AnalyticsPage /></MainLayout>} />
         <Route path="/message-history" element={<MainLayout><MessageHistoryPage /></MainLayout>} />
         <Route path="/ppt-generator" element={<PPTGeneratorPage />} />
+        <Route path="/pdf-manager" element={<MainLayout><PDFManagerPage /></MainLayout>} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/chat/marketing" element={<MarketingChatPage />} />
         <Route path="/chat/insurance" element={<InsuranceChatPage />} />
