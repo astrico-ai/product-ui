@@ -521,6 +521,17 @@ const streamAnalyzePDFs = async (pdfArray, query, userMessage = '', res) => {
   let tokensUsed = { input: 0, output: 0, total: 0 };
   let model = openrouterConfig.model;
   
+  // Keep-alive ping interval for Vercel serverless functions
+  // Send a ping every 20 seconds to keep the connection alive
+  const keepAliveInterval = setInterval(() => {
+    try {
+      res.write(': ping\n\n');
+    } catch (error) {
+      // Connection might be closed, clear interval
+      clearInterval(keepAliveInterval);
+    }
+  }, 20000);
+  
   try {
     if (!pdfArray || pdfArray.length === 0) {
       throw new Error('No PDFs provided for analysis');
@@ -721,6 +732,9 @@ const streamAnalyzePDFs = async (pdfArray, query, userMessage = '', res) => {
                 error: parsed.error.message || parsed.error,
                 code: parsed.error.code
               })}\n\n`);
+              
+              // Clear keep-alive interval on error
+              clearInterval(keepAliveInterval);
               res.end();
               return;
             }
@@ -1000,10 +1014,15 @@ const streamAnalyzePDFs = async (pdfArray, query, userMessage = '', res) => {
       
       res.write(`data: ${JSON.stringify(completePayload)}\n\n`);
       
+      // Clear keep-alive interval before ending
+      clearInterval(keepAliveInterval);
       res.end();
     });
 
     response.data.on('error', (error) => {
+      
+      // Clear keep-alive interval on error
+      clearInterval(keepAliveInterval);
       
       // Log error with request ID
       logOpenRouterError(error, {
@@ -1023,10 +1042,16 @@ const streamAnalyzePDFs = async (pdfArray, query, userMessage = '', res) => {
         type: 'error', 
         error: error.message || 'Stream error occurred'
       })}\n\n`);
+      
+      // Clear keep-alive interval on error
+      clearInterval(keepAliveInterval);
       res.end();
     });
 
   } catch (error) {
+    // Clear keep-alive interval on catch error
+    clearInterval(keepAliveInterval);
+    
     const duration = Date.now() - startTime;
     
     logger.error('❌ [OPENROUTER] Streaming Failed', {
