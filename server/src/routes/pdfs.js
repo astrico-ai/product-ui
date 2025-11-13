@@ -323,6 +323,144 @@ router.post('/analyze', async (req, res) => {
 });
 
 /**
+ * POST /api/pdfs/analyze/stream
+ * Stream PDF analysis using Server-Sent Events (SSE)
+ */
+router.post('/analyze/stream', async (req, res) => {
+  try {
+    const { pdfIds, query, userMessage } = req.body;
+
+    logger.debug('Stream analyze PDFs request', { pdfCount: pdfIds?.length || 0 });
+
+    // Validate request
+    if (!pdfIds || !Array.isArray(pdfIds) || pdfIds.length === 0) {
+      logger.warn('Stream analyze request with missing PDF IDs');
+      res.write(`data: ${JSON.stringify({ 
+        type: 'error', 
+        error: 'At least one PDF ID is required',
+        code: 'MISSING_PDF_IDS'
+      })}\n\n`);
+      res.end();
+      return;
+    }
+
+    if (!query || query.trim().length === 0) {
+      logger.warn('Stream analyze request with empty query');
+      res.write(`data: ${JSON.stringify({ 
+        type: 'error', 
+        error: 'Query is required',
+        code: 'MISSING_QUERY'
+      })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Get all available PDFs
+    const allPdfs = await s3Service.listPDFs();
+
+    // Validate PDF IDs (s3Keys)
+    const validation = pdfProcessingService.validatePDFIds(pdfIds, allPdfs);
+    if (!validation.valid) {
+      logger.warn('PDF validation failed during stream analysis', { invalidIds: validation.invalidIds });
+      res.write(`data: ${JSON.stringify({ 
+        type: 'error', 
+        error: 'One or more PDFs not found',
+        invalidIds: validation.invalidIds,
+        code: 'INVALID_PDF_IDS'
+      })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Get the requested PDFs using exact s3Key match
+    const selectedPdfs = allPdfs.filter(pdf => validation.validIds.includes(pdf.s3Key));
+
+    // Set up SSE headers immediately - CRITICAL: Must be set before any writes
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow CORS for SSE
+    res.flushHeaders();
+
+    // Process PDFs in parallel
+    const useBase64 = req.query.useBase64 === 'true' || req.body.useBase64 === true;
+
+    let enrichedPdfs;
+    
+    if (useBase64) {
+      logger.info('Using Base64 encoding for streaming PDF analysis', {
+        pdfCount: selectedPdfs.length
+      });
+      
+      const base64Pdfs = await pdfProcessingService.processS3KeysToBase64(
+        selectedPdfs.map(p => p.s3Key)
+      );
+      
+      enrichedPdfs = base64Pdfs.map((pdf) => ({
+        ...pdf,
+        id: pdf.s3Key
+      }));
+    } else {
+      logger.info('Using signed URLs for streaming PDF analysis', {
+        pdfCount: selectedPdfs.length
+      });
+      
+      const pdfUrls = await pdfProcessingService.processS3KeysToUrls(
+        selectedPdfs.map(p => p.s3Key),
+        3600 // 1 hour expiration
+      );
+      
+      enrichedPdfs = pdfUrls.map((pdf) => ({
+        ...pdf,
+        id: pdf.s3Key
+      }));
+    }
+
+    logger.info('PDFs prepared for streaming analysis', {
+      pdfCount: enrichedPdfs.length,
+      method: useBase64 ? 'base64' : 'url-based'
+    });
+
+    // Start main PDF analysis stream
+    await openrouterService.streamAnalyzePDFs(
+      enrichedPdfs,
+      query,
+      userMessage,
+      res
+    );
+
+  } catch (error) {
+    logger.error('❌ [STREAM] Stream analyze PDFs endpoint error', { 
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+
+    // Ensure SSE headers are set before sending error
+    if (!res.headersSent) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.flushHeaders();
+    }
+
+    const errorMessage = error?.message || error?.toString?.() || 'Failed to stream PDF analysis';
+    res.write(`data: ${JSON.stringify({ 
+      type: 'error', 
+      error: errorMessage,
+      code: error?.code || 'STREAM_ERROR'
+    })}\n\n`);
+    if (typeof res.flush === 'function') {
+      res.flush();
+    }
+    res.end();
+  }
+});
+
+/**
  * Error handling middleware for multer
  */
 router.use((error, req, res, next) => {

@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { FileText, Trash2, Calendar, HardDrive, ExternalLink, AlertCircle } from 'lucide-react';
+import { FileText, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -136,7 +136,7 @@ export function PDFList({ pdfs = [], onDelete, isDeleting = false, loading = fal
                 <TableHead>File Name</TableHead>
                 <TableHead>Size</TableHead>
                 <TableHead>Uploaded</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -148,29 +148,18 @@ export function PDFList({ pdfs = [], onDelete, isDeleting = false, loading = fal
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gray-900 group-hover:text-[#3551F3] transition-colors">
-                        {pdf.filename}
-                      </span>
-                      <span className="text-xs text-gray-500 truncate max-w-md" title={pdf.s3Key}>
-                        S3: {pdf.s3Key}
-                      </span>
-                    </div>
+                    <span className="font-medium text-gray-900 group-hover:text-[#3551F3] transition-colors">
+                      {pdf.filename}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 text-gray-600">
-                      <HardDrive className="w-4 h-4" />
-                      <span className="text-sm">{formatFileSize(pdf.size)}</span>
-                    </div>
+                    <span className="text-sm text-gray-600">{formatFileSize(pdf.size)}</span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 text-gray-600">
-                      <Calendar className="w-4 h-4" />
-                      <span className="text-sm">{formatDate(pdf.uploadedAt)}</span>
-                    </div>
+                    <span className="text-sm text-gray-600">{formatDate(pdf.uploadedAt)}</span>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  <TableCell className="text-right align-middle">
+                    <div className="flex items-center justify-end gap-2 w-full">
                       {pdf.s3Url && (
                         <Button
                           variant="ghost"
@@ -209,14 +198,8 @@ export function PDFList({ pdfs = [], onDelete, isDeleting = false, loading = fal
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-gray-900 truncate">{pdf.filename}</h4>
                   <div className="flex flex-col gap-1 mt-2 text-xs text-gray-500">
-                    <div className="flex items-center gap-1.5">
-                      <HardDrive className="w-3.5 h-3.5" />
-                      <span>{formatFileSize(pdf.size)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>{formatDate(pdf.uploadedAt)}</span>
-                    </div>
+                    <span>{formatFileSize(pdf.size)}</span>
+                    <span>{formatDate(pdf.uploadedAt)}</span>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">

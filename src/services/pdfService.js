@@ -130,9 +130,6 @@ const realUploadPDFs = async (files) => {
   if (!response.ok || !data.success) {
     // Handle specific error codes from Agent 1
     const errorMessage = data.error || 'Failed to upload PDFs';
-    if (data.code) {
-      console.error(`Upload error [${data.code}]:`, errorMessage);
-    }
     throw new Error(errorMessage);
   }
   
@@ -152,7 +149,6 @@ export const uploadPDFs = async (files) => {
       return await realUploadPDFs(files);
     }
   } catch (error) {
-    console.error('Error uploading PDFs:', error);
     throw error;
   }
 };
@@ -201,7 +197,6 @@ export const listPDFs = async () => {
       return await realListPDFs();
     }
   } catch (error) {
-    console.error('Error listing PDFs:', error);
     throw error;
   }
 };
@@ -267,7 +262,6 @@ export const deletePDF = async (s3Key) => {
       return await realDeletePDF(s3Key);
     }
   } catch (error) {
-    console.error('Error deleting PDF:', error);
     throw error;
   }
 };
@@ -318,23 +312,303 @@ export const analyzePDFs = async (pdfIds, query, userMessage = '') => {
     if (!response.ok || !data.success) {
       // Handle specific error codes from Agent 1
       const errorMessage = data.error || 'Failed to analyze PDFs';
-      if (data.code) {
-        console.error(`Analysis error [${data.code}]:`, errorMessage);
-        
-        // Provide user-friendly messages for common errors
-        if (data.code === 'RATE_LIMITED') {
-          throw new Error('API rate limit exceeded. Please try again in a moment.');
-        } else if (data.code === 'TIMEOUT') {
-          throw new Error('Analysis took too long. Please try with fewer PDFs.');
-        }
+      if (data.code === 'RATE_LIMITED') {
+        throw new Error('API rate limit exceeded. Please try again in a moment.');
+      } else if (data.code === 'TIMEOUT') {
+        throw new Error('Analysis took too long. Please try with fewer PDFs.');
       }
       throw new Error(errorMessage);
     }
     
     return data;
   } catch (error) {
-    console.error('Error analyzing PDFs:', error);
     throw error;
+  }
+};
+
+/**
+ * PUBLIC API: Stream PDF analysis with AI (Server-Sent Events)
+ * Endpoint: POST /api/pdfs/analyze/stream
+ * 
+ * Streams PDF analysis response token by token for better UX
+ * 
+ * @param {string[]} pdfIds - Array of s3Keys to analyze
+ * @param {string} query - User's query about the PDFs
+ * @param {string} userMessage - Optional additional context
+ * @param {Function} onChunk - Callback for each chunk: (chunk: string) => void
+ * @param {Function} onComplete - Callback when complete: (data: Object) => void
+ * @param {Function} onError - Callback for errors: (error: Error) => void
+ * @returns {Promise<void>}
+ */
+export const streamAnalyzePDFs = async (pdfIds, query, userMessage = '', onChunk, onComplete, onError) => {
+  console.log('🚀 [STREAM] streamAnalyzePDFs called', { 
+    pdfIds, 
+    queryLength: query.length,
+    endpoint: `${API_BASE_URL}/api/pdfs/analyze/stream`
+  });
+  
+  try {
+    if (USE_MOCK) {
+      // Mock streaming for development
+      const mockText = 'Mock AI analysis result. Backend is ready - set VITE_USE_MOCK_PDF_API=false to use real OpenRouter API.';
+      const words = mockText.split(' ');
+      
+      for (let i = 0; i < words.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        onChunk(words[i] + (i < words.length - 1 ? ' ' : ''));
+      }
+      
+      onComplete({
+        success: true,
+        analysis: mockText,
+        referencedPdfs: pdfIds.map(s3Key => {
+          const pdf = mockPDFs.find(p => p.s3Key === s3Key);
+          return { id: s3Key, filename: pdf?.filename || 'Unknown' };
+        }),
+        tokensUsed: { input: 1000, output: 200, total: 1200 },
+        model: 'mock-model',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+    
+    console.log('📡 [STREAM] Making fetch request to:', `${API_BASE_URL}/api/pdfs/analyze/stream`);
+    console.log('📡 [STREAM] Request payload:', { 
+      pdfIds, 
+      queryLength: query?.length || 0,
+      userMessageLength: userMessage?.length || 0,
+      useBase64: true
+    });
+    
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}/api/pdfs/analyze/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          pdfIds, 
+          query, 
+          userMessage,
+          useBase64: true
+        })
+      });
+    } catch (fetchError) {
+      console.error('❌ [STREAM] Fetch request failed:', fetchError);
+      throw new Error(`Failed to connect to server: ${fetchError.message}`);
+    }
+    
+    console.log('📥 [STREAM] Response received:', { 
+      status: response.status, 
+      ok: response.ok,
+      contentType: response.headers.get('content-type'),
+      statusText: response.statusText
+    });
+    
+    if (!response.ok) {
+      console.error('❌ [STREAM] Response not OK:', response.status, response.statusText);
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (jsonError) {
+        const text = await response.text().catch(() => 'Unknown error');
+        console.error('❌ [STREAM] Failed to parse error response:', text);
+        throw new Error(`Server error (${response.status}): ${text || response.statusText}`);
+      }
+      throw new Error(errorData.error || errorData.message || 'Failed to start streaming');
+    }
+
+    // Check if response is SSE
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('text/event-stream')) {
+      throw new Error(`Server did not return a streaming response. Got: ${contentType}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    let streamComplete = false;
+    let accumulatedText = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          // Stream ended - check if we got a complete message
+          if (!streamComplete) {
+            // Stream ended without complete message - try to process remaining buffer
+            if (buffer.trim()) {
+              const trimmedLine = buffer.trim();
+              if (trimmedLine.startsWith('data: ')) {
+                const data = trimmedLine.slice(6);
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.type === 'complete') {
+                    onComplete({
+                      success: true,
+                      analysis: parsed.analysis || accumulatedText,
+                      referencedPdfs: parsed.referencedPdfs || [],
+                      tokensUsed: parsed.tokensUsed || { input: 0, output: 0, total: 0 },
+                      model: parsed.model || 'unknown',
+                      timestamp: parsed.timestamp || new Date().toISOString(),
+                      csvData: parsed.csvData || null,
+                      jsonTableData: parsed.jsonTableData || null
+                    });
+                    streamComplete = true;
+                    return;
+                  }
+                } catch (e) {
+                  // Ignore parse errors in final buffer
+                }
+              }
+            }
+            
+            // If we have accumulated text but no complete message, call onComplete with what we have
+            if (accumulatedText.trim()) {
+              console.warn('⚠️ [STREAM] Stream ended without complete message, using accumulated text');
+              onComplete({
+                success: true,
+                analysis: accumulatedText,
+                referencedPdfs: pdfIds.map(id => ({ id, filename: 'Unknown' })),
+                tokensUsed: { input: 0, output: 0, total: 0 },
+                model: 'unknown',
+                timestamp: new Date().toISOString(),
+                csvData: null
+              });
+              return;
+            }
+            
+            // No text accumulated and no complete message - this is an error
+            throw new Error('Stream ended unexpectedly without completing');
+          }
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          
+          // Skip empty lines
+          if (!trimmedLine) continue;
+          
+          // Handle SSE comments (like ": OPENROUTER PROCESSING")
+          if (trimmedLine.startsWith(':')) {
+            continue;
+          }
+          
+          if (trimmedLine.startsWith('data: ')) {
+            const data = trimmedLine.slice(6); // Remove 'data: ' prefix
+            
+            if (data === '[DONE]' || data.trim() === '') {
+              continue;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              
+              // Handle our custom format from backend
+              if (parsed.type === 'status' || parsed.type === 'transition') {
+                // Ignore status and transition events - we use LoadingIndicator instead
+                continue;
+              } else if (parsed.type === 'chunk' && parsed.content) {
+                // Regular chunk from main stream
+                const isFirstChunk = accumulatedText.length === 0;
+                if (isFirstChunk) {
+                  console.log('📥 [STREAM] First chunk received on frontend', {
+                    timestamp: new Date().toISOString(),
+                    contentPreview: parsed.content.substring(0, 50) + (parsed.content.length > 50 ? '...' : ''),
+                    contentLength: parsed.content.length
+                  });
+                }
+                accumulatedText += parsed.content;
+                onChunk(parsed.content);
+              } else if (parsed.type === 'complete') {
+                streamComplete = true;
+                onComplete({
+                  success: true,
+                  analysis: parsed.analysis || accumulatedText,
+                  referencedPdfs: parsed.referencedPdfs || [],
+                  tokensUsed: parsed.tokensUsed || { input: 0, output: 0, total: 0 },
+                  model: parsed.model || 'unknown',
+                  timestamp: parsed.timestamp || new Date().toISOString(),
+                  csvData: parsed.csvData || null,
+                  jsonTableData: parsed.jsonTableData || null
+                });
+                return;
+              } else if (parsed.type === 'error') {
+                const errorMsg = parsed.error || parsed.message || 'Stream error occurred';
+                console.error('❌ [STREAM] Backend sent error event:', errorMsg, parsed);
+                // Create a proper Error object
+                const streamError = new Error(errorMsg);
+                // Throw it to be caught by the outer catch block
+                throw streamError;
+              } else if (parsed.type === 'done') {
+                // Stream finished, wait for complete message
+                continue;
+              }
+            } catch (parseError) {
+              // Only warn for non-empty, non-comment data
+              if (data.trim() && !data.startsWith(':')) {
+                console.warn('⚠️ [STREAM] Failed to parse SSE data:', {
+                  data: data.substring(0, 100),
+                  error: parseError,
+                  errorType: typeof parseError,
+                  errorMessage: parseError?.message
+                });
+              }
+              // Don't re-throw parse errors - they're not critical, just skip the line
+              continue;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ [STREAM] Error in streaming loop:', error);
+      // Ensure error is always an Error object with a proper message
+      let errorObj;
+      if (error instanceof Error) {
+        errorObj = error;
+      } else if (error && typeof error === 'object' && error.message) {
+        errorObj = new Error(error.message);
+      } else if (error === undefined || error === null) {
+        // Handle undefined/null errors - don't call onError for these
+        console.warn('⚠️ [STREAM] Caught undefined/null error in streaming loop, ignoring');
+        return;
+      } else {
+        const errorStr = error?.toString?.() || String(error) || 'Unknown streaming error';
+        errorObj = new Error(errorStr);
+      }
+      console.error('❌ [STREAM] Calling onError with:', errorObj.message);
+      if (onError) {
+        onError(errorObj);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  } catch (error) {
+    console.error('❌ [STREAM] Error in streamAnalyzePDFs outer catch:', error);
+    // Ensure error is always an Error object with a proper message
+    let errorObj;
+    if (error instanceof Error) {
+      errorObj = error;
+    } else if (error && typeof error === 'object' && error.message) {
+      errorObj = new Error(error.message);
+    } else if (error === undefined || error === null) {
+      // Handle undefined/null errors - don't call onError for these
+      console.warn('⚠️ [STREAM] Caught undefined/null error in outer catch, ignoring');
+      return;
+    } else {
+      const errorStr = error?.toString?.() || String(error) || 'Unknown error';
+      errorObj = new Error(errorStr);
+    }
+    console.error('❌ [STREAM] Calling onError from outer catch with:', errorObj.message);
+    if (onError) {
+      onError(errorObj);
+    }
   }
 };
 
@@ -348,6 +622,7 @@ export default {
   listPDFs,
   deletePDF,
   analyzePDFs,
+  streamAnalyzePDFs,
   formatFileSize,
   validatePDF,
   getServiceMode

@@ -4,34 +4,34 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Send, ChevronLeft, Plus, Link2, Send as SendIcon, FileText, Video, Search, Paperclip, ChevronDown, ChevronUp, ChevronRight, ThumbsUp, ThumbsDown, Copy, Share2, X } from "lucide-react";
 import { MainLayout } from "@/components/MainLayout";
-import { TypewriterText } from "@/components/TypewriterText";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LoadingSteps } from "@/components/LoadingSteps";
+import { MarkdownText } from "@/components/MarkdownText";
+import { LoadingIndicator } from "@/components/LoadingIndicator";
+import { StreamingCursor } from "@/components/StreamingCursor";
 import { useLocation } from "react-router-dom";
 import { DataVisualization } from "@/components/DataVisualization";
 import { PDFMentionDropdown } from "@/components/PDFMentionDropdown";
 import { PDFReferenceBadgeList } from "@/components/PDFReferenceBadge";
 import { usePDFMention } from "@/hooks/usePDFMention";
-import { analyzePDFs } from "@/services/pdfService";
+import { analyzePDFs, streamAnalyzePDFs } from "@/services/pdfService";
+import { usePDFStore } from "@/stores/usePDFStore";
+import { downloadCSV, parseJSONToTable, removeJSONFromText, convertJSONToCSV } from "@/utils/csvUtils";
 
 // Mock chat history data
-const chatHistory = {
-  today: [
-    { id: 1, title: "Tata Signa 4830.T के जैसे और कौन-कौन से ट्रक हैं?" },
-    { id: 2, title: "भारी वाहनों की तुलना" }
-  ],
-  yesterday: [
-    { id: 3, title: "ट्रक की वारंटी और सर्विसिंग" },
-    { id: 4, title: "डीजल इंजन की क्षमता" }
-  ],
-  previousWeek: [
-    { id: 5, title: "ट्रक खरीदने के लिए दस्तावेज" }
-  ],
-  previousMonth: [
-    { id: 6, title: "ट्रक की कीमत और EMI" }
-  ]
-};
+const chatHistory = [
+  { id: 1, title: "EMD submission requirements - online or offline?" },
+  { id: 2, title: "PBG percentage and duration details" },
+  { id: 3, title: "MSME and MII preference requirements" },
+  { id: 4, title: "Delivery location - Consignee or Fabricator?" },
+  { id: 5, title: "Technical clarification time allowed" },
+  { id: 6, title: "Arbitration and Mediation clause details" },
+  { id: 7, title: "Bid to RA enabled status" },
+  { id: 8, title: "Inspection requirements at TML plant" },
+  { id: 9, title: "RCM applicability and registration requirements" },
+  { id: 10, title: "Insurance and commissioning requirements" },
+  { id: 11, title: "Trial run and AMC requirements" },
+  { id: 12, title: "Highlight financial implication areas" }
+];
 
 // Mock chat messages for each chat
 const mockChatMessages = {
@@ -52,46 +52,151 @@ export default function ChatPage() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistorySearch, setChatHistorySearch] = useState("");
-  const [loadingProgress, setLoadingProgress] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
   const [showVisualization, setShowVisualization] = useState(false);
-  const [completedSteps, setCompletedSteps] = useState([]);
-  const [showSteps, setShowSteps] = useState({});
   const [attachments, setAttachments] = useState([]);
   const [tableVisibleByMessageId, setTableVisibleByMessageId] = useState({});
   const fileInputRef = useRef(null);
   const chatInputRef = useRef(null);
+  const scrollAreaRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const lastUserMessageIdRef = useRef(null);
 
   // Agent 4: PDF @ mention system
   // Agent 5: Now using Zustand store for state management (useStore: true by default)
   const pdfMention = usePDFMention({ useStore: true });
+  
+  // Direct store subscription to ensure PDF pills persist after responses
+  const storeSelectedPdfs = usePDFStore(state => state.selectedPdfs);
+  const storeDeselectPDF = usePDFStore(state => state.deselectPDF);
 
-  const loadingSteps = [
-    {
-      title: "Understanding your query..."
-    },
-    {
-      title: "Scanning SOP documents for key insights..."
-    },
-    {
-      title: "Analyzing video content for relevant context..."
-    },
-    {
-      title: "Compiling structured recommendations..."
-    },
-    {
-      title: "Generating response and next best actions..."
+  // Helper function to scroll user message to top (ChatGPT-style)
+  const scrollUserMessageToTop = (messageId) => {
+    // Use multiple attempts to ensure DOM is ready
+    const attemptScroll = (attempt = 0) => {
+      if (attempt > 10) {
+        console.warn('📜 [SCROLL] Max attempts reached, giving up');
+        return; // Max 10 attempts
+      }
+      
+      const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+      
+      if (!messageElement) {
+        // Retry if element not found yet
+        setTimeout(() => attemptScroll(attempt + 1), 50);
+        return;
+      }
+      
+      if (!scrollAreaRef.current) {
+        setTimeout(() => attemptScroll(attempt + 1), 50);
+        return;
+      }
+      
+      // Find the viewport element inside ScrollArea (Radix UI structure)
+      // Radix UI adds data-radix-scroll-area-viewport attribute
+      let viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      
+      if (!viewport) {
+        // Try finding by traversing children
+        const root = scrollAreaRef.current;
+        const findScrollable = (el) => {
+          if (!el) return null;
+          if (el.scrollHeight > el.clientHeight && el.scrollTop !== undefined) {
+            return el;
+          }
+          for (let child of el.children) {
+            const found = findScrollable(child);
+            if (found) return found;
+          }
+          return null;
+        };
+        viewport = findScrollable(root);
+      }
+      
+      console.log('📜 [SCROLL] Attempt', attempt, {
+        messageId,
+        messageElement: !!messageElement,
+        scrollAreaRef: !!scrollAreaRef.current,
+        viewport: !!viewport,
+        viewportScrollTop: viewport?.scrollTop
+      });
+      
+      if (viewport && messageElement) {
+        // Get the scrollable container (the div with space-y-4)
+        const scrollableContainer = messageElement.closest('.space-y-4');
+        
+        if (scrollableContainer) {
+          // Get bounding rects
+          const containerRect = scrollableContainer.getBoundingClientRect();
+          const messageRect = messageElement.getBoundingClientRect();
+          const viewportRect = viewport.getBoundingClientRect();
+          
+          // Calculate the current scroll position
+          const currentScrollTop = viewport.scrollTop;
+          
+          // Calculate message position relative to container
+          // messageRect.top is relative to viewport, so we need to add current scroll
+          const messageTopInContainer = messageRect.top - containerRect.top + currentScrollTop;
+          
+          // Scroll to position message at top of viewport
+          const targetScrollTop = messageTopInContainer;
+          
+          viewport.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+          });
+          
+          console.log('📜 [SCROLL] Scrolled successfully', {
+            messageId,
+            currentScrollTop,
+            messageTopInContainer,
+            targetScrollTop,
+            messageRect: { top: messageRect.top, bottom: messageRect.bottom },
+            containerRect: { top: containerRect.top, bottom: containerRect.bottom }
+          });
+        } else {
+          console.warn('📜 [SCROLL] Scrollable container not found');
+          // Fallback: use scrollIntoView
+          messageElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      } else {
+        // Retry if viewport not found
+        if (attempt < 5) {
+          setTimeout(() => attemptScroll(attempt + 1), 100);
+        } else {
+          // Final fallback: use scrollIntoView
+          messageElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+          console.log('📜 [SCROLL] Using scrollIntoView fallback');
+        }
+      }
+    };
+    
+    // Start attempting to scroll
+    requestAnimationFrame(() => {
+      setTimeout(() => attemptScroll(), 150);
+    });
+  };
+
+  // Auto-scroll user message to top when a new user message is added (ChatGPT-style)
+  useEffect(() => {
+    // Find the last user message
+    const lastUserMessage = messages.filter(msg => msg.sender === 'user').pop();
+    
+    // Only scroll if this is a new user message (different ID than last time)
+    if (lastUserMessage && lastUserMessage.id !== lastUserMessageIdRef.current) {
+      lastUserMessageIdRef.current = lastUserMessage.id;
+      scrollUserMessageToTop(lastUserMessage.id);
     }
-  ];
+  }, [messages]); // Watch all messages, but only act on new user messages
 
-  // Hardcoded Hindi query and steps
-  const HARD_CODED_HINDI_QUERY = "Tata Signa 4830.T के जैसे और कौन-कौन से ट्रक हैं?";
-  const getHindiLoadingSteps = () => ([
-    { title: "सवाल समझा जा रहा है..." },
-    { title: "डाटा लोड और विश्लेषण किया जा रहा है..." },
-    { title: "जवाब तैयार किया जा रहा है..." }
-  ]);
 
   // Shared hardcoded Hindi response with comparison table
   const HINDI_TRUCK_RESPONSE = {
@@ -141,9 +246,9 @@ export default function ChatPage() {
     ]
   };
 
-  // Debug utilities
-  const DEBUG_CHAT = true;
-  const debugLog = (...args) => { if (DEBUG_CHAT && typeof window !== 'undefined') { console.log('[ChatPage]', ...args); } };
+  // Debug utilities (only for streaming)
+  const DEBUG_STREAMING = false;
+  const debugStreamLog = (...args) => { if (DEBUG_STREAMING && typeof window !== 'undefined') { console.log('[Streaming]', ...args); } };
 
   // Normalize and detect the Hindi trucks query even with small variations
   const normalize = (text) => (text || "")
@@ -157,15 +262,7 @@ export default function ChatPage() {
     const t = normalize(text);
     const hasTataSigna = t.includes("tata signa 4830");
     const hasTruck = t.includes("ट्रक") || t.includes("truck");
-    const result = hasTataSigna && hasTruck;
-    debugLog('isHindiTruckQuery', { 
-      text, 
-      normalized: t, 
-      hasTataSigna, 
-      hasTruck, 
-      result 
-    });
-    return result;
+    return hasTataSigna && hasTruck;
   };
 
   const detectLanguage = (text) => {
@@ -183,67 +280,6 @@ export default function ChatPage() {
     return 'en';
   };
 
-  const getCustomLoadingSteps = (query) => {
-    const q = query || '';
-    
-    // If query is empty, return default steps (don't override with empty queries)
-    if (!q.trim()) {
-      debugLog('getCustomLoadingSteps:returning', 'Empty query - Default English steps');
-      return loadingSteps;
-    }
-    
-    const normalizedQuery = normalize(q);
-    const normalizedHardCoded = normalize(HARD_CODED_HINDI_QUERY);
-    const isExactMatch = normalizedQuery === normalizedHardCoded;
-    const isHindi = isHindiTruckQuery(q);
-    const lang = detectLanguage(q);
-    
-    debugLog('getCustomLoadingSteps', { 
-      query: q, 
-      normalized: normalizedQuery, 
-      hardCodedQuery: HARD_CODED_HINDI_QUERY,
-      normalizedHardCoded,
-      isExactMatch,
-      isHindi, 
-      detectedLang: lang
-    });
-    
-    // First check for exact match with hardcoded query
-    if (isExactMatch) {
-      debugLog('getCustomLoadingSteps:returning', 'Exact match - Hindi truck steps');
-      return getHindiLoadingSteps();
-    }
-    
-    // Then check for Hindi truck query pattern
-    if (isHindi) {
-      debugLog('getCustomLoadingSteps:returning', 'Hindi truck pattern - Hindi truck steps');
-      return getHindiLoadingSteps();
-    }
-    
-    // Then check for general Hindi language
-    if (lang === 'hi') {
-      debugLog('getCustomLoadingSteps:returning', 'Hindi language - Hindi steps');
-      return getHindiLoadingSteps();
-    }
-    
-    if (lang === 'mr') {
-      debugLog('getCustomLoadingSteps:returning', 'Marathi steps');
-      return [
-        {
-          title: "तुमचा प्रश्न समजत आहे..."
-        },
-        {
-          title: "स्रोतांमधून उपयोगी माहिती काढत आहे..."
-        },
-        {
-          title: "सोपी उत्तर तयार करत आहे आणि पुढे काय करायचं ते सांगत आहे..."
-        }
-      ];
-    }
-    
-    debugLog('getCustomLoadingSteps:returning', 'Default English steps');
-    return loadingSteps;
-  };
 
   const getCustomSources = (query) => {
     const language = detectLanguage(query);
@@ -317,70 +353,169 @@ export default function ChatPage() {
     if (!query.trim()) return;
     
     setIsLoading(true);
-    setLoadingProgress(0);
-    setCurrentStep(0);
     setShowVisualization(false);
-    setCompletedSteps([]);
-    
-    const queryLanguage = detectLanguage(query);
-    const customSteps = getCustomLoadingSteps(query);
-    debugLog('handleSearch:start', { 
-      query, 
-      normalized: normalize(query), 
-      queryLanguage, 
-      isHindi: isHindiTruckQuery(query),
-      customSteps,
-      stepsLength: customSteps.length
-    });
     
     try {
-      const progressInterval = setInterval(() => {
-        setLoadingProgress(prev => Math.min(prev + 1, 100));
-      }, 50);
-
-      const stepInterval = setInterval(() => {
-        setCurrentStep(prev => {
-          // Use the pre-calculated steps instead of calling getCustomLoadingSteps again
-          debugLog('handleSearch:stepInterval', { prev, stepsLength: customSteps.length, steps: customSteps });
-          if (prev >= customSteps.length - 1) {
-            clearInterval(stepInterval);
-            return prev;
-          }
-          setCompletedSteps(current => [...current, prev]);
-          return prev + 1;
-        });
-      }, 1000);
-
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Agent 4: Check if PDFs are referenced and call analyze API
+      // Agent 4: Check if PDFs are referenced and call streaming analyze API - use store directly
       let searchResponse;
-      if (pdfMention.hasSelectedPdfs) {
+      const hasSelectedPdfs = storeSelectedPdfs && storeSelectedPdfs.length > 0;
+      if (hasSelectedPdfs) {
+        console.log('✅ [SEARCH STREAMING] Using streaming endpoint for search');
         try {
-          const pdfIds = pdfMention.getSelectedPdfIds();
-          debugLog('Calling PDF analyze API from search', { pdfIds, query });
+          // Get PDF IDs from store directly
+          const pdfIds = storeSelectedPdfs.map(pdf => pdf.s3Key || pdf.id);
           
-          const analysisResult = await analyzePDFs(pdfIds, query, query);
+          // Create streaming response message
+          const responseId = Date.now() + 1;
+          let streamedText = '';
           
           searchResponse = {
-            id: Date.now() + 1,
-            text: analysisResult.analysis || "AI analysis completed.",
+            id: responseId,
+            text: '',
             sender: 'assistant',
             showFollowUp: false,
             showFeedback: true,
-            pdfReferences: analysisResult.referencedPdfs || pdfMention.selectedPdfs,
-            tokensUsed: analysisResult.tokensUsed
+            pdfReferences: storeSelectedPdfs,
+            isStreaming: true,
+            isLoading: true // Show loading indicator until first chunk
           };
           
-          debugLog('PDF analysis result from search', analysisResult);
+          // Add response to messages immediately for streaming
+          setMessages(prev => [...prev, searchResponse]);
+          setIsTyping(true);
           
-          // Clear selected PDFs after search
-          pdfMention.clearSelectedPDFs();
+          // Stream the analysis
+          let isMainStream = false;
+          
+          await streamAnalyzePDFs(
+            pdfIds,
+            query,
+            query,
+            // onChunk - called for each chunk from main stream
+            (chunk) => {
+              if (!isMainStream) {
+                // First chunk from main stream - hide loading indicator and start main text
+                isMainStream = true;
+                streamedText = chunk;
+                
+                console.log('🎨 [STREAMING] First chunk received in ChatPage (handleSearch), updating UI', {
+                  timestamp: new Date().toISOString(),
+                  chunkPreview: chunk.substring(0, 50) + (chunk.length > 50 ? '...' : ''),
+                  chunkLength: chunk.length
+                });
+                
+                setMessages(prev => prev.map(msg => 
+                  msg.id === responseId 
+                    ? { ...msg, text: streamedText, isLoading: false }
+                    : msg
+                ));
+              } else {
+                streamedText += chunk;
+                setMessages(prev => prev.map(msg => 
+                  msg.id === responseId 
+                    ? { ...msg, text: streamedText }
+                    : msg
+                ));
+              }
+            },
+            // onComplete
+            (analysisResult) => {
+              
+              // Parse JSON table data to table format if available
+              let tableColumns = null;
+              let tableData = null;
+              let cleanedText = analysisResult.analysis || streamedText;
+              let csvDataForDownload = null;
+              
+              if (analysisResult.jsonTableData) {
+                console.log('✅ [JSON] JSON table data available, parsing to table format');
+                const parsedTable = parseJSONToTable(analysisResult.jsonTableData);
+                if (parsedTable) {
+                  tableColumns = parsedTable.tableColumns;
+                  tableData = parsedTable.tableData;
+                  console.log('✅ [JSON] JSON parsed to table:', { 
+                    columns: tableColumns.length, 
+                    rows: tableData.length 
+                  });
+                  
+                  // Convert JSON to CSV for download
+                  csvDataForDownload = convertJSONToCSV(analysisResult.jsonTableData);
+                  
+                  // Remove JSON markdown code block from displayed text
+                  cleanedText = removeJSONFromText(cleanedText);
+                  console.log('✅ [JSON] Removed JSON code block from response text');
+                }
+              } else if (analysisResult.csvData) {
+                // Fallback: if CSV data exists (legacy support), use it
+                console.log('✅ [CSV] CSV data available (legacy), parsing to table format');
+                const parsedTable = parseCSVToTable(analysisResult.csvData);
+                if (parsedTable) {
+                  tableColumns = parsedTable.tableColumns;
+                  tableData = parsedTable.tableData;
+                  csvDataForDownload = analysisResult.csvData;
+                  cleanedText = removeJSONFromText(cleanedText);
+                }
+              }
+              
+              setMessages(prev => prev.map(msg => 
+                msg.id === responseId 
+                  ? { 
+                      ...msg, 
+                      text: cleanedText,
+                      pdfReferences: analysisResult.referencedPdfs || storeSelectedPdfs,
+                      tokensUsed: analysisResult.tokensUsed,
+                      isStreaming: false,
+                      csvData: csvDataForDownload || analysisResult.csvData || null,
+                      tableColumns: tableColumns || msg.tableColumns,
+                      tableData: tableData || msg.tableData
+                    }
+                  : msg
+              ));
+              setIsTyping(false);
+              setTimeout(() => {
+                setTableVisibleByMessageId(prev => ({ ...prev, [responseId]: true }));
+                const followUpElement = document.querySelector(`#followup-${responseId}`);
+                const feedbackElement = document.querySelector(`#feedback-${responseId}`);
+                if (followUpElement) {
+                  followUpElement.style.opacity = '1';
+                  followUpElement.style.transform = 'translateY(0)';
+                }
+                if (feedbackElement) {
+                  feedbackElement.style.opacity = '1';
+                }
+              }, 100);
+            },
+            // onError
+            (error) => {
+              console.error('❌ [SEARCH STREAMING] Streaming failed:', error);
+              const errorMessage = error?.message || error?.toString() || 'An unknown error occurred';
+              setMessages(prev => prev.map(msg => 
+                msg.id === responseId 
+                  ? { 
+                      ...msg, 
+                      text: `Error analyzing PDFs: ${errorMessage}. Please try again.`,
+                      showFollowUp: false,
+                      showFeedback: false,
+                      isStreaming: false,
+                      isLoading: false
+                    }
+                  : msg
+              ));
+              setIsTyping(false);
+            }
+          );
+          
+          // Return early since streaming handles the response
+          setIsLoading(false);
+          setChatHistorySearch("");
+          return;
+          
         } catch (error) {
-          console.error('Error analyzing PDFs:', error);
+          console.error('❌ [SEARCH STREAMING] Error starting stream:', error);
+          const errorMessage = error?.message || error?.toString() || 'An unknown error occurred';
           searchResponse = {
             id: Date.now() + 1,
-            text: `Error analyzing PDFs: ${error.message}. Please try again.`,
+            text: `Error analyzing PDFs: ${errorMessage}. Please try again.`,
             sender: 'assistant',
             showFollowUp: false,
             showFeedback: false
@@ -468,15 +603,9 @@ export default function ChatPage() {
       
       setIsTyping(false);
       setShowVisualization(true);
-      setCurrentStep(getCustomLoadingSteps(query).length - 1);
-      setCompletedSteps(getCustomLoadingSteps(query).map((_, index) => index));
-      
-      // Clean up intervals
-      clearInterval(progressInterval);
-      clearInterval(stepInterval);
 
     } catch (error) {
-      console.error('Error:', error);
+      // Error handled in UI
     } finally {
       setIsLoading(false);
       setChatHistorySearch("");
@@ -484,89 +613,256 @@ export default function ChatPage() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() && (!storeSelectedPdfs || storeSelectedPdfs.length === 0)) return;
 
-    // Agent 4: Include PDF references in message
+    // Agent 4: Include PDF references in message - use store directly
+    const hasSelectedPdfs = storeSelectedPdfs && storeSelectedPdfs.length > 0;
     const newMessage = {
       id: Date.now(),
       text: inputValue.trim(),
       sender: 'user',
-      pdfReferences: pdfMention.hasSelectedPdfs ? [...pdfMention.selectedPdfs] : undefined
+      pdfReferences: hasSelectedPdfs ? [...storeSelectedPdfs] : undefined
     };
 
     setMessages(prev => [...prev, newMessage]);
     const messageText = inputValue.trim();
     setInputValue("");
     setIsLoading(true);
-    setLoadingProgress(0);
     setShowVisualization(false);
-
-    const customSteps = getCustomLoadingSteps(messageText);
-    debugLog('handleSendMessage:start', { 
-      inputValue: messageText, 
-      customSteps,
-      stepsLength: customSteps.length,
-      hasPdfReferences: pdfMention.hasSelectedPdfs,
-      pdfCount: pdfMention.selectedPdfs.length
-    });
+    
+    // Scroll user message to top after it's added to DOM
+    scrollUserMessageToTop(newMessage.id);
 
     try {
-      const progressInterval = setInterval(() => {
-        setLoadingProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return prev + 5;
-        });
-      }, 50);
-
-      const stepInterval = setInterval(() => {
-        setCurrentStep(prev => {
-          // Use the pre-calculated steps instead of calling getCustomLoadingSteps again
-          debugLog('handleSendMessage:stepInterval', { prev, stepsLength: customSteps.length, steps: customSteps });
-          if (prev >= customSteps.length - 1) {
-            clearInterval(stepInterval);
-            return prev;
-          }
-          setCompletedSteps(current => [...current, prev]);
-          return prev + 1;
-        });
-      }, 1000);
-
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Agent 4: Check if PDFs are referenced and call analyze API
+      // Agent 4: Check if PDFs are referenced and call streaming analyze API - use store directly
       let response;
-      if (pdfMention.hasSelectedPdfs) {
+      
+      // Explicit check with detailed logging
+      const pdfsSelected = storeSelectedPdfs && Array.isArray(storeSelectedPdfs) && storeSelectedPdfs.length > 0;
+      console.log('🔍 [STREAMING CHECK]', { 
+        hasSelectedPdfs,
+        pdfsSelected,
+        storeSelectedPdfsLength: storeSelectedPdfs?.length || 0,
+        storeSelectedPdfsType: typeof storeSelectedPdfs,
+        storeSelectedPdfsIsArray: Array.isArray(storeSelectedPdfs),
+        storeSelectedPdfs: storeSelectedPdfs 
+      });
+      
+      if (pdfsSelected) {
+        console.log('✅ [STREAMING] PDFs detected! Using streaming endpoint /api/pdfs/analyze/stream');
+        console.log('✅ [STREAMING] Selected PDFs:', storeSelectedPdfs);
         try {
-          const pdfIds = pdfMention.getSelectedPdfIds();
-          debugLog('Calling PDF analyze API', { pdfIds, query: messageText });
+          // Get PDF IDs from store directly
+          const pdfIds = storeSelectedPdfs.map(pdf => pdf.s3Key || pdf.id);
+          console.log('✅ [STREAMING] Extracted PDF IDs:', pdfIds);
+          console.log('✅ [STREAMING] Query:', messageText);
+          debugStreamLog('Calling PDF streaming analyze API', { pdfIds, query: messageText });
           
-          const analysisResult = await analyzePDFs(pdfIds, messageText, messageText);
+          // Validate PDF IDs before making request
+          if (!pdfIds || pdfIds.length === 0 || pdfIds.some(id => !id)) {
+            throw new Error('Invalid PDF IDs: ' + JSON.stringify(pdfIds));
+          }
+          
+          // Create streaming response message
+          const responseId = Date.now() + 1;
+          let streamedText = '';
+          let isMainStream = false; // Track if we're in main stream phase
           
           response = {
-            id: Date.now() + 1,
-            text: analysisResult.analysis || "AI analysis completed.",
+            id: responseId,
+            text: '',
             sender: 'assistant',
             showFollowUp: false,
             showFeedback: true,
-            pdfReferences: analysisResult.referencedPdfs || pdfMention.selectedPdfs,
-            tokensUsed: analysisResult.tokensUsed
+            pdfReferences: storeSelectedPdfs,
+            isStreaming: true,
+            isLoading: true // Show loading indicator until first chunk
           };
           
-          debugLog('PDF analysis result', analysisResult);
+          // Add response to messages immediately for streaming
+          setMessages(prev => [...prev, response]);
+          setIsTyping(true);
+          
+          // Stream the analysis
+          await streamAnalyzePDFs(
+            pdfIds,
+            messageText,
+            messageText,
+            // onChunk - called for each token from main stream
+            (chunk) => {
+              if (!isMainStream) {
+                // First chunk from main stream - hide loading indicator and start main text
+                isMainStream = true;
+                streamedText = chunk;
+                
+                console.log('🎨 [STREAMING] First chunk received in ChatPage, updating UI', {
+                  timestamp: new Date().toISOString(),
+                  chunkPreview: chunk.substring(0, 50) + (chunk.length > 50 ? '...' : ''),
+                  chunkLength: chunk.length
+                });
+                
+                setMessages(prev => prev.map(msg => 
+                  msg.id === responseId 
+                    ? { ...msg, text: streamedText, isLoading: false }
+                    : msg
+                ));
+              } else {
+                // Continue accumulating main stream text
+                streamedText += chunk;
+                setMessages(prev => {
+                  const updated = prev.map(msg => 
+                    msg.id === responseId 
+                      ? { ...msg, text: streamedText }
+                      : msg
+                  );
+                  return updated;
+                });
+              }
+            },
+            // onComplete - called when stream finishes
+            (analysisResult) => {
+              // Parse JSON table data to table format if available
+              let tableColumns = null;
+              let tableData = null;
+              let cleanedText = analysisResult.analysis || streamedText;
+              let csvDataForDownload = null;
+              
+              if (analysisResult.jsonTableData) {
+                console.log('✅ [JSON] JSON table data available, parsing to table format');
+                const parsedTable = parseJSONToTable(analysisResult.jsonTableData);
+                if (parsedTable) {
+                  tableColumns = parsedTable.tableColumns;
+                  tableData = parsedTable.tableData;
+                  console.log('✅ [JSON] JSON parsed to table:', { 
+                    columns: tableColumns.length, 
+                    rows: tableData.length 
+                  });
+                  
+                  // Convert JSON to CSV for download
+                  csvDataForDownload = convertJSONToCSV(analysisResult.jsonTableData);
+                  
+                  // Remove JSON markdown code block from displayed text
+                  cleanedText = removeJSONFromText(cleanedText);
+                  console.log('✅ [JSON] Removed JSON code block from response text');
+                }
+              } else if (analysisResult.csvData) {
+                // Fallback: if CSV data exists (legacy support), use it
+                console.log('✅ [CSV] CSV data available (legacy), parsing to table format');
+                const parsedTable = parseCSVToTable(analysisResult.csvData);
+                if (parsedTable) {
+                  tableColumns = parsedTable.tableColumns;
+                  tableData = parsedTable.tableData;
+                  csvDataForDownload = analysisResult.csvData;
+                  cleanedText = removeJSONFromText(cleanedText);
+                }
+              }
+              
+              setMessages(prev => prev.map(msg => 
+                msg.id === responseId 
+                  ? { 
+                      ...msg, 
+                      text: cleanedText,
+                      pdfReferences: analysisResult.referencedPdfs || storeSelectedPdfs,
+                      tokensUsed: analysisResult.tokensUsed,
+                      isStreaming: false,
+                      csvData: csvDataForDownload || analysisResult.csvData || null,
+                      tableColumns: tableColumns || msg.tableColumns,
+                      tableData: tableData || msg.tableData
+                    }
+                  : msg
+              ));
+              setIsTyping(false);
+              // Show table and feedback buttons after streaming completes
+              setTimeout(() => {
+                setTableVisibleByMessageId(prev => ({ ...prev, [responseId]: true }));
+                const followUpElement = document.querySelector(`#followup-${responseId}`);
+                const feedbackElement = document.querySelector(`#feedback-${responseId}`);
+                if (followUpElement) {
+                  followUpElement.style.opacity = '1';
+                  followUpElement.style.transform = 'translateY(0)';
+                }
+                if (feedbackElement) {
+                  feedbackElement.style.opacity = '1';
+                }
+              }, 100);
+              debugStreamLog('PDF streaming analysis complete', analysisResult);
+            },
+            // onError - called on error
+            (error) => {
+              console.error('❌ [STREAMING] Error callback received:', error);
+              console.error('❌ [STREAMING] Error type:', typeof error);
+              console.error('❌ [STREAMING] Error details:', {
+                message: error?.message,
+                toString: error?.toString?.(),
+                string: String(error),
+                error: error
+              });
+              
+              // Extract error message more robustly
+              let errorMessage = 'An unknown error occurred';
+              if (error) {
+                if (error instanceof Error) {
+                  errorMessage = error.message || error.toString();
+                } else if (typeof error === 'string') {
+                  errorMessage = error;
+                } else if (error.message) {
+                  errorMessage = error.message;
+                } else if (error.toString && typeof error.toString === 'function') {
+                  errorMessage = error.toString();
+                } else {
+                  errorMessage = String(error);
+                }
+              }
+              
+              // Only update if we have a valid error message
+              if (errorMessage && errorMessage !== 'An unknown error occurred') {
+                setMessages(prev => prev.map(msg => 
+                  msg.id === responseId 
+                    ? { 
+                        ...msg, 
+                        text: `Error analyzing PDFs: ${errorMessage}. Please try again.`,
+                        showFollowUp: false,
+                        showFeedback: false,
+                        isStreaming: false
+                      }
+                    : msg
+                ));
+              } else {
+                // If we still don't have a message, log and show generic error
+                console.error('❌ [STREAMING] Could not extract error message, showing generic error');
+                setMessages(prev => prev.map(msg => 
+                  msg.id === responseId 
+                    ? { 
+                        ...msg, 
+                        text: `Error analyzing PDFs. Please check the console for details and try again.`,
+                        showFollowUp: false,
+                        showFeedback: false,
+                        isStreaming: false
+                      }
+                    : msg
+                ));
+              }
+              setIsTyping(false);
+            }
+          );
+          
+          // Return early since streaming handles the response
+          setIsLoading(false);
+          return;
+          
         } catch (error) {
-          console.error('Error analyzing PDFs:', error);
+          console.error('❌ [STREAMING] Streaming failed, showing error:', error);
+          const errorMessage = error?.message || error?.toString() || 'An unknown error occurred';
           response = {
             id: Date.now() + 1,
-            text: `Error analyzing PDFs: ${error.message}. Please try again.`,
+            text: `Error analyzing PDFs: ${errorMessage}. Please try again.`,
             sender: 'assistant',
             showFollowUp: false,
             showFeedback: false
           };
         }
       } else {
+        console.log('ℹ️ [STREAMING] No PDFs selected - storeSelectedPdfs:', storeSelectedPdfs);
         // Use the same query matching logic as handleSearch
         const queries = {
         "I spoke with Mr John Doe and he was interested in getting 5L loan for a new Maruti Suzuki Car Swift Desire. He will put a down payment of 2L and he wants the loan for 5 years. Please push this to @SFDC": {
@@ -636,10 +932,10 @@ export default function ChatPage() {
       setIsTyping(true);
       setMessages(prev => [...prev, response]);
       
-      // Agent 4: Clear selected PDFs after sending message
-      if (pdfMention.hasSelectedPdfs) {
-        pdfMention.clearSelectedPDFs();
-      }
+      // Agent 4: Keep selected PDFs after sending message (user can manually remove them)
+      // if (pdfMention.hasSelectedPdfs) {
+      //   pdfMention.clearSelectedPDFs();
+      // }
       
       if (currentChat) {
         mockChatMessages[currentChat.id] = [
@@ -652,16 +948,10 @@ export default function ChatPage() {
       setTimeout(() => {
         setIsTyping(false);
         setShowVisualization(true);
-        setCurrentStep(getCustomLoadingSteps(messageText).length - 1);
-        setCompletedSteps(getCustomLoadingSteps(messageText).map((_, index) => index));
       }, 500);
-
-      // Make sure to clear both intervals
-      clearInterval(progressInterval);
-      clearInterval(stepInterval);
       
     } catch (error) {
-      console.error('Error:', error);
+      // Error handled in UI
     } finally {
       setIsLoading(false);
     }
@@ -677,39 +967,12 @@ export default function ChatPage() {
     setMessages(prev => [...prev, newMessage]);
     setInputValue("");
     setIsLoading(true);
-    setLoadingProgress(0);
     setShowVisualization(false);
-
-    const customSteps = getCustomLoadingSteps(query);
-    debugLog('handleFollowUpClick:start', { 
-      query, 
-      customSteps,
-      stepsLength: customSteps.length
-    });
+    
+    // Scroll user message to top after it's added to DOM
+    scrollUserMessageToTop(newMessage.id);
 
     try {
-      const progressInterval = setInterval(() => {
-        setLoadingProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return prev + 1;
-        });
-      }, 50);
-
-      const stepInterval = setInterval(() => {
-        setCurrentStep(prev => {
-          // Use the pre-calculated steps instead of calling getCustomLoadingSteps again
-          debugLog('handleFollowUpClick:stepInterval', { prev, stepsLength: customSteps.length, steps: customSteps });
-          if (prev >= customSteps.length - 1) {
-            clearInterval(stepInterval);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-
       // Simulate API delay
       setTimeout(async () => {
         const responseText = `Yes but one additional document is also required in the case of partnership firms: **Board resolution for Trust.**`;
@@ -739,13 +1002,11 @@ export default function ChatPage() {
           setShowVisualization(true);
         }, 500);
 
-        clearInterval(progressInterval);
-        clearInterval(stepInterval);
         setIsLoading(false);
       }, 5000);
 
     } catch (error) {
-      console.error('Error:', error);
+      // Error handled in UI
       setIsLoading(false);
     }
   };
@@ -783,78 +1044,22 @@ export default function ChatPage() {
 
           {/* Chat History */}
           <ScrollArea className="flex-1 px-3 py-2">
-            <div className="space-y-4">
-              {/* Today's Chats */}
-              <div className="space-y-0.5">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-1">Today</h3>
-                {chatHistory.today.map(chat => (
-                  <button
-                    key={chat.id}
-                    onClick={() => selectChat(chat)}
-                    className={`w-full text-left py-2 px-4 text-sm transition-all rounded-xl ${
-                      currentChat?.id === chat.id 
-                        ? 'bg-[#EEF2FF] text-gray-900 font-medium' 
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {chat.title}
-                  </button>
-                ))}
-              </div>
-
-              {/* Yesterday's Chats */}
-              <div className="space-y-0.5">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-1">Yesterday</h3>
-                {chatHistory.yesterday.map(chat => (
-                  <button
-                    key={chat.id}
-                    onClick={() => selectChat(chat)}
-                    className={`w-full text-left py-2 px-4 text-sm transition-all rounded-xl ${
-                      currentChat?.id === chat.id 
-                        ? 'bg-[#EEF2FF] text-gray-900 font-medium' 
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {chat.title}
-                  </button>
-                ))}
-              </div>
-
-              {/* Previous Week */}
-              <div className="space-y-0.5">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-1">Previous 7 Days</h3>
-                {chatHistory.previousWeek.map(chat => (
-                  <button
-                    key={chat.id}
-                    onClick={() => selectChat(chat)}
-                    className={`w-full text-left py-2 px-4 text-sm transition-all rounded-xl ${
-                      currentChat?.id === chat.id 
-                        ? 'bg-[#EEF2FF] text-gray-900 font-medium' 
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {chat.title}
-                  </button>
-                ))}
-              </div>
-
-              {/* Previous Month */}
-              <div className="space-y-0.5">
-                <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-1">Previous 30 Days</h3>
-                {chatHistory.previousMonth.map(chat => (
-                  <button
-                    key={chat.id}
-                    onClick={() => selectChat(chat)}
-                    className={`w-full text-left py-2 px-4 text-sm transition-all rounded-xl ${
-                      currentChat?.id === chat.id 
-                        ? 'bg-[#EEF2FF] text-gray-900 font-medium' 
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {chat.title}
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-0.5">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 mb-1">Previous Chats</h3>
+              {chatHistory.map(chat => (
+                <button
+                  key={chat.id}
+                  onClick={() => selectChat(chat)}
+                  className={`w-full text-left py-2 px-4 text-sm transition-all rounded-xl truncate ${
+                    currentChat?.id === chat.id 
+                      ? 'bg-[#EEF2FF] text-gray-900 font-medium' 
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                  title={chat.title}
+                >
+                  {chat.title}
+                </button>
+              ))}
             </div>
           </ScrollArea>
         </div>
@@ -911,12 +1116,13 @@ export default function ChatPage() {
                           
                           if (e.key === 'Enter' && !e.shiftKey && chatHistorySearch.trim()) {
                             e.preventDefault();
+                            const hasSelectedPdfs = storeSelectedPdfs && storeSelectedPdfs.length > 0;
                             const newMessage = {
                               id: Date.now(),
                               text: chatHistorySearch.trim(),
                               sender: 'user',
                               attachments: attachments,
-                              pdfReferences: pdfMention.hasSelectedPdfs ? [...pdfMention.selectedPdfs] : undefined
+                              pdfReferences: hasSelectedPdfs ? [...storeSelectedPdfs] : undefined
                             };
                             const newChat = {
                               id: Date.now(),
@@ -924,6 +1130,8 @@ export default function ChatPage() {
                             };
                             setCurrentChat(newChat);
                             setMessages([newMessage]);
+                            // Scroll user message to top after it's added to DOM
+                            setTimeout(() => scrollUserMessageToTop(newMessage.id), 100);
                             handleSearch(chatHistorySearch);
                             setAttachments([]);
                             e.target.style.height = 'auto';
@@ -941,12 +1149,13 @@ export default function ChatPage() {
                         <button 
                           onClick={() => {
                             if (chatHistorySearch.trim()) {
+                              const hasSelectedPdfs = storeSelectedPdfs && storeSelectedPdfs.length > 0;
                               const newMessage = {
                                 id: Date.now(),
                                 text: chatHistorySearch.trim(),
                                 sender: 'user',
                                 attachments: attachments,
-                                pdfReferences: pdfMention.hasSelectedPdfs ? [...pdfMention.selectedPdfs] : undefined
+                                pdfReferences: hasSelectedPdfs ? [...storeSelectedPdfs] : undefined
                               };
                               const newChat = {
                                 id: Date.now(),
@@ -954,6 +1163,8 @@ export default function ChatPage() {
                               };
                               setCurrentChat(newChat);
                               setMessages([newMessage]);
+                              // Scroll user message to top after it's added to DOM
+                              setTimeout(() => scrollUserMessageToTop(newMessage.id), 100);
                               handleSearch(chatHistorySearch);
                               setAttachments([]);
                             }
@@ -967,14 +1178,14 @@ export default function ChatPage() {
                     </div>
                     
                     {/* Agent 4: PDF Reference Badges inside input */}
-                    {pdfMention.hasSelectedPdfs && (
+                    {storeSelectedPdfs && storeSelectedPdfs.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-2">
-                        {pdfMention.selectedPdfs.map(pdf => (
-                          <div key={pdf.s3Key} className="flex items-center gap-1 bg-[#EEF2FF] text-[#3551F3] px-2 py-1 rounded-full text-xs">
+                        {storeSelectedPdfs.map(pdf => (
+                          <div key={pdf.s3Key || pdf.id} className="flex items-center gap-1 bg-[#EEF2FF] text-[#3551F3] px-2 py-1 rounded-full text-xs">
                             <FileText className="w-3 h-3" />
                             <span>{pdf.filename}</span>
                             <button
-                              onClick={() => pdfMention.removePDF(pdf.s3Key)}
+                              onClick={() => storeDeselectPDF(pdf.s3Key || pdf.id)}
                               className="hover:bg-[#3551F3] hover:text-white p-0.5 rounded-full transition-colors ml-0.5"
                             >
                               <X className="w-2.5 h-2.5" />
@@ -991,74 +1202,46 @@ export default function ChatPage() {
             // Chat View
             <>
               {/* Messages */}
-              <ScrollArea className="h-full w-full absolute inset-0 p-6">
+              <ScrollArea ref={scrollAreaRef} className="h-full w-full absolute inset-0 p-6">
                 <div className="space-y-4 max-w-5xl mx-auto pb-32">
                   {messages.map((msg, index) => (
                     <div
                       key={msg.id}
+                      data-message-id={msg.id}
                       className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                     >
-                      {msg.sender === 'assistant' && messages[index - 1]?.sender === 'user' && completedSteps.length > 0 && (
-                        <button
-                          onClick={() => setShowSteps(prev => ({ ...prev, [msg.id]: !prev[msg.id] }))}
-                          className="flex items-center gap-1.5 mb-2 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                        >
-                          {showSteps[msg.id] ? (
-                            <ChevronUp className="w-3.5 h-3.5" />
-                          ) : (
-                            <ChevronDown className="w-3.5 h-3.5" />
-                          )}
-                          View Processing Steps
-                        </button>
-                      )}
-                      {showSteps[msg.id] && (
-                        <div className="w-full mb-3 bg-white rounded-2xl p-6 space-y-5 border border-gray-100 shadow-sm">
-                          
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <h3 className="text-base font-semibold text-gray-900">
-                                {msg.language === 'mr' ? 'प्रक्रिया सुरू आहे' : 'Request processed'}
-                              </h3>
-                              <span className="text-sm text-gray-500 font-medium">{Math.round(loadingProgress)}%</span>
-                            </div>
-                            <Progress value={loadingProgress} className="h-1.5" />
-                          </div>
-                          
-                          <LoadingSteps steps={getCustomLoadingSteps(msg.language === 'mr' ? 'कार' : 'car')} currentStep={currentStep} />
-                        </div>
-                      )}
                        <div
                          className={`max-w-[85%] rounded-2xl py-3 px-5 ${
                            msg.sender === 'user'
                              ? 'bg-[#EEF2FF] text-gray-900'
-                             : 'bg-gray-50/80 text-gray-900'
+                             : 'text-gray-900'
                          }`}
                        >
                         {msg.sender === 'assistant' ? (
                           <div>
-                            <div className="whitespace-pre-wrap leading-relaxed">
-                              <TypewriterText 
-                                text={msg.text} 
-                                delay={5} 
-                                onComplete={() => {
-                                  setTimeout(() => {
-                                    const followUpElement = document.querySelector(`#followup-${msg.id}`);
-                                    const feedbackElement = document.querySelector(`#feedback-${msg.id}`);
-                                    if (msg.showFollowUp && followUpElement) {
-                                      followUpElement.style.opacity = '1';
-                                      followUpElement.style.transform = 'translateY(0)';
-                                    }
-                                    if (feedbackElement) {
-                                      feedbackElement.style.opacity = '1';
-                                    }
-                                    // Show table after text is complete
-                                    setTableVisibleByMessageId(prev => ({ ...prev, [msg.id]: true }));
-                                  }, 500);
-                                }}
-                              />
-                            </div>
+                            {msg.isStreaming ? (
+                              // For streaming messages
+                              msg.isLoading ? (
+                                // Show loading indicator while waiting for first chunk
+                                <LoadingIndicator isActive={true} />
+                              ) : msg.text && msg.text.trim() ? (
+                                // Show streaming text with cursor once main stream starts
+                                <div>
+                                  <MarkdownText text={msg.text} />
+                                  <span className="inline-block">
+                                    <StreamingCursor />
+                                  </span>
+                                </div>
+                              ) : (
+                                // Fallback: show loading indicator if no text yet
+                                <LoadingIndicator isActive={true} />
+                              )
+                            ) : (
+                              // For non-streaming messages, display with markdown formatting
+                              <MarkdownText text={msg.text} />
+                            )}
                             
-                            {/* Table rendering */}
+                            {/* Show table immediately for non-streaming messages, or after streaming completes */}
                             {msg.tableData && Array.isArray(msg.tableData) && msg.tableData.length > 0 && tableVisibleByMessageId[msg.id] && (
                               <div className="mt-4">
                                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
@@ -1088,9 +1271,25 @@ export default function ChatPage() {
                             
                             <div 
                               id={`feedback-${msg.id}`} 
-                              className="mt-4 flex items-center gap-2"
+                              className="mt-4 flex items-center gap-2 flex-wrap"
                               style={{ opacity: '0', transition: 'opacity 0.3s ease' }}
                             >
+                              {msg.csvData && (
+                                <button 
+                                  onClick={() => {
+                                    try {
+                                      downloadCSV(msg.csvData);
+                                    } catch (error) {
+                                      console.error('❌ [CSV] Error downloading CSV:', error);
+                                    }
+                                  }}
+                                  className="px-3 py-1.5 text-sm font-medium text-[#3551F3] hover:bg-[#EEF2FF] rounded-lg transition-colors flex items-center gap-1.5"
+                                  title="Download CSV"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  Download CSV
+                                </button>
+                              )}
                               <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                                 <ThumbsUp className="w-4 h-4 text-gray-500" />
                               </button>
@@ -1146,23 +1345,9 @@ export default function ChatPage() {
                       </div>
                     </div>
                   ))}
-
-                  {isLoading && (
-                    <div className="bg-white rounded-2xl p-6 space-y-5 border border-gray-100">
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-base font-semibold text-gray-900">
-                            {detectLanguage(inputValue || chatHistorySearch) === 'mr' ? 'प्रक्रिया सुरू आहे' : 'Processing your request'}
-                          </h3>
-                          <span className="text-sm text-gray-500 font-medium">{Math.round(loadingProgress)}%</span>
-                        </div>
-                        <Progress value={loadingProgress} className="h-1.5" />
-                      </div>
-                      
-                      <LoadingSteps steps={getCustomLoadingSteps(inputValue || chatHistorySearch)} currentStep={currentStep} />
-                    </div>
-                  )}
+                  
+                  {/* Invisible element at the end to scroll to */}
+                  <div ref={messagesEndRef} />
 
                   {isTyping && !isLoading && (
                     <div className="flex justify-start">
@@ -1196,8 +1381,8 @@ export default function ChatPage() {
                   )}
                   
                   <div className="relative bg-white rounded-3xl border border-gray-300 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex flex-col gap-2 px-5 py-3">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-col px-5 py-3">
+                      <div className="flex items-start gap-2">
                         <input
                           type="file"
                           ref={fileInputRef}
@@ -1235,17 +1420,17 @@ export default function ChatPage() {
                           }}
                           placeholder="Ask anything"
                           rows="1"
-                          className="flex-1 text-base text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent resize-none overflow-hidden py-1"
+                          className="flex-1 text-base text-gray-900 placeholder-gray-400 focus:outline-none bg-transparent resize-none overflow-hidden py-1 min-h-[24px]"
                           disabled={isLoading}
                         />
                         
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 pt-1">
                           <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
                             <Paperclip className="w-5 h-5 text-gray-600" />
                           </button>
                           <button
                             onClick={handleSendMessage}
-                            disabled={!inputValue.trim() && !pdfMention.hasSelectedPdfs}
+                            disabled={!inputValue.trim() && (!storeSelectedPdfs || storeSelectedPdfs.length === 0)}
                             className="p-2 bg-[#3551F3] hover:bg-[#2B41D9] disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-all"
                           >
                             <Send className="w-4 h-4 text-white" />
@@ -1254,14 +1439,14 @@ export default function ChatPage() {
                       </div>
                       
                       {/* Agent 4: PDF Reference Badges inside input */}
-                      {pdfMention.hasSelectedPdfs && (
-                        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-200">
-                          {pdfMention.selectedPdfs.map(pdf => (
-                            <div key={pdf.s3Key} className="flex items-center gap-1 bg-[#EEF2FF] text-[#3551F3] px-2 py-1 rounded-full text-xs">
+                      {storeSelectedPdfs && storeSelectedPdfs.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-2 mt-1">
+                          {storeSelectedPdfs.map(pdf => (
+                            <div key={pdf.s3Key || pdf.id} className="flex items-center gap-1 bg-[#EEF2FF] text-[#3551F3] px-2 py-1 rounded-full text-xs">
                               <FileText className="w-3 h-3" />
                               <span>{pdf.filename}</span>
                               <button
-                                onClick={() => pdfMention.removePDF(pdf.s3Key)}
+                                onClick={() => storeDeselectPDF(pdf.s3Key || pdf.id)}
                                 className="hover:bg-[#3551F3] hover:text-white p-0.5 rounded-full transition-colors ml-0.5"
                               >
                                 <X className="w-2.5 h-2.5" />

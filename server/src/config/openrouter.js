@@ -49,61 +49,71 @@ module.exports = {
   // Helper function to create message payload for OpenRouter
   // Accepts array of PDFs with either 'data' (base64) or 'url' (signed URL)
   // Uses OpenRouter's file format: https://openrouter.ai/docs/features/multimodal/pdfs
-  createMessagePayload: (pdfArray, query) => ({
-    model: openrouterConfig.model,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: query
-          },
-          ...pdfArray.map((pdf) => {
-            // OpenRouter format differs based on input type:
-            // - URLs: use "fileData" (camelCase) with direct URL
-            // - Base64: use "file_data" (snake_case) with "data:application/pdf;base64," prefix
-            if (pdf.url) {
-              // URL-based format (most efficient)
-              return {
-                type: 'file',
-                file: {
-                  filename: pdf.filename || 'document.pdf',
-                  fileData: pdf.url
-                }
-              };
-            } else {
-              // Base64 format (for local files)
-              const base64WithPrefix = pdf.data.startsWith('data:') 
-                ? pdf.data 
-                : `data:application/pdf;base64,${pdf.data}`;
-              
-              return {
-                type: 'file',
-                file: {
-                  filename: pdf.filename || 'document.pdf',
-                  file_data: base64WithPrefix
-                }
-              };
-            }
-          })
-        ]
-      }
-    ],
-    // CRITICAL: Explicitly configure PDF processing engine
-    // https://openrouter.ai/docs/features/multimodal/pdfs#plugin-configuration
-    plugins: [
-      {
-        id: 'file-parser',
-        pdf: {
-          // Use 'native' for Claude models that support PDF natively
-          // Falls back to 'mistral-ocr' if native not available
-          engine: 'native'
+  // Optionally includes tools (function calling) for structured data
+  createMessagePayload: (pdfArray, query, tools = null) => {
+    const payload = {
+      model: openrouterConfig.model,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: query
+            },
+            ...pdfArray.map((pdf) => {
+              // OpenRouter format differs based on input type:
+              // - URLs: use "fileData" (camelCase) with direct URL
+              // - Base64: use "file_data" (snake_case) with "data:application/pdf;base64," prefix
+              if (pdf.url) {
+                // URL-based format (most efficient)
+                return {
+                  type: 'file',
+                  file: {
+                    filename: pdf.filename || 'document.pdf',
+                    fileData: pdf.url
+                  }
+                };
+              } else {
+                // Base64 format (for local files)
+                const base64WithPrefix = pdf.data.startsWith('data:') 
+                  ? pdf.data 
+                  : `data:application/pdf;base64,${pdf.data}`;
+                
+                return {
+                  type: 'file',
+                  file: {
+                    filename: pdf.filename || 'document.pdf',
+                    file_data: base64WithPrefix
+                  }
+                };
+              }
+            })
+          ]
         }
-      }
-    ],
-    temperature: 0.7,
-    max_tokens: 2000,
-    top_p: 1
-  })
+      ],
+      // CRITICAL: Explicitly configure PDF processing engine
+      // https://openrouter.ai/docs/features/multimodal/pdfs#plugin-configuration
+      plugins: [
+        {
+          id: 'file-parser',
+          pdf: {
+            // Use 'native' for Claude models that support PDF natively
+            // Falls back to 'mistral-ocr' if native not available
+            engine: 'native'
+          }
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+      top_p: 1
+    };
+    
+    // Add tools if provided (for function calling)
+    if (tools && Array.isArray(tools) && tools.length > 0) {
+      payload.tools = tools;
+    }
+    
+    return payload;
+  }
 };
