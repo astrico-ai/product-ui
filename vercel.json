@@ -17,7 +17,7 @@
   "framework": "vite",
   "functions": {
     "api/index.js": {
-      "maxDuration": 300
+      "maxDuration": 60
     }
   }
 } 
