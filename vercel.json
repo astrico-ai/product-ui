@@ -12,10 +12,5 @@
   "github": {
     "silent": true
   },
-  "framework": "vite",
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  "framework": "vite"
 } 

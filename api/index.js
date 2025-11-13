@@ -4,7 +4,13 @@
 // Set Vercel environment flag
 process.env.VERCEL = '1';
 
+// Load environment variables
+require('dotenv').config();
+
 const app = require('../server/src/app');
 
-module.exports = app;
+// Export as Vercel serverless function handler
+module.exports = (req, res) => {
+  return app(req, res);
+};
 
