@@ -28,16 +28,18 @@ const consoleFormat = winston.format.combine(
     )
 );
 
-// Create the logger
-const logger = winston.createLogger({
-    levels,
-    format: winston.format.json(),
-    transports: [
-        // Console transport for development
-        new winston.transports.Console({
-            format: consoleFormat,
-            level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-        }),
+// Create transports array
+const transports = [
+    // Console transport (always enabled)
+    new winston.transports.Console({
+        format: consoleFormat,
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+    }),
+];
+
+// Only add file transports if not on Vercel (serverless functions can't write to filesystem)
+if (process.env.VERCEL !== '1') {
+    transports.push(
         // File transport for errors
         new winston.transports.File({
             filename: 'logs/error.log',
@@ -54,8 +56,15 @@ const logger = winston.createLogger({
                 winston.format.timestamp(),
                 winston.format.json()
             ),
-        }),
-    ],
+        })
+    );
+}
+
+// Create the logger
+const logger = winston.createLogger({
+    levels,
+    format: winston.format.json(),
+    transports,
 });
 
 // Create a stream object for Morgan middleware
