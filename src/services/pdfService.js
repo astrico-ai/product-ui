@@ -10,7 +10,9 @@
  * - Full error handling and validation
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Use environment variable or default to same origin (for Vercel deployment)
+// In production, if VITE_API_URL is not set, it will use relative URLs (same domain)
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:3000');
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_PDF_API === 'true'; // Default to real API now
 
 // Mock data store (simulates backend database)

@@ -21,7 +21,14 @@ const io = socketIo(server, {
 });
 
 // Middleware
-app.use(cors());
+// CORS configuration - allow requests from frontend domain
+const corsOptions = {
+    origin: process.env.CLIENT_URL || (process.env.VERCEL ? 'https://demo.astrico.ai' : 'http://localhost:5173'),
+    credentials: true,
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev', { stream }));
@@ -55,10 +62,17 @@ app.use('*', (req, res) => {
     });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    logger.info(`PDF API routes registered at /api/pdfs`);
-    debug(`Debug mode is ${process.env.DEBUG_MODE ? 'enabled' : 'disabled'}`);
-}); 
+// Export app for Vercel serverless functions
+// Only start server if not in Vercel environment
+if (process.env.VERCEL !== '1') {
+    // Start server (for local development)
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, () => {
+        logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+        logger.info(`PDF API routes registered at /api/pdfs`);
+        debug(`Debug mode is ${process.env.DEBUG_MODE ? 'enabled' : 'disabled'}`);
+    });
+}
+
+// Export app for Vercel
+module.exports = app; 
