@@ -1340,7 +1340,7 @@ export default function DashboardView() {
                   type="text"
                   value={aiSearchQuery}
                   onChange={(e) => setAiSearchQuery(e.target.value)}
-                  placeholder="Ask a question like 'Total Cost by Campaign Type'"
+                  placeholder="Ask a question like 'Sales Revenue by Region'"
                   className="w-full h-10 px-12 rounded-lg shadow-sm bg-white text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#3551F3]/20 focus:border-[#3551F3]/40"
                 />
               </div>
