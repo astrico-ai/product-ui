@@ -48,7 +48,7 @@ const createMiningDashboard = (data) => {
     widgets: [],
     ...data,
   };
-  
+
   dashboards.push(newDashboard);
   saveMiningDashboards(dashboards);
   return newDashboard;

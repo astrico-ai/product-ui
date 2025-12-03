@@ -31,8 +31,8 @@ export const getDashboard = (id) => {
   return dashboard;
 };
 
-// Default widgets for new dashboards
-const getDefaultWidgets = () => [
+// Default widgets for Marketing dashboards
+const getMarketingDefaultWidgets = () => [
   {
     id: "widget-1",
     type: "kpi",
@@ -42,7 +42,7 @@ const getDefaultWidgets = () => [
   },
   {
     id: "widget-2",
-    type: "kpi", 
+    type: "kpi",
     title: "Total Cost",
     description: "Cost incurred in this month",
     position: 1,
@@ -107,17 +107,62 @@ const getDefaultWidgets = () => [
   }
 ];
 
+// Default widgets for Motul dashboards
+const getMotulDefaultWidgets = () => [
+  {
+    id: "widget-1",
+    type: "kpi",
+    title: "Total Leads",
+    description: "",
+    position: 0
+  },
+  {
+    id: "widget-2",
+    type: "kpi",
+    title: "Total Cost",
+    description: "",
+    position: 1
+  },
+  {
+    id: "widget-3",
+    type: "kpi",
+    title: "Conversion Rate",
+    description: "",
+    position: 2
+  },
+  {
+    id: "widget-4",
+    type: "table",
+    title: "Primary Segment Wise Sales",
+    description: "",
+    position: 3
+  },
+  {
+    id: "widget-5",
+    type: "combo",
+    title: "Outlets Billed & Invoices by Region",
+    description: "",
+    position: 4
+  }
+];
+
+// Get default widgets based on data source
+const getDefaultWidgets = (dataSource = "Marketing") => {
+  return dataSource === "Motul" ? getMotulDefaultWidgets() : getMarketingDefaultWidgets();
+};
+
 // Create a new dashboard
-export const createDashboard = (data) => {
+export const createDashboard = (data, dataSource = "Marketing") => {
   const dashboards = getDashboards();
   const newDashboard = {
     id: Math.random().toString(36).substring(7),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    widgets: getDefaultWidgets(),
+    widgets: getDefaultWidgets(dataSource),
+    dataSource: dataSource,
     ...data,
   };
-  
+
   dashboards.push(newDashboard);
   saveDashboards(dashboards);
   return newDashboard;

@@ -25,6 +25,9 @@ import ShareDashboardModal from "@/components/dashboard/ShareDashboardModal";
 // Lazy load ApexCharts
 const Chart = lazy(() => import('react-apexcharts'));
 
+// DATA SOURCE FLAG - Change between "Marketing" and "Motul"
+const DATA_SOURCE = "Motul";
+
 export default function DashboardView() {
   const { id } = useParams();
   const [dashboard, setDashboard] = useState(null);
@@ -38,6 +41,15 @@ export default function DashboardView() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [aiSearchQuery, setAiSearchQuery] = useState('');
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  // Filter state
+  const [selectedDate, setSelectedDate] = useState('25-26');
+  const [selectedSegment, setSelectedSegment] = useState('All');
+  const [selectedRegion, setSelectedRegion] = useState('All');
+  const [selectedState, setSelectedState] = useState('All');
+
+  // Log the current DATA_SOURCE flag
+  console.log('🚀 DashboardView loaded - DATA_SOURCE:', DATA_SOURCE);
 
   const handleAiSearch = (e) => {
     e.preventDefault();
@@ -67,8 +79,60 @@ export default function DashboardView() {
   };
 
   // Handle presentation navigation
+  // Get widgets to render (default Motul widgets or dashboard widgets)
+  const getWidgetsToRender = () => {
+    if (DATA_SOURCE === "Motul") {
+      return [
+        {
+          id: "motul-widget-1",
+          type: "kpi",
+          title: "Total Leads",
+          description: "",
+          position: 0
+        },
+        {
+          id: "motul-widget-2",
+          type: "kpi",
+          title: "Total Cost",
+          description: "",
+          position: 1
+        },
+        {
+          id: "motul-widget-3",
+          type: "kpi",
+          title: "Conversion Rate",
+          description: "",
+          position: 2
+        },
+        {
+          id: "motul-widget-4",
+          type: "table",
+          title: "Primary Segment Wise Sales",
+          description: "",
+          position: 3
+        },
+        {
+          id: "motul-widget-5",
+          type: "combo",
+          title: "Outlets Billed & Invoices by Region",
+          description: "",
+          position: 4
+        },
+        {
+          id: "motul-widget-6",
+          type: "pie",
+          title: "Sales Revenue by Region",
+          description: "",
+          position: 5
+        }
+      ];
+    }
+    return dashboard?.widgets || [];
+  };
+
   const handleNextSlide = () => {
-    if (dashboard?.widgets && currentSlideIndex < dashboard.widgets.length - 1) {
+    const widgets = getWidgetsToRender();
+    if (widgets && currentSlideIndex < widgets.length - 1) {
       setCurrentSlideIndex(currentSlideIndex + 1);
     }
   };
@@ -180,27 +244,233 @@ export default function DashboardView() {
   const renderWidget = (widget) => {
     if (!widget) return null;
 
+    // Hide non-KPI, non-table, non-combo, and non-pie charts for Motul
+    if (DATA_SOURCE === "Motul" && widget.type !== "kpi" && widget.type !== "table" && widget.type !== "combo" && widget.type !== "pie") {
+      return null;
+    }
+
+    console.log('📊 Rendering widget:', { type: widget.type, title: widget.title, dataSource: DATA_SOURCE });
+
     const renderChart = () => {
       switch (widget.type) {
+        case "combo":
+          console.log('📊 Combo chart - DATA_SOURCE:', DATA_SOURCE);
+
+          // Data organized by month with regions
+          const comboData = DATA_SOURCE === "Marketing" ? [] : [
+
+            {
+              month: "July 2025",
+              "East Region - Outlets": 4320,
+              "North Region - Outlets": 7253,
+              "South Region-1 - Outlets": 4126,
+              "South Region-2 - Outlets": 3126,
+              "West Region - Outlets": 6243,
+              "East Region - Invoices": 7143,
+              "North Region - Invoices": 9021,
+              "South Region-1 - Invoices": 9370,
+              "South Region-2 - Invoices": 4962,
+              "West Region - Invoices": 9010
+            },
+            {
+              month: "August 2025",
+              "East Region - Outlets": 5182,
+              "North Region - Outlets": 7422,
+              "South Region-1 - Outlets": 4271,
+              "South Region-2 - Outlets": 3506,
+              "West Region - Outlets": 6821,
+              "East Region - Invoices": 9921,
+              "North Region - Invoices": 10430,
+              "South Region-1 - Invoices": 10017,
+              "South Region-2 - Invoices": 5967,
+              "West Region - Invoices": 11589
+            },
+            {
+              month: "September 2025",
+              "East Region - Outlets": 5879,
+              "North Region - Outlets": 8153,
+              "South Region-1 - Outlets": 4590,
+              "South Region-2 - Outlets": 4194,
+              "West Region - Outlets": 7623,
+              "East Region - Invoices": 10340,
+              "North Region - Invoices": 11710,
+              "South Region-1 - Invoices": 9666,
+              "South Region-2 - Invoices": 7130,
+              "West Region - Invoices": 14231
+            }
+          ];
+
+          return (
+            <div className="p-4">
+              <Suspense fallback={<div>Loading chart...</div>}>
+                <Chart
+                  options={{
+                    chart: {
+                      type: 'bar',
+                      toolbar: {
+                        show: false
+                      }
+                    },
+                    plotOptions: {
+                      bar: {
+                        columnWidth: '60%'
+                      }
+                    },
+                    xaxis: {
+                      categories: comboData.map(d => d.month)
+                    },
+                    yaxis: [
+                      {
+                        title: {
+                          text: 'Outlets Billed',
+                          style: {
+                            fontSize: '12px'
+                          }
+                        },
+                        labels: {
+                          formatter: (value) => value.toLocaleString()
+                        }
+                      },
+                      {
+                        opposite: true,
+                        title: {
+                          text: 'Number of Invoices',
+                          style: {
+                            fontSize: '12px'
+                          }
+                        },
+                        labels: {
+                          formatter: (value) => value.toLocaleString()
+                        }
+                      }
+                    ],
+                    stroke: {
+                      width: [0, 0, 0, 0, 0, 3, 3, 3, 3, 3],
+                      curve: 'smooth'
+                    },
+                    tooltip: {
+                      enabled: false
+                    },
+                    legend: {
+                      show: false
+                    }
+                  }}
+                  series={[
+                    {
+                      name: 'East Region',
+                      data: comboData.map(d => d["East Region - Outlets"]),
+                      type: 'bar'
+                    },
+                    {
+                      name: 'North Region',
+                      data: comboData.map(d => d["North Region - Outlets"]),
+                      type: 'bar'
+                    },
+                    {
+                      name: 'South Region-1',
+                      data: comboData.map(d => d["South Region-1 - Outlets"]),
+                      type: 'bar'
+                    },
+                    {
+                      name: 'South Region-2',
+                      data: comboData.map(d => d["South Region-2 - Outlets"]),
+                      type: 'bar'
+                    },
+                    {
+                      name: 'West Region',
+                      data: comboData.map(d => d["West Region - Outlets"]),
+                      type: 'bar'
+                    },
+                    {
+                      name: '',
+                      data: comboData.map(d => d["East Region - Invoices"]),
+                      type: 'line'
+                    },
+                    {
+                      name: '',
+                      data: comboData.map(d => d["North Region - Invoices"]),
+                      type: 'line'
+                    },
+                    {
+                      name: '',
+                      data: comboData.map(d => d["South Region-1 - Invoices"]),
+                      type: 'line'
+                    },
+                    {
+                      name: '',
+                      data: comboData.map(d => d["South Region-2 - Invoices"]),
+                      type: 'line'
+                    },
+                    {
+                      name: '',
+                      data: comboData.map(d => d["West Region - Invoices"]),
+                      type: 'line'
+                    }
+                  ]}
+                  height={400}
+                />
+              </Suspense>
+
+              {/* Custom Horizontal Legend */}
+              <div className="flex justify-center gap-8 mt-6 flex-wrap">
+                {[
+                  { name: 'East Region', color: '#3B82F6' },
+                  { name: 'North Region', color: '#10B981' },
+                  { name: 'South Region-1', color: '#F59E0B' },
+                  { name: 'South Region-2', color: '#EF4444' },
+                  { name: 'West Region', color: '#8B5CF6' }
+                ].map((item) => (
+                  <div key={item.name} className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm text-gray-700">{item.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+
         case "kpi":
           let displayValue;
           let trend;
-          
-          // Determine value based on widget title
-          if (widget.title === "Total Leads") {
-            trend = 12.5;
-            displayValue = "12,349";
-          } else if (widget.title === "Total Cost") {
-            trend = 8.3;
-            displayValue = "₹15 Cr";
-          } else if (widget.title === "Conversion Rate") {
-            trend = -2.8;
-            displayValue = "35%";
+
+          // Determine value based on widget title and data source
+          if (DATA_SOURCE === "Motul") {
+            // Map Marketing KPI titles to Motul values
+            if (widget.title === "Total Leads" || widget.title === "Sale for the Day") {
+              trend = 5.2;
+              displayValue = "128.92";
+            } else if (widget.title === "Total Cost" || widget.title === "MTD") {
+              trend = 8.7;
+              displayValue = "3,245.46";
+            } else if (widget.title === "Conversion Rate" || widget.title === "YTD") {
+              trend = 12.3;
+              displayValue = "9,279.07";
+            } else {
+              // For other Motul KPI cards
+              const otherValue = Math.floor(Math.random() * (1000 - 100 + 1)) + 100;
+              trend = Math.random() > 0.5 ? 6.5 : -4.2;
+              displayValue = otherValue.toLocaleString();
+            }
           } else {
-            // For other KPI cards
-            const otherValue = Math.floor(Math.random() * (100 - 30 + 1)) + 30;
-            trend = Math.random() > 0.5 ? 5.2 : -3.1;
-            displayValue = otherValue.toLocaleString();
+            // Marketing data
+            if (widget.title === "Total Leads") {
+              trend = 12.5;
+              displayValue = "12,349";
+            } else if (widget.title === "Total Cost") {
+              trend = 8.3;
+              displayValue = "₹15 Cr";
+            } else if (widget.title === "Conversion Rate") {
+              trend = -2.8;
+              displayValue = "35%";
+            } else {
+              // For other KPI cards
+              const otherValue = Math.floor(Math.random() * (100 - 30 + 1)) + 30;
+              trend = Math.random() > 0.5 ? 5.2 : -3.1;
+              displayValue = otherValue.toLocaleString();
+            }
           }
           
           return (
@@ -209,12 +479,14 @@ export default function DashboardView() {
                 <div className="text-4xl font-bold text-gray-900">
                   {displayValue}
                 </div>
-                <div className={cn(
-                  "text-sm mt-2 flex items-center justify-center gap-1",
-                  trend > 0 ? "text-green-600" : "text-red-600"
-                )}>
-                  {trend > 0 ? "↑" : "↓"} {Math.abs(trend)}% vs last period
-                </div>
+                {DATA_SOURCE !== "Motul" && (
+                  <div className={cn(
+                    "text-sm mt-2 flex items-center justify-center gap-1",
+                    trend > 0 ? "text-green-600" : "text-red-600"
+                  )}>
+                    {trend > 0 ? "↑" : "↓"} {Math.abs(trend)}% vs last period
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -384,82 +656,131 @@ export default function DashboardView() {
           );
 
         case "table":
+          console.log('📋 Table chart - DATA_SOURCE:', DATA_SOURCE);
           // If no CSV data is provided, fall back to default data
-          const displayData = tableData.length > 0 ? tableData : [
-            { 
-              id: 1, 
-              campaign: "Google Search Campaign", 
-              spend: 4500000, 
+          const defaultMarketingData = [
+            {
+              id: 1,
+              campaign: "Google Search Campaign",
+              spend: 4500000,
               ctr: 12.5,
               conversions: 850,
               roas: 4.2
             },
-            { 
-              id: 2, 
-              campaign: "Facebook Brand Campaign", 
-              spend: 3200000, 
+            {
+              id: 2,
+              campaign: "Facebook Brand Campaign",
+              spend: 3200000,
               ctr: 8.7,
               conversions: 640,
               roas: 3.8
             },
-            { 
-              id: 3, 
-              campaign: "LinkedIn B2B Campaign", 
-              spend: 2800000, 
+            {
+              id: 3,
+              campaign: "LinkedIn B2B Campaign",
+              spend: 2800000,
               ctr: 6.4,
               conversions: 420,
               roas: 3.2
             },
-            { 
-              id: 4, 
-              campaign: "Email Newsletter", 
-              spend: 1500000, 
+            {
+              id: 4,
+              campaign: "Email Newsletter",
+              spend: 1500000,
               ctr: 15.8,
               conversions: 320,
               roas: 5.6
             },
-            { 
-              id: 5, 
-              campaign: "YouTube Video Ads", 
-              spend: 3800000, 
+            {
+              id: 5,
+              campaign: "YouTube Video Ads",
+              spend: 3800000,
               ctr: 9.7,
               conversions: 760,
               roas: 4.1
             },
-            { 
-              id: 6, 
-              campaign: "Instagram Stories", 
-              spend: 2200000, 
+            {
+              id: 6,
+              campaign: "Instagram Stories",
+              spend: 2200000,
               ctr: 11.3,
               conversions: 440,
               roas: 3.9
             },
-            { 
-              id: 7, 
-              campaign: "Content Marketing", 
-              spend: 1800000, 
+            {
+              id: 7,
+              campaign: "Content Marketing",
+              spend: 1800000,
               ctr: 7.5,
               conversions: 280,
               roas: 3.4
             },
-            { 
-              id: 8, 
-              campaign: "Retargeting Campaign", 
-              spend: 2600000, 
+            {
+              id: 8,
+              campaign: "Retargeting Campaign",
+              spend: 2600000,
               ctr: 14.8,
               conversions: 520,
               roas: 4.7
             }
           ];
 
+          const defaultMotulData = [
+            {
+              id: 1,
+              region: "East Region",
+              "Sale for the Day": 21358.7,
+              "MTD": 629931.41,
+              "YTD": 1793836.17
+            },
+            {
+              id: 2,
+              region: "India Yamaha",
+              "Sale for the Day": 15449.6,
+              "MTD": 150351.6,
+              "YTD": 460185.6
+            },
+            {
+              id: 3,
+              region: "North Region",
+              "Sale for the Day": 24874.3,
+              "MTD": 782716.42,
+              "YTD": 2140121.17
+            },
+            {
+              id: 4,
+              region: "South Region - 1",
+              "Sale for the Day": 25330.04,
+              "MTD": 407762.4,
+              "YTD": 1238276.9
+            },
+            {
+              id: 5,
+              region: "South Region - 2",
+              "Sale for the Day": 16336.8,
+              "MTD": 460574.74,
+              "YTD": 1308954.64
+            },
+            {
+              id: 6,
+              region: "West Region",
+              "Sale for the Day": 30665.5,
+              "MTD": 784674.47,
+              "YTD": 2202840.72
+            }
+          ];
+
+          const displayData = tableData.length > 0 ? tableData : (DATA_SOURCE === "Marketing" ? defaultMarketingData : defaultMotulData);
+          console.log('📋 Table data:', { source: DATA_SOURCE, dataLength: displayData.length, firstRow: displayData[0] });
+
           return (
             <div className="p-4">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      {Object.keys(displayData[0] || {}).map((header) => (
-                        <th key={header} className="px-6 py-4 text-left font-medium text-gray-500 uppercase tracking-wider">
+                    <tr className="bg-[#3551F3] border-b border-gray-200">
+                      {Object.keys(displayData[0] || {}).filter(header => header !== 'id').map((header) => (
+                        <th key={header} className="px-6 py-4 text-left font-bold text-white uppercase tracking-wider">
                           {header.charAt(0).toUpperCase() + header.slice(1)}
                         </th>
                       ))}
@@ -468,7 +789,7 @@ export default function DashboardView() {
                   <tbody className="bg-white divide-y divide-gray-100">
                     {displayData.map((row, index) => (
                       <tr key={row.id || `row-${index}`} className="hover:bg-gray-50 transition-colors">
-                        {Object.entries(row).map(([key, value]) => (
+                        {Object.entries(row).filter(([key]) => key !== 'id').map(([key, value]) => (
                           <td 
                             key={key} 
                             className={cn(
@@ -503,7 +824,8 @@ export default function DashboardView() {
           );
 
         case "line":
-          const lineData = [
+          console.log('📈 Line chart - DATA_SOURCE:', DATA_SOURCE);
+          const lineData = DATA_SOURCE === "Marketing" ? [
             {
               month: "Oct'24",
               "Google Ads": 2200000,
@@ -544,7 +866,49 @@ export default function DashboardView() {
               "Email Marketing": 1500000,
               "Content Marketing": 1600000
             }
-          ];
+          ] : (console.log('📈 Using Motul line data'), [
+            {
+              month: "Oct'24",
+              "Engine Oil": 1500000,
+              "Motor Oil": 1200000,
+              "Transmission Fluid": 800000,
+              "Coolant": 600000,
+              "Additives": 700000
+            },
+            {
+              month: "Nov'24",
+              "Engine Oil": 1700000,
+              "Motor Oil": 1400000,
+              "Transmission Fluid": 900000,
+              "Coolant": 750000,
+              "Additives": 850000
+            },
+            {
+              month: "Dec'24",
+              "Engine Oil": 1900000,
+              "Motor Oil": 1600000,
+              "Transmission Fluid": 1050000,
+              "Coolant": 900000,
+              "Additives": 1000000
+            },
+            {
+              month: "Jan'25",
+              "Engine Oil": 2100000,
+              "Motor Oil": 1800000,
+              "Transmission Fluid": 1200000,
+              "Coolant": 1050000,
+              "Additives": 1150000
+            },
+            {
+              month: "Feb'25",
+              "Engine Oil": 1950000,
+              "Motor Oil": 1700000,
+              "Transmission Fluid": 1100000,
+              "Coolant": 950000,
+              "Additives": 1050000
+            }
+          ]);
+          console.log('📈 Line chart data loaded:', { source: DATA_SOURCE, months: lineData.map(d => d.month) });
 
           return (
             <div className="p-4">
@@ -577,7 +941,7 @@ export default function DashboardView() {
                       }
                     }
                   }}
-                  series={[
+                  series={DATA_SOURCE === "Marketing" ? [
                     {
                       name: 'Google Ads',
                       data: lineData.map(d => d["Google Ads"])
@@ -598,6 +962,27 @@ export default function DashboardView() {
                       name: 'Content Marketing',
                       data: lineData.map(d => d["Content Marketing"])
                     }
+                  ] : [
+                    {
+                      name: 'Engine Oil',
+                      data: lineData.map(d => d["Engine Oil"])
+                    },
+                    {
+                      name: 'Motor Oil',
+                      data: lineData.map(d => d["Motor Oil"])
+                    },
+                    {
+                      name: 'Transmission Fluid',
+                      data: lineData.map(d => d["Transmission Fluid"])
+                    },
+                    {
+                      name: 'Coolant',
+                      data: lineData.map(d => d["Coolant"])
+                    },
+                    {
+                      name: 'Additives',
+                      data: lineData.map(d => d["Additives"])
+                    }
                   ]}
                   type="line"
                   height={350}
@@ -607,12 +992,21 @@ export default function DashboardView() {
           );
 
         case "pie":
-          const pieData = [
+          console.log('🥧 Pie chart - DATA_SOURCE:', DATA_SOURCE);
+          const pieData = DATA_SOURCE === "Marketing" ? [
             { type: 'Google Ads', amount: 48000000 },
             { type: 'Facebook Ads', amount: 27000000 },
             { type: 'LinkedIn Ads', amount: 13000000 },
             { type: 'Email Marketing', amount: 34000000 },
             { type: 'Content Marketing', amount: 23000000 }
+          ] : [
+            { type: 'West Region', amount: 649705485.42 },
+            { type: 'North Region', amount: 643123733.72 },
+            { type: 'East Region', amount: 598346948.12 },
+            { type: 'South Region - 2', amount: 424667042.98 },
+            { type: 'South Region - 1', amount: 391846712.34 },
+            { type: 'Export', amount: 129117649.19 },
+            { type: 'India Yamaha', amount: 109501448.7 }
           ];
 
           return (
@@ -624,6 +1018,9 @@ export default function DashboardView() {
                       type: 'pie'
                     },
                     labels: pieData.map(d => d.type),
+                    legend: {
+                      position: 'bottom'
+                    },
                     tooltip: {
                       y: {
                         formatter: (value) => {
@@ -639,19 +1036,26 @@ export default function DashboardView() {
                   }}
                   series={pieData.map(d => d.amount)}
                   type="pie"
-                  height={350}
+                  height={400}
                 />
               </Suspense>
             </div>
           );
 
         case "bar":
-          const barData = [
+          console.log('📊 Bar chart - DATA_SOURCE:', DATA_SOURCE);
+          const barData = DATA_SOURCE === "Marketing" ? [
             { channel: 'Google Ads', amount: 4500000 },
             { channel: 'Facebook Ads', amount: 3200000 },
             { channel: 'LinkedIn Ads', amount: 2800000 },
             { channel: 'Email Marketing', amount: 3800000 },
             { channel: 'Content Marketing', amount: 2200000 }
+          ] : [
+            { channel: 'Engine Oil', amount: 0 },
+            { channel: 'Motor Oil', amount: 0 },
+            { channel: 'Transmission Fluid', amount: 0 },
+            { channel: 'Coolant', amount: 0 },
+            { channel: 'Additives', amount: 0 }
           ];
 
           return (
@@ -673,7 +1077,7 @@ export default function DashboardView() {
                       },
                     },
                     xaxis: {
-                      categories: barData.map(d => d.channel),
+                      categories: barData.map(d => DATA_SOURCE === "Marketing" ? d.channel : d.product || d.channel),
                       labels: {
                         rotate: -45,
                         style: {
@@ -695,7 +1099,7 @@ export default function DashboardView() {
                     }
                   }}
                   series={[{
-                    name: 'Marketing Spend',
+                    name: DATA_SOURCE === "Marketing" ? 'Marketing Spend' : 'Product Spend',
                     data: barData.map(d => d.amount)
                   }]}
                   type="bar"
@@ -714,8 +1118,17 @@ export default function DashboardView() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-gray-900">{widget.title}</h3>
-            <p className="text-sm text-gray-500">{widget.description}</p>
+            <h3 className="font-medium text-gray-900">
+              {DATA_SOURCE === "Motul" && widget.type === "kpi" ? (
+                widget.title === "Total Leads" ? "Sale for the Day" :
+                widget.title === "Total Cost" ? "MTD" :
+                widget.title === "Conversion Rate" ? "YTD" :
+                widget.title
+              ) : widget.type === "table" && DATA_SOURCE === "Motul" ? "Primary Segment Wise Sales" : widget.title}
+            </h3>
+            {!((widget.type === "table" || widget.type === "kpi") && DATA_SOURCE === "Motul") && (
+              <p className="text-sm text-gray-500">{widget.description}</p>
+            )}
           </div>
           <div className="flex items-center">
             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-50 mr-1">
@@ -770,6 +1183,9 @@ export default function DashboardView() {
     );
   }
 
+  // Use default Motul widgets or stored widgets
+  const widgetsToRender = getWidgetsToRender();
+
   return (
     <MainLayout>
       {isPresentationMode ? (
@@ -796,13 +1212,13 @@ export default function DashboardView() {
               <ChevronLeft className="h-6 w-6" />
             </Button>
             <div className="w-full max-w-4xl">
-              {dashboard?.widgets && dashboard.widgets[currentSlideIndex] && (
+              {widgetsToRender && widgetsToRender[currentSlideIndex] && (
                 <div className="transform scale-125">
-                  {renderWidget(dashboard.widgets[currentSlideIndex])}
+                  {renderWidget(widgetsToRender[currentSlideIndex])}
                 </div>
               )}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white">
-                {currentSlideIndex + 1} / {dashboard?.widgets?.length || 0}
+                {currentSlideIndex + 1} / {widgetsToRender?.length || 0}
               </div>
             </div>
             <Button
@@ -810,7 +1226,7 @@ export default function DashboardView() {
               size="icon"
               className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/10 disabled:opacity-50"
               onClick={handleNextSlide}
-              disabled={!dashboard?.widgets || currentSlideIndex === dashboard.widgets.length - 1}
+              disabled={!widgetsToRender || currentSlideIndex === widgetsToRender.length - 1}
             >
               <ChevronRight className="h-6 w-6" />
             </Button>
@@ -938,8 +1354,100 @@ export default function DashboardView() {
             </div>
           </form>
 
+          {/* Filters */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* FY Filter */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">FY</label>
+                <select
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3551F3]/20 focus:border-[#3551F3]/40 bg-white"
+                >
+                  <option>25-26</option>
+                </select>
+              </div>
+
+              {/* Segment Filter */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">Segment</label>
+                <select
+                  value={selectedSegment}
+                  onChange={(e) => setSelectedSegment(e.target.value)}
+                  className="w-full h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3551F3]/20 focus:border-[#3551F3]/40 bg-white"
+                >
+                  <option>All</option>
+                  <option>MCO</option>
+                  <option>Care & Additives</option>
+                  <option>Specialities</option>
+                  <option>PCMO</option>
+                  <option>3WO</option>
+                  <option>HDDO</option>
+                </select>
+              </div>
+
+              {/* Region Filter */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">Region</label>
+                <select
+                  value={selectedRegion}
+                  onChange={(e) => setSelectedRegion(e.target.value)}
+                  className="w-full h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3551F3]/20 focus:border-[#3551F3]/40 bg-white"
+                >
+                  <option>All</option>
+                  <option>EAST REGION</option>
+                  <option>NORTH REGION</option>
+                  <option>SOUTH REGION-1</option>
+                  <option>SOUTH REGION-2</option>
+                  <option>WEST REGION</option>
+                  <option>INDIA YAMAHA</option>
+                </select>
+              </div>
+
+              {/* State Filter */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-2">State</label>
+                <select
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  className="w-full h-10 px-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3551F3]/20 focus:border-[#3551F3]/40 bg-white"
+                >
+                  <option>All</option>
+                  <option>DELHI NCR</option>
+                  <option>GUJARAT</option>
+                  <option>ODISHA</option>
+                  <option>SOUTH TAMILNADU</option>
+                  <option>UTTAR PRADESH (WEST)</option>
+                  <option>WEST BENGAL</option>
+                  <option>UTTAR PRADESH (EAST)</option>
+                  <option>KARNATAKA</option>
+                  <option>WEST MAHARASHTRA</option>
+                  <option>PUNJAB</option>
+                  <option>MUMBAI METRO</option>
+                  <option>VIDARBHA</option>
+                  <option>CHANDIGARH</option>
+                  <option>KERALA</option>
+                  <option>BIHAR</option>
+                  <option>HARYANA</option>
+                  <option>JHARKHAND</option>
+                  <option>NORTH TAMILNADU</option>
+                  <option>Nepal</option>
+                  <option>NORTH EAST</option>
+                  <option>GOA</option>
+                  <option>MADHYA PRADESH</option>
+                  <option>RAJASTHAN</option>
+                  <option>ANDHRA PRADESH</option>
+                  <option>TELANGANA</option>
+                  <option>HIMACHAL PRADESH</option>
+                  <option>UTTARAKHAND</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           {/* Empty State */}
-          {(!dashboard.widgets || dashboard.widgets.length === 0) && (
+          {(!widgetsToRender || widgetsToRender.length === 0) && (
             <div className="bg-white rounded-2xl border border-gray-200 p-12">
               <div className="max-w-md mx-auto text-center">
                 <div className="h-12 w-12 rounded-2xl bg-[#3551F3]/10 flex items-center justify-center mx-auto mb-6">
@@ -961,12 +1469,12 @@ export default function DashboardView() {
           )}
 
           {/* Widgets Grid */}
-          {dashboard.widgets && dashboard.widgets.length > 0 && (
+          {widgetsToRender && widgetsToRender.length > 0 && (
             <div className="space-y-6">
               {/* KPI Widgets */}
-              {dashboard.widgets.some(w => w.type === 'kpi') && (
+              {widgetsToRender.some(w => w.type === 'kpi') && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {dashboard.widgets
+                  {widgetsToRender
                     .filter(w => w.type === 'kpi')
                     .sort((a, b) => a.position - b.position)
                     .map((widget) => (
@@ -978,14 +1486,14 @@ export default function DashboardView() {
               )}
               
               {/* Other Widgets */}
-              {dashboard.widgets.some(w => w.type !== 'kpi') && (
+              {widgetsToRender.some(w => w.type !== 'kpi') && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {dashboard.widgets
+                  {widgetsToRender
                     .filter(w => w.type !== 'kpi')
                     .sort((a, b) => a.position - b.position)
                     .map((widget) => (
-                      <div 
-                        key={widget.id} 
+                      <div
+                        key={widget.id}
                         className={cn(
                           widget.type === 'table' ? 'md:col-span-2' : ''
                         )}

@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { Globe, Lock } from "lucide-react";
 
-export default function CreateDashboardModal({ open, onOpenChange, onSubmit }) {
+export default function CreateDashboardModal({ open, onOpenChange, onSubmit, dataSource = "Marketing" }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
@@ -21,7 +21,8 @@ export default function CreateDashboardModal({ open, onOpenChange, onSubmit }) {
       name,
       description,
       isPublic,
-      sharedEmails: !isPublic ? sharedEmails : []
+      sharedEmails: !isPublic ? sharedEmails : [],
+      dataSource
     });
     
     // Reset form
