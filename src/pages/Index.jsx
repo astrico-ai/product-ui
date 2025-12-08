@@ -124,8 +124,97 @@ export default function Index() {
           </div>
         </div>
 
+        {/* Announcements and Mentions Section */}
+        <div className="grid grid-cols-2 gap-6 mb-8">
+          {/* Company Announcements */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-[#3551F3]" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5.951-1.429 5.951 1.429a1 1 0 001.169-1.409l-7-14z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Company Announcements</h3>
+                <p className="text-sm text-gray-500">Latest updates and announcements</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-900 font-medium">Q4 Sales Target Achievement: 95% completed</p>
+                  <span className="bg-green-100 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">On Track</span>
+                </div>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-900 font-medium">New MCO segment strategy rollout completed</p>
+                  <span className="bg-blue-100 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">New</span>
+                </div>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-900 font-medium">Regional distributor performance review scheduled</p>
+                  <span className="bg-yellow-100 text-yellow-700 text-xs font-medium px-2.5 py-1 rounded-full">Scheduled</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mentions */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Mentions</h3>
+                <p className="text-sm text-gray-500">Actions requiring your attention</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-900"><span className="text-[#3551F3] font-medium">@Sarah Singh</span> shared the East Region Dashboard</p>
+                  <div className="flex gap-2">
+                    <button className="p-1 hover:bg-green-100 rounded transition-colors">
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    <button className="p-1 hover:bg-red-100 rounded transition-colors">
+                      <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-900"><span className="text-[#3551F3] font-medium">@Rajesh Kumar</span> assigned you PCMO segment performance review</p>
+                  <div className="flex gap-2">
+                    <button className="p-1 hover:bg-green-100 rounded transition-colors">
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    <button className="p-1 hover:bg-red-100 rounded transition-colors">
+                      <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Content Grid */}
-        <div className="space-y-8">
+        <div className="space-y-8 hidden">
           {/* Top Row: Video, Training, and Leaderboard */}
           <div className="grid grid-cols-12 gap-6">
             {/* Featured Video */}

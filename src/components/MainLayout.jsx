@@ -24,12 +24,12 @@ import { cn } from "../lib/utils";
 // Main nav items for the general application
 const mainNavItems = [
   { icon: Home, label: "Home", path: "/" },
-  { icon: MessageSquare, label: "Chat", path: "/chat" },
-  { icon: FileText, label: "PDF Manager", path: "/pdf-manager" },
-  { icon: GraduationCap, label: "Training", path: "/training" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-  { icon: Users2, label: "Sources", path: "/sources" },
-  { icon: Trophy, label: "Rewards", path: "/rewards" },
+  { icon: MessageSquare, label: "Chat", path: "/chat" },
+  // { icon: FileText, label: "PDF Manager", path: "/pdf-manager" },
+  // { icon: GraduationCap, label: "Training", path: "/training" },
+  // { icon: Users2, label: "Sources", path: "/sources" },
+  // { icon: Trophy, label: "Rewards", path: "/rewards" },
 ];
 
 const insightsSubNav = [
@@ -40,26 +40,26 @@ const insightsSubNav = [
 // Marketing-specific nav items
 const marketingNavItems = [
   { icon: Home, label: "Home", path: "/marketing" },
-  { icon: MessageSquare, label: "Chat", path: "/chat/marketing" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/marketing/dashboard" },
-  { icon: Users2, label: "Sources", path: "/marketing/sources" },
+  { icon: MessageSquare, label: "Chat", path: "/chat/marketing" },
+  // { icon: Users2, label: "Sources", path: "/marketing/sources" },
 ];
 
 // Insurance-specific nav items
 const insuranceNavItems = [
   { icon: Home, label: "Home", path: "/insurance" },
-  { icon: MessageSquare, label: "Chat", path: "/chat/insurance" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/insurance/dashboard" },
-  { icon: Users2, label: "Sources", path: "/insurance/sources" },
+  { icon: MessageSquare, label: "Chat", path: "/chat/insurance" },
+  // { icon: Users2, label: "Sources", path: "/insurance/sources" },
 ];
 
 // Mining-specific nav items
 const miningNavItems = [
   { icon: Home, label: "Home", path: "/mining" },
-  { icon: MessageSquare, label: "Chat", path: "/chat/mining" },
-  { icon: GraduationCap, label: "Training", path: "/mining/training" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/mining/dashboard" },
-  { icon: Users2, label: "Sources", path: "/mining/sources" },
+  { icon: MessageSquare, label: "Chat", path: "/chat/mining" },
+  // { icon: GraduationCap, label: "Training", path: "/mining/training" },
+  // { icon: Users2, label: "Sources", path: "/mining/sources" },
 ];
 
 export function MainLayout({ children }) {
@@ -136,7 +136,7 @@ export function MainLayout({ children }) {
                 </Link>
               );
             })}
-            {/* Insights Dropdown */}
+            {/* Insights Dropdown
             <div className="relative">
               <button
                 onClick={() => setInsightsOpen((open) => !open)}
@@ -153,7 +153,7 @@ export function MainLayout({ children }) {
                 )}
               </button>
               {/* Subnav */}
-              {!isCollapsed && insightsOpen && (
+              {/* {!isCollapsed && insightsOpen && (
                 <div className="ml-8 mt-1 space-y-1">
                   {insightsSubNav.map((sub) => {
                     const isActive = location.pathname.startsWith(sub.path);
@@ -175,6 +175,7 @@ export function MainLayout({ children }) {
                 </div>
               )}
             </div>
+            */}
           </div>
         </nav>
 
