@@ -1326,25 +1326,27 @@ export default function DashboardView() {
               <table className="w-full text-sm border-collapse">
                 <thead>
                   {/* Month headers row */}
-                  <tr className="bg-[#3551F3]">
-                    <th className="sticky left-0 bg-[#3551F3] text-white px-4 py-3 font-semibold text-left border-r border-blue-400"
+                  <tr className="bg-[#3551F3] border-b border-white">
+                    <th className="sticky left-0 bg-[#3551F3] text-white px-4 py-3 font-semibold text-left border-r border-white"
                         style={{ minWidth: '150px' }}>
-                      Region
+                      Month
                     </th>
                     {pivotTableData.columnGroups.map(group => (
                       <th key={group.label} colSpan={group.columns.length}
-                          className="text-white px-4 py-3 text-center font-semibold text-sm border-r border-blue-400">
+                          className="text-white px-4 py-3 text-center font-semibold text-sm border-r border-white">
                         {group.label}
                       </th>
                     ))}
                   </tr>
                   {/* Metric headers row */}
                   <tr className="bg-[#3551F3]">
-                    <th className="sticky left-0 bg-[#3551F3] text-white px-4 py-3"
-                        style={{ minWidth: '150px' }}></th>
+                    <th className="sticky left-0 bg-[#3551F3] text-white px-4 py-3 font-semibold text-left border-r border-white"
+                        style={{ minWidth: '150px' }}>
+                      Region
+                    </th>
                     {pivotTableData.columnGroups.map(group =>
                       group.columns.map(col => (
-                        <th key={col.key} className="text-white px-4 py-3 text-xs font-medium border-r border-blue-400 whitespace-nowrap text-center">
+                        <th key={col.key} className="text-white px-4 py-3 text-xs font-medium border-r border-white whitespace-nowrap text-center">
                           {col.label}
                         </th>
                       ))
@@ -1355,13 +1357,13 @@ export default function DashboardView() {
                   {pivotTableData.rows.flatMap(row => renderPivotRow(row, 0))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-[#3551F3] border-t-2 border-blue-400 font-semibold">
+                  <tr className="bg-[#3551F3] border-t-2 border-white font-semibold">
                     <td className="sticky left-0 bg-[#3551F3] px-4 py-3 text-white" style={{ minWidth: '150px' }}>
                       Total
                     </td>
                     {pivotTableData.columnGroups.map(group =>
                       group.columns.map(col => (
-                        <td key={col.key} className="px-4 py-3 text-right border-r border-blue-400 text-white">
+                        <td key={col.key} className="px-4 py-3 text-right border-r border-white text-white">
                           {formatPivotValue(pivotTableData.totals[col.key], col.key)}
                         </td>
                       ))
