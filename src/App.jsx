@@ -34,6 +34,14 @@ import PPTGeneratorPage from '@/pages/PPTGeneratorPage';
 import PDFManagerPage from '@/pages/PDFManagerPage';
 import { MainLayout } from '@/components/MainLayout';
 
+// Connector Routes
+import ConnectorGallery from '@/pages/ConnectorGallery';
+import ConnectorSetup from '@/pages/ConnectorSetup';
+import ConnectorDashboard from '@/pages/ConnectorDashboard';
+import ConnectorDetail from '@/pages/ConnectorDetail';
+import ConnectorCallback from '@/pages/ConnectorCallback';
+import SyncHistory from '@/pages/SyncHistory';
+
 function App() {
   return (
     <TooltipProvider>
@@ -67,6 +75,14 @@ function App() {
         <Route path="/mining/dashboard" element={<MiningDashboardList />} />
         <Route path="/mining/dashboard/:id" element={<MiningDashboardView />} />
         <Route path="/mining/sources" element={<MiningSources />} />
+
+        {/* Connector Routes */}
+        <Route path="/connectors" element={<ConnectorGallery />} />
+        <Route path="/connectors/setup/:id" element={<ConnectorSetup />} />
+        <Route path="/connectors/callback" element={<ConnectorCallback />} />
+        <Route path="/connectors/dashboard" element={<ConnectorDashboard />} />
+        <Route path="/connectors/:id" element={<ConnectorDetail />} />
+        <Route path="/connectors/:id/sync-history" element={<SyncHistory />} />
 
         {/* Rewards Routes */}
         <Route path="/rewards" element={<RewardsApp />} />

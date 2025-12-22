@@ -7,6 +7,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MarkdownText } from "@/components/MarkdownText";
 import { LoadingIndicator } from "@/components/LoadingIndicator";
+import { LoadingSteps } from "@/components/LoadingSteps";
 import { StreamingCursor } from "@/components/StreamingCursor";
 import { useLocation } from "react-router-dom";
 import { DataVisualization } from "@/components/DataVisualization";
@@ -54,13 +55,17 @@ export default function ChatPage() {
   const [chatHistorySearch, setChatHistorySearch] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showVisualization, setShowVisualization] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isKomatsuQuery, setIsKomatsuQuery] = useState(false);
   const [attachments, setAttachments] = useState([]);
   const [tableVisibleByMessageId, setTableVisibleByMessageId] = useState({});
+  const [expandedSourcesByMessageId, setExpandedSourcesByMessageId] = useState({});
   const fileInputRef = useRef(null);
   const chatInputRef = useRef(null);
   const scrollAreaRef = useRef(null);
   const messagesEndRef = useRef(null);
   const lastUserMessageIdRef = useRef(null);
+  const processingQueryRef = useRef(null);
 
   // Agent 4: PDF @ mention system
   // Agent 5: Now using Zustand store for state management (useStore: true by default)
@@ -197,6 +202,15 @@ export default function ChatPage() {
     }
   }, [messages]); // Watch all messages, but only act on new user messages
 
+  // Loading steps for Komatsu query
+  const komatsuLoadingSteps = [
+    { title: "Understanding your query..." },
+    { title: "Scanning mining equipment data..." },
+    { title: "Analyzing Komatsu PC 5500 specifications..." },
+    { title: "Gathering performance metrics..." },
+    { title: "Compiling advantages and benefits..." },
+    { title: "Preparing detailed response..." }
+  ];
 
   // Shared hardcoded Hindi response with comparison table
   const HINDI_TRUCK_RESPONSE = {
@@ -351,11 +365,192 @@ export default function ChatPage() {
 
   const handleSearch = async (query) => {
     if (!query.trim()) return;
-    
+
     setIsLoading(true);
     setShowVisualization(false);
-    
+    let skipFinally = false;  // Flag to skip finally block for Komatsu query
+
     try {
+      // Check for hardcoded Komatsu 5500 query
+      const lowerQuery = query.toLowerCase();
+      if (lowerQuery.includes('advantages of komatsu') && lowerQuery.includes('5500')) {
+        // Set skipFinally FIRST, before any returns
+        skipFinally = true;
+
+        // Prevent duplicate processing
+        if (processingQueryRef.current === query.trim()) {
+          console.log('⚠️ [DUPLICATE] Already processing this query, skipping');
+          return;
+        }
+        processingQueryRef.current = query.trim();
+
+        console.log('🎯 [HARDCODED] Detected Komatsu 5500 advantages query from search');
+        console.log('📊 [DEBUG] Current messages:', messages);
+        console.log('📊 [DEBUG] isLoading:', isLoading);
+
+        // Set Komatsu query flag
+        setIsKomatsuQuery(true);
+
+        // Only add user message if messages array is empty (not already added by useEffect)
+        setMessages(prev => {
+          if (prev.length === 0 || prev[prev.length - 1].text !== query.trim()) {
+            return [...prev, {
+              id: Date.now(),
+              text: query.trim(),
+              sender: 'user'
+            }];
+          }
+          return prev;
+        });
+        setCurrentStep(0);
+
+        // Progress through loading steps
+        const stepInterval = setInterval(() => {
+          setCurrentStep(prev => {
+            if (prev >= komatsuLoadingSteps.length - 1) {
+              clearInterval(stepInterval);
+              return prev;
+            }
+            return prev + 1;
+          });
+        }, 1700); // ~1.7 seconds per step for 6 steps = ~10 seconds total
+
+        // Wait ~10 seconds before showing response
+        setTimeout(() => {
+          clearInterval(stepInterval);
+          console.log('⏰ [TIMEOUT] 10 seconds elapsed, showing response');
+
+          // Create response message with hardcoded content
+          const komatsuResponseText = `**Advantages of Komatsu PC 5500**
+
+• **High Productivity:** Large bucket capacity (23 m³/50 tons), fast 23-second cycle time, and monthly throughput exceeding 870,000 tons.
+• **Exceptional Durability:** Pin life surpasses 50,000 hours (vs. 10,000-hour standard), with minimal wear on slewing gear and no need for pin/bush replacements or line boring.
+• **Efficient Maintenance:** Bucket change time reduced to 3-4 hours (from 1.5 days), no grease system failures, and much lower grease consumption.
+• **Cost-Effectiveness:** Operating cost is less than $0.1 per ton, with low waste and no cleaning required due to efficient lubrication.
+• **Reliability:** No grease system failures reported, and machine availability improved from 85% to 97%.
+Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduced downtime, and low operating costs, making it a highly efficient and cost-effective mining solution.
+
+## 🔗 External References
+
+**Executive Summary: Advantages of the Komatsu PC5500**
+
+• **Massive Payload Capacity:** Equipped with a 28 m³ reinforced rock bucket, allowing for exceptional material handling and high haul-cycle efficiency.
+• **Structural Strength & Efficiency:** Reinforced bucket design maintains durability during heavy-duty cycles while reducing swing times and speeding up overall production.
+• **Advanced Hydraulic System:** Delivers precise and robust digging power with improved fuel economy compared to older models.
+• **Intelligent Machine Control:** Integrated Komatsu Intelligent Machine Control and telematics provide real-time data, automate cycle optimization, and enable remote monitoring for productivity gains and minimized downtime.
+• **Operator Comfort & Safety:** Features a spacious, ergonomically designed cab with climate control and low-noise operation to promote safer, more comfortable, and prolonged shifts.
+• **Reliable & Durable Build:** The robust chassis, reinforced undercarriage, and proven durable components ensure longevity and dependable service in the toughest environments.
+• **Maintenance & Cost Benefits:** Modular design makes maintenance and part replacements simpler and faster, resulting in lower total ownership costs.`;
+
+          // Table data for Komatsu PC 5500
+          const komatsuTableColumns = [
+            { key: 'parameter', label: 'Parameter' },
+            { key: 'value', label: 'Value' }
+          ];
+
+          const komatsuTableData = [
+            { parameter: 'Bucket capacity', value: '23 m³ (50 tons)' },
+            { parameter: 'Cycle time', value: '23 seconds' },
+            { parameter: 'Monthly throughput', value: '>870,000 tons' },
+            { parameter: 'Pin life', value: '>50,000 hours' },
+            { parameter: 'Mining standard pin life', value: '10,000 hours' },
+            { parameter: 'Bucket change time', value: '3-4 hours' },
+            { parameter: 'Standard bucket change time', value: '1.5 days' },
+            { parameter: 'Grease consumption', value: '1 drum of Molub-Alloy 777/2 NG every 5 weeks' },
+            { parameter: 'Initial grease consumption', value: 'Significantly higher' },
+            { parameter: 'Machine availability', value: 'Improved from 85% to 97%' },
+            { parameter: 'Operating cost', value: '< $0.1 per ton' }
+          ];
+
+          const responseId = Date.now() + 1;
+          const komatsuResponse = {
+            id: responseId,
+            text: '',
+            sender: 'assistant',
+            showFollowUp: false,
+            showFeedback: true,
+            isStreaming: true,
+            tableColumns: komatsuTableColumns,
+            tableData: komatsuTableData,
+            tableTitle: 'Komatsu PC 5500 Key Performance and Maintenance Metrics',
+            internalReferences: [
+              {
+                type: 'pdf',
+                title: 'Mining Presentation_2025-12-19_09-53-16.pdf',
+                url: 'https://s3.ap-south-1.amazonaws.com/product-ui-pdfs/pdfs/2025-12-19/e3f48bf4-b296-4ff7-a8bb-8812f98bd41e/Mining%20Presentation_2025-12-19_09-53-16.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQGYBPNQU4R3C4ZVR%2F20251219%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20251219T122155Z&X-Amz-Expires=3600&X-Amz-Signature=ec25bb511892e19dc9ffd1e234cf99aa4c0a73e14eeae647f1e77ae65ba25265&X-Amz-SignedHeaders=host'
+              }
+            ],
+            externalReferences: [
+              {
+                type: 'link',
+                title: 'www.mining.com',
+                url: 'https://www.mining.com/markets/commodity/palladium/page/5142'
+              },
+              {
+                type: 'link',
+                title: 'www.mining.com',
+                url: 'https://www.mining.com/web/allied-nevada-achieves-net-income-of-6-1-million-or-0-07-per-share-in-q2-2012/'
+              },
+              {
+                type: 'link',
+                title: 'www.mining.com',
+                url: 'https://www.mining.com/mining-simulators-virtual-training-2/'
+              }
+            ]
+          };
+
+          // Add response message and end loading
+          setMessages(prev => [...prev, komatsuResponse]);
+          setIsLoading(false);
+          setIsTyping(true);
+
+          // Simulate typewriter effect
+          let currentText = '';
+          let charIndex = 0;
+          const typewriterSpeed = 10; // milliseconds per character
+
+          const typeNextChar = () => {
+            if (charIndex < komatsuResponseText.length) {
+              currentText += komatsuResponseText[charIndex];
+              charIndex++;
+
+              setMessages(prev => prev.map(msg =>
+                msg.id === responseId
+                  ? { ...msg, text: currentText }
+                  : msg
+              ));
+
+              setTimeout(typeNextChar, typewriterSpeed);
+            } else {
+              // Typing complete
+              setMessages(prev => prev.map(msg =>
+                msg.id === responseId
+                  ? { ...msg, isStreaming: false, showFollowUp: true }
+                  : msg
+              ));
+              setIsTyping(false);
+              setIsKomatsuQuery(false); // Reset after typewriter completes
+
+              // Show table after typing completes
+              setTimeout(() => {
+                setTableVisibleByMessageId(prev => ({ ...prev, [responseId]: true }));
+            }, 100);
+
+            // Clear selected PDFs after response
+            storeDeselectPDF && storeSelectedPdfs.forEach(pdf => storeDeselectPDF(pdf.s3Key || pdf.id));
+
+            // Clear processing ref to allow same query again
+            processingQueryRef.current = null;
+          }
+        };
+
+          setTimeout(typeNextChar, 100); // Start typing after small delay
+        }, 10200); // Wait ~10 seconds before starting typewriter
+
+        console.log('✅ [KOMATSU] Returning early, skipFinally already set');
+        return; // Exit early, don't continue with normal flow
+      }
+
       // Agent 4: Check if PDFs are referenced and call streaming analyze API - use store directly
       let searchResponse;
       const hasSelectedPdfs = storeSelectedPdfs && storeSelectedPdfs.length > 0;
@@ -607,8 +802,14 @@ export default function ChatPage() {
     } catch (error) {
       // Error handled in UI
     } finally {
-      setIsLoading(false);
-      setChatHistorySearch("");
+      console.log('🏁 [FINALLY] Block executing, skipFinally =', skipFinally);
+      if (!skipFinally) {
+        console.log('🔄 [FINALLY] Resetting isLoading to false');
+        setIsLoading(false);
+        setChatHistorySearch("");
+      } else {
+        console.log('⏭️ [FINALLY] Skipping isLoading reset');
+      }
     }
   };
 
@@ -629,11 +830,169 @@ export default function ChatPage() {
     setInputValue("");
     setIsLoading(true);
     setShowVisualization(false);
-    
+
     // Scroll user message to top after it's added to DOM
     scrollUserMessageToTop(newMessage.id);
 
     try {
+      // Check for hardcoded Komatsu 5500 query
+      const lowerQuery = messageText.toLowerCase();
+      if (lowerQuery.includes('advantages of komatsu') && lowerQuery.includes('5500')) {
+        console.log('🎯 [HARDCODED] Detected Komatsu 5500 advantages query');
+
+        // Set Komatsu query flag and reset current step for loading
+        setIsKomatsuQuery(true);
+        setCurrentStep(0);
+
+        // Progress through loading steps
+        const stepInterval = setInterval(() => {
+          setCurrentStep(prev => {
+            if (prev >= komatsuLoadingSteps.length - 1) {
+              clearInterval(stepInterval);
+              return prev;
+            }
+            return prev + 1;
+          });
+        }, 1700); // ~1.7 seconds per step for 6 steps = ~10 seconds total
+
+        // Wait ~10 seconds before showing response
+        setTimeout(() => {
+          clearInterval(stepInterval);
+          console.log('⏰ [TIMEOUT - MESSAGE SUBMIT] 10 seconds elapsed, showing response');
+
+          // Create response message with hardcoded content
+          const komatsuResponseText = `Advantages of Komatsu PC 5500
+
+• **High Productivity:** Large bucket capacity (23 m³/50 tons), fast 23-second cycle time, and monthly throughput exceeding 870,000 tons.
+• **Exceptional Durability:** Pin life surpasses 50,000 hours (vs. 10,000-hour standard), with minimal wear on slewing gear and no need for pin/bush replacements or line boring.
+• **Efficient Maintenance:** Bucket change time reduced to 3-4 hours (from 1.5 days), no grease system failures, and much lower grease consumption.
+• **Cost-Effectiveness:** Operating cost is less than $0.1 per ton, with low waste and no cleaning required due to efficient lubrication.
+• **Reliability:** No grease system failures reported, and machine availability improved from 85% to 97%.
+
+Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduced downtime, and low operating costs, making it a highly efficient and cost-effective mining solution.
+
+---
+
+## 🔗 External References
+
+**Executive Summary: Advantages of the Komatsu PC5500**
+
+• **Massive Payload Capacity:** Equipped with a 28 m³ reinforced rock bucket, allowing for exceptional material handling and high haul-cycle efficiency.
+• **Structural Strength & Efficiency:** Reinforced bucket design maintains durability during heavy-duty cycles while reducing swing times and speeding up overall production.
+• **Advanced Hydraulic System:** Delivers precise and robust digging power with improved fuel economy compared to older models.
+• **Intelligent Machine Control:** Integrated Komatsu Intelligent Machine Control and telematics provide real-time data, automate cycle optimization, and enable remote monitoring for productivity gains and minimized downtime.
+• **Operator Comfort & Safety:** Features a spacious, ergonomically designed cab with climate control and low-noise operation to promote safer, more comfortable, and prolonged shifts.
+• **Reliable & Durable Build:** The robust chassis, reinforced undercarriage, and proven durable components ensure longevity and dependable service in the toughest environments.
+• **Maintenance & Cost Benefits:** Modular design makes maintenance and part replacements simpler and faster, resulting in lower total ownership costs.`;
+
+        // Table data for Komatsu PC 5500
+        const komatsuTableColumns = [
+          { key: 'parameter', label: 'Parameter' },
+          { key: 'value', label: 'Value' }
+        ];
+
+        const komatsuTableData = [
+          { parameter: 'Bucket capacity', value: '23 m³ (50 tons)' },
+          { parameter: 'Cycle time', value: '23 seconds' },
+          { parameter: 'Monthly throughput', value: '>870,000 tons' },
+          { parameter: 'Pin life', value: '>50,000 hours' },
+          { parameter: 'Mining standard pin life', value: '10,000 hours' },
+          { parameter: 'Bucket change time', value: '3-4 hours' },
+          { parameter: 'Standard bucket change time', value: '1.5 days' },
+          { parameter: 'Grease consumption', value: '1 drum of Molub-Alloy 777/2 NG every 5 weeks' },
+          { parameter: 'Initial grease consumption', value: 'Significantly higher' },
+          { parameter: 'Machine availability', value: 'Improved from 85% to 97%' },
+          { parameter: 'Operating cost', value: '< $0.1 per ton' }
+        ];
+
+        const responseId = Date.now() + 1;
+        const komatsuResponse = {
+          id: responseId,
+          text: '',
+          sender: 'assistant',
+          showFollowUp: false,
+          showFeedback: true,
+          tableColumns: komatsuTableColumns,
+          tableData: komatsuTableData,
+          tableTitle: 'Komatsu PC 5500 Key Performance and Maintenance Metrics',
+          isStreaming: true,
+          internalReferences: [
+            {
+              type: 'pdf',
+              title: 'Mining Presentation_2025-12-19_09-53-16.pdf',
+              url: 'https://s3.ap-south-1.amazonaws.com/product-ui-pdfs/pdfs/2025-12-19/e3f48bf4-b296-4ff7-a8bb-8812f98bd41e/Mining%20Presentation_2025-12-19_09-53-16.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQGYBPNQU4R3C4ZVR%2F20251219%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20251219T122155Z&X-Amz-Expires=3600&X-Amz-Signature=ec25bb511892e19dc9ffd1e234cf99aa4c0a73e14eeae647f1e77ae65ba25265&X-Amz-SignedHeaders=host'
+            }
+          ],
+          externalReferences: [
+            {
+              type: 'link',
+              title: 'www.mining.com',
+              url: 'https://www.mining.com/markets/commodity/palladium/page/5142'
+            },
+            {
+              type: 'link',
+              title: 'www.mining.com',
+              url: 'https://www.mining.com/web/allied-nevada-achieves-net-income-of-6-1-million-or-0-07-per-share-in-q2-2012/'
+            },
+            {
+              type: 'link',
+              title: 'www.mining.com',
+              url: 'https://www.mining.com/mining-simulators-virtual-training-2/'
+            }
+          ]
+        };
+
+          // Add empty response first
+          setMessages(prev => [...prev, komatsuResponse]);
+          setIsLoading(false);
+          setIsTyping(true);
+
+          // Simulate typewriter effect
+          let currentText = '';
+          let charIndex = 0;
+          const typewriterSpeed = 10; // milliseconds per character
+
+          const typeNextChar = () => {
+            if (charIndex < komatsuResponseText.length) {
+              currentText += komatsuResponseText[charIndex];
+              charIndex++;
+
+              setMessages(prev => prev.map(msg =>
+                msg.id === responseId
+                  ? { ...msg, text: currentText }
+                  : msg
+              ));
+
+              setTimeout(typeNextChar, typewriterSpeed);
+            } else {
+              // Typing complete
+              setMessages(prev => prev.map(msg =>
+                msg.id === responseId
+                  ? { ...msg, isStreaming: false, showFollowUp: true }
+                  : msg
+              ));
+              setIsTyping(false);
+              setIsKomatsuQuery(false); // Reset after typewriter completes
+
+              // Show table after typing completes
+              setTimeout(() => {
+                setTableVisibleByMessageId(prev => ({ ...prev, [responseId]: true }));
+              }, 100);
+
+              // Clear selected PDFs after response
+              storeDeselectPDF && storeSelectedPdfs.forEach(pdf => storeDeselectPDF(pdf.s3Key || pdf.id));
+
+              // Clear processing ref to allow same query again
+              processingQueryRef.current = null;
+            }
+          };
+
+          setTimeout(typeNextChar, 100); // Start typing after small delay
+        }, 10200); // Wait ~10 seconds before starting typewriter
+
+        return; // Exit early, don't continue with normal flow
+      }
+
       // Agent 4: Check if PDFs are referenced and call streaming analyze API - use store directly
       let response;
       
@@ -1269,6 +1628,85 @@ export default function ChatPage() {
                               </div>
                             )}
                             
+                            {/* View Sources Section */}
+                            {msg.tableData && Array.isArray(msg.tableData) && msg.tableData.length > 0 && tableVisibleByMessageId[msg.id] && (msg.internalReferences || msg.externalReferences) && (
+                              <div className="mt-4">
+                                <button
+                                  onClick={() => {
+                                    setExpandedSourcesByMessageId(prev => ({
+                                      ...prev,
+                                      [msg.id]: !prev[msg.id]
+                                    }));
+                                  }}
+                                  className="w-full bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3 flex items-center justify-between transition-colors"
+                                >
+                                  <span className="text-sm font-medium text-gray-700">View Sources</span>
+                                  {expandedSourcesByMessageId[msg.id] ? (
+                                    <ChevronUp className="w-4 h-4 text-gray-600" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                                  )}
+                                </button>
+                                
+                                {expandedSourcesByMessageId[msg.id] && (
+                                  <div className="mt-2 space-y-4 bg-white border border-gray-200 rounded-lg p-4">
+                                    {/* Internal References */}
+                                    {msg.internalReferences && msg.internalReferences.length > 0 && (
+                                      <div>
+                                        <h4 className="text-sm font-semibold text-gray-700 mb-2">Internal References</h4>
+                                        <div className="space-y-2">
+                                          {msg.internalReferences.map((ref, idx) => (
+                                            <a
+                                              key={idx}
+                                              href={ref.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors"
+                                            >
+                                              <FileText className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                              <span className="text-sm text-gray-700 flex-1 truncate">{ref.title}</span>
+                                              <Link2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* External References */}
+                                    {msg.externalReferences && msg.externalReferences.length > 0 && (
+                                      <div>
+                                        <h4 className="text-sm font-semibold text-gray-700 mb-2">External References</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                          {msg.externalReferences.map((ref, idx) => (
+                                            <a
+                                              key={idx}
+                                              href={ref.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors"
+                                            >
+                                              <img 
+                                                src={`https://www.google.com/s2/favicons?domain=${new URL(ref.url).hostname}&sz=16`}
+                                                alt=""
+                                                className="w-4 h-4 flex-shrink-0"
+                                                onError={(e) => {
+                                                  // Fallback to orange square if favicon fails to load
+                                                  e.target.onerror = null;
+                                                  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16" fill="%23FB923C"/></svg>';
+                                                }}
+                                              />
+                                              <span className="text-sm text-gray-700">{ref.title}</span>
+                                              <Link2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
                             <div 
                               id={`feedback-${msg.id}`} 
                               className="mt-4 flex items-center gap-2 flex-wrap"
@@ -1349,7 +1787,21 @@ export default function ChatPage() {
                   {/* Invisible element at the end to scroll to */}
                   <div ref={messagesEndRef} />
 
-                  {isTyping && !isLoading && (
+                  {/* Loading steps indicator for Komatsu query */}
+                  {(() => {
+                    const shouldShow = isLoading && isKomatsuQuery;
+                    console.log('🔍 [RENDER] LoadingSteps check:', { isLoading, isKomatsuQuery, shouldShow, currentStep });
+                    return shouldShow && (
+                      <div className="flex justify-start w-full">
+                        <div className="w-[95%] rounded-2xl px-8 py-6 bg-white border border-gray-200">
+                          <h4 className="text-base font-medium text-gray-700 mb-5">Processing your request</h4>
+                          <LoadingSteps steps={komatsuLoadingSteps} currentStep={currentStep} />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {isTyping && !isLoading && !isKomatsuQuery && (
                     <div className="flex justify-start">
                       <div className="max-w-[85%] rounded-2xl p-4">
                         <div className="flex gap-1.5">

@@ -105,9 +105,16 @@ export function MarkdownText({ text }) {
             listItems = [];
             listType = null;
           }
+          // Check if this is the External References heading
+          const headingText = trimmedLine.substring(3);
+          const isExternalReferences = headingText.includes('External References') || headingText.startsWith('🔗');
+
           result.push(
-            <h2 key={`h2-${lineIndex}`} className="font-bold text-xl mt-4 mb-2">
-              {processInlineMarkdown(trimmedLine.substring(3))}
+            <h2
+              key={`h2-${lineIndex}`}
+              className={`font-semibold text-xl mt-4 mb-2 ${isExternalReferences ? 'text-[#3551F3]' : 'font-bold'}`}
+            >
+              {processInlineMarkdown(headingText)}
             </h2>
           );
         } else if (trimmedLine.startsWith('# ')) {

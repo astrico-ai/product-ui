@@ -11,21 +11,22 @@ function LoadingSteps({ steps, currentStep }) {
 
         return (
           <div key={step.title} className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-full text-sm font-medium",
-                  isActive && "border-2 border-primary",
-                  isCompleted && "bg-primary text-primary-foreground"
+                  "flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold transition-all",
+                  isCompleted && "bg-[#4F46E5] text-white",
+                  isActive && "bg-white border-2 border-[#4F46E5] text-[#4F46E5]",
+                  !isActive && !isCompleted && "bg-gray-200 text-gray-500"
                 )}
               >
                 {isCompleted ? (
-                  <Check className="h-3 w-3" />
+                  <Check className="h-3.5 w-3.5 stroke-[3]" />
                 ) : (
                   <span>{index + 1}</span>
                 )}
               </div>
-              <h3 className="text-sm font-medium">{step.title}</h3>
+              <h3 className="text-[15px] font-normal text-gray-900">{step.title}</h3>
             </div>
             {step.description && (
               <p className="text-sm text-muted-foreground pl-8">

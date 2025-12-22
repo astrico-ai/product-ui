@@ -5,63 +5,21 @@ export default function Sources() {
   const serviceSources = [
     {
       id: 1,
-      name: "Freshdesk",
-      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQjhW4KYWY9rhjJS8gCKPL9zw1gjIne5YRL5A&s",
-      description: "Help desk software for customer support and ticket management"
+      name: "Google Ads",
+      logo: "https://www.gstatic.com/images/branding/product/1x/googleg_40dp.png",
+      description: "Online advertising platform for campaign management and performance tracking"
     },
     {
       id: 2,
-      name: "Genesys",
-      logo: "https://mms.businesswire.com/media/20241218804901/en/2284852/22/Genesys_Logo.jpg",
-      description: "Cloud customer experience and contact center solution"
+      name: "META Ads",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/1200px-Meta_Platforms_Inc._logo.svg.png",
+      description: "Social media advertising platform for Facebook, Instagram, and other Meta services"
     },
     {
       id: 3,
-      name: "Exotel",
-      logo: "https://www.cioandleader.com/wp-content/uploads/2025/02/Exotel-logo-1.png",
-      description: "Cloud telephony and customer engagement platform"
-    },
-    {
-      id: 4,
-      name: "Outlook",
-      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfUvracY3ekf9w5lGrkysXP4QQloDAqo6AdQ&s",
-      description: "Email and calendar management platform for business communication"
-    },
-    {
-      id: 5,
-      name: "Zoho",
-      logo: "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcSZkW7rlj4cSdUAoc7LoM2Tb2FQJALnj35__ONKRhymVxHXu8tPvwCXee4wK_RX0Umto7depDZLXUvq37vNqZ3hLMvu4Ck4-iMo_5XqOZI",
-      description: "Business and customer service software suite"
-    },
-    {
-      id: 6,
-      name: "HubSpot",
-      logo: "https://fs.hubspotusercontent00.net/hubfs/53/assets/hubspot.com/web-team/WBZ/Blog%202021/Images/Logos/HubSpot%20Logo%20112X112.svg",
-      description: "CRM platform with customer service and support capabilities"
-    },
-    {
-      id: 7,
-      name: "Salesforce",
-      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTC8tgeDcYtezt1igXtlWcIHvo6hRw_rKYhbQ&s",
-      description: "Customer relationship and service management platform"
-    },
-    {
-      id: 8,
-      name: "SharePoint",
-      logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRof11NMtStmQJC566EfEjEn-066jwb398VrQ&s",
-      description: "Document management and collaboration platform"
-    },
-    {
-      id: 9,
-      name: "Haptik",
-      logo: "https://i.ibb.co/kV9vqVLx/Haptik.png",
-      description: "Conversational AI and customer engagement platform"
-    },
-    {
-      id: 10,
-      name: "GreyLabs AI",
-      logo: "https://i.ibb.co/v4hPPBSy/image-Photoroom.png",
-      description: "AI-powered customer service and automation solution"
+      name: "Bing Ads",
+      logo: "https://www.bing.com/sa/simg/bing_p_blk.svg",
+      description: "Microsoft advertising platform for search and programmatic advertising"
     }
   ];
 
