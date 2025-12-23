@@ -57,6 +57,7 @@ export default function ChatPage() {
   const [showVisualization, setShowVisualization] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isKomatsuQuery, setIsKomatsuQuery] = useState(false);
+  const [currentQueryType, setCurrentQueryType] = useState(null); // 'komatsu' or 'riotinto'
   const [attachments, setAttachments] = useState([]);
   const [tableVisibleByMessageId, setTableVisibleByMessageId] = useState({});
   const [expandedSourcesByMessageId, setExpandedSourcesByMessageId] = useState({});
@@ -210,6 +211,16 @@ export default function ChatPage() {
     { title: "Gathering performance metrics..." },
     { title: "Compiling advantages and benefits..." },
     { title: "Preparing detailed response..." }
+  ];
+
+  // Loading steps for Rio Tinto query
+  const rioTintoLoadingSteps = [
+    { title: "Understanding your query..." },
+    { title: "Searching rare earths market data..." },
+    { title: "Analyzing Rio Tinto's strategic investments..." },
+    { title: "Reviewing lithium and critical minerals focus..." },
+    { title: "Gathering external sources..." },
+    { title: "Preparing comprehensive response..." }
   ];
 
   // Shared hardcoded Hindi response with comparison table
@@ -390,6 +401,7 @@ export default function ChatPage() {
 
         // Set Komatsu query flag
         setIsKomatsuQuery(true);
+        setCurrentQueryType('komatsu');
 
         // Only add user message if messages array is empty (not already added by useEffect)
         setMessages(prev => {
@@ -477,7 +489,7 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
               {
                 type: 'pdf',
                 title: 'Mining Presentation_2025-12-19_09-53-16.pdf',
-                url: 'https://s3.ap-south-1.amazonaws.com/product-ui-pdfs/pdfs/2025-12-19/e3f48bf4-b296-4ff7-a8bb-8812f98bd41e/Mining%20Presentation_2025-12-19_09-53-16.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQGYBPNQU4R3C4ZVR%2F20251219%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20251219T122155Z&X-Amz-Expires=3600&X-Amz-Signature=ec25bb511892e19dc9ffd1e234cf99aa4c0a73e14eeae647f1e77ae65ba25265&X-Amz-SignedHeaders=host'
+                url: 'https://product-ui-pdfs.s3.ap-south-1.amazonaws.com/pdfs/2025-12-19/e3f48bf4-b296-4ff7-a8bb-8812f98bd41e/Mining%20Presentation_2025-12-19_09-53-16.pdf'
               }
             ],
             externalReferences: [
@@ -530,6 +542,7 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
               ));
               setIsTyping(false);
               setIsKomatsuQuery(false); // Reset after typewriter completes
+              setCurrentQueryType(null);
 
               // Show table after typing completes
               setTimeout(() => {
@@ -548,6 +561,153 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
         }, 10200); // Wait ~10 seconds before starting typewriter
 
         console.log('✅ [KOMATSU] Returning early, skipFinally already set');
+        return; // Exit early, don't continue with normal flow
+      }
+
+      // Check for hardcoded Rio Tinto rare earths query
+      const lowerQueryRio = query.toLowerCase();
+      if (lowerQueryRio.includes('rio tinto') && lowerQueryRio.includes('rare earth')) {
+        // Set skipFinally FIRST, before any returns
+        skipFinally = true;
+
+        // Prevent duplicate processing
+        if (processingQueryRef.current === query.trim()) {
+          console.log('⚠️ [DUPLICATE] Already processing Rio Tinto query, skipping');
+          return;
+        }
+        processingQueryRef.current = query.trim();
+
+        console.log('🎯 [HARDCODED] Detected Rio Tinto rare earths query from search');
+
+        // Set Rio Tinto query flag
+        setIsKomatsuQuery(true); // Reusing the same flag for loading steps
+        setCurrentQueryType('riotinto');
+
+        // Only add user message if messages array is empty (not already added by useEffect)
+        setMessages(prev => {
+          if (prev.length === 0 || prev[prev.length - 1].text !== query.trim()) {
+            return [...prev, {
+              id: Date.now(),
+              text: query.trim(),
+              sender: 'user'
+            }];
+          }
+          return prev;
+        });
+        setCurrentStep(0);
+
+        // Progress through loading steps
+        const stepInterval = setInterval(() => {
+          setCurrentStep(prev => {
+            if (prev >= rioTintoLoadingSteps.length - 1) {
+              clearInterval(stepInterval);
+              return prev;
+            }
+            return prev + 1;
+          });
+        }, 1700); // ~1.7 seconds per step for 6 steps = ~10 seconds total
+
+        // Wait ~10 seconds before showing response
+        setTimeout(() => {
+          clearInterval(stepInterval);
+          console.log('⏰ [TIMEOUT] 10 seconds elapsed, showing Rio Tinto response');
+
+          // Create response message with hardcoded content
+          const rioTintoResponseText = `**Rio Tinto and the Rare Earths Market**
+No relevant information was found regarding Rio Tinto entering the rare earths market.
+No official announcements or data available on Rio Tinto's involvement in rare earths.
+Further monitoring of industry news and company releases is recommended for updates.
+
+## 🔗 External References
+
+**Rio Tinto's Strategic Position in Critical Minerals**
+
+• **Primary Focus:** Rio Tinto is not pursuing the rare earths market as a main strategy.
+• **Lithium Investment:** The company acquired Arcadium for $6.7 billion, securing access to South America's Lithium Triangle and brine-based lithium resources.
+• **Gallium Extraction:** Efforts are underway to develop gallium production at their Quebec operations, with a pilot plant targeting 3.5 tonnes per year and future potential expansion to 40 tonnes annually at full scale.
+
+**Emphasis on Lithium over Rare Earths**
+
+• **Market Focus:** While gallium (used in EVs and semiconductors) and lithium (for batteries) are both critical minerals, Rio Tinto's current strategy centers on lithium as its main entry into energy transition metals.
+• **Rare Earths Clarification:** There are no indications that Rio Tinto is centering operations or investments on traditional rare earth elements such as neodymium or dysprosium.`;
+
+          const responseId = Date.now() + 1;
+          const rioTintoResponse = {
+            id: responseId,
+            text: '',
+            sender: 'assistant',
+            showFollowUp: false,
+            showFeedback: true,
+            isStreaming: true,
+            externalReferences: [
+              {
+                type: 'link',
+                title: 'www.mining.com',
+                url: 'https://www.mining.com/rio-tinto-bets-big-on-lithium-triangles-brine-riches/'
+              },
+              {
+                type: 'link',
+                title: 'www.mining.com',
+                url: 'https://www.mining.com/rio-tinto-extracts-first-gallium-at-quebec-operations/'
+              },
+              {
+                type: 'link',
+                title: 'www.mining.com',
+                url: 'https://www.mining.com/web/argentina-approves-2-5b-rio-tinto-lithium-mining-project/'
+              }
+            ]
+          };
+
+          // Add response message and end loading
+          setMessages(prev => [...prev, rioTintoResponse]);
+          setIsLoading(false);
+          setIsTyping(true);
+
+          // Simulate typewriter effect
+          let currentText = '';
+          let charIndex = 0;
+          const typewriterSpeed = 10; // milliseconds per character
+
+          const typeNextChar = () => {
+            if (charIndex < rioTintoResponseText.length) {
+              currentText += rioTintoResponseText[charIndex];
+              charIndex++;
+
+              setMessages(prev => prev.map(msg =>
+                msg.id === responseId
+                  ? { ...msg, text: currentText }
+                  : msg
+              ));
+
+              setTimeout(typeNextChar, typewriterSpeed);
+            } else {
+              // Typing complete
+              setMessages(prev => prev.map(msg =>
+                msg.id === responseId
+                  ? { ...msg, isStreaming: false, showFollowUp: true }
+                  : msg
+              ));
+              setIsTyping(false);
+              setIsKomatsuQuery(false); // Reset after typewriter completes
+              setCurrentQueryType(null);
+
+              // Show table after typing completes
+              setTimeout(() => {
+                setTableVisibleByMessageId(prev => ({ ...prev, [responseId]: true }));
+            }, 100);
+
+            // Clear selected PDFs after response
+            storeDeselectPDF && storeSelectedPdfs.forEach(pdf => storeDeselectPDF(pdf.s3Key || pdf.id));
+
+            // Clear processing ref to allow same query again
+            processingQueryRef.current = null;
+          }
+        };
+
+          setTimeout(typeNextChar, 100); // Start typing after small delay
+        }, 10200); // Wait ~10 seconds before starting typewriter
+
+        console.log('✅ [RIO TINTO] Returning early, skipFinally already set');
         return; // Exit early, don't continue with normal flow
       }
 
@@ -830,6 +990,7 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
     setInputValue("");
     setIsLoading(true);
     setShowVisualization(false);
+    let skipFinally = false;  // Flag to skip finally block for hardcoded queries
 
     // Scroll user message to top after it's added to DOM
     scrollUserMessageToTop(newMessage.id);
@@ -840,8 +1001,12 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
       if (lowerQuery.includes('advantages of komatsu') && lowerQuery.includes('5500')) {
         console.log('🎯 [HARDCODED] Detected Komatsu 5500 advantages query');
 
+        // Set skipFinally FIRST, before any returns
+        skipFinally = true;
+
         // Set Komatsu query flag and reset current step for loading
         setIsKomatsuQuery(true);
+        setCurrentQueryType('komatsu');
         setCurrentStep(0);
 
         // Progress through loading steps
@@ -861,7 +1026,7 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
           console.log('⏰ [TIMEOUT - MESSAGE SUBMIT] 10 seconds elapsed, showing response');
 
           // Create response message with hardcoded content
-          const komatsuResponseText = `Advantages of Komatsu PC 5500
+          const komatsuResponseText = `**Advantages of Komatsu PC 5500**
 
 • **High Productivity:** Large bucket capacity (23 m³/50 tons), fast 23-second cycle time, and monthly throughput exceeding 870,000 tons.
 • **Exceptional Durability:** Pin life surpasses 50,000 hours (vs. 10,000-hour standard), with minimal wear on slewing gear and no need for pin/bush replacements or line boring.
@@ -870,8 +1035,6 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
 • **Reliability:** No grease system failures reported, and machine availability improved from 85% to 97%.
 
 Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduced downtime, and low operating costs, making it a highly efficient and cost-effective mining solution.
-
----
 
 ## 🔗 External References
 
@@ -920,7 +1083,7 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
             {
               type: 'pdf',
               title: 'Mining Presentation_2025-12-19_09-53-16.pdf',
-              url: 'https://s3.ap-south-1.amazonaws.com/product-ui-pdfs/pdfs/2025-12-19/e3f48bf4-b296-4ff7-a8bb-8812f98bd41e/Mining%20Presentation_2025-12-19_09-53-16.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQGYBPNQU4R3C4ZVR%2F20251219%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20251219T122155Z&X-Amz-Expires=3600&X-Amz-Signature=ec25bb511892e19dc9ffd1e234cf99aa4c0a73e14eeae647f1e77ae65ba25265&X-Amz-SignedHeaders=host'
+              url: 'https://s3.ap-south-1.amazonaws.com/product-ui-pdfs/pdfs/2025-12-19/e3f48bf4-b296-4ff7-a8bb-8812f98bd41e/Mining%20Presentation_2025-12-19_09-53-16.pdf'
             }
           ],
           externalReferences: [
@@ -973,6 +1136,7 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
               ));
               setIsTyping(false);
               setIsKomatsuQuery(false); // Reset after typewriter completes
+              setCurrentQueryType(null);
 
               // Show table after typing completes
               setTimeout(() => {
@@ -990,6 +1154,129 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
           setTimeout(typeNextChar, 100); // Start typing after small delay
         }, 10200); // Wait ~10 seconds before starting typewriter
 
+        return; // Exit early, don't continue with normal flow
+      }
+
+      // Check for hardcoded Rio Tinto rare earths query
+      const lowerQueryRio = messageText.toLowerCase();
+      if (lowerQueryRio.includes('rio tinto') && lowerQueryRio.includes('rare earth')) {
+        console.log('🎯 [HARDCODED] Detected Rio Tinto rare earths query');
+
+        // Set skipFinally FIRST, before any returns
+        skipFinally = true;
+
+        // Set Rio Tinto query flag
+        setIsKomatsuQuery(true); // Reusing the same flag for loading steps
+        setCurrentQueryType('riotinto');
+        setCurrentStep(0);
+
+        // Progress through loading steps
+        const stepInterval = setInterval(() => {
+          setCurrentStep(prev => {
+            if (prev >= rioTintoLoadingSteps.length - 1) {
+              clearInterval(stepInterval);
+              return prev;
+            }
+            return prev + 1;
+          });
+        }, 1700); // ~1.7 seconds per step for 6 steps = ~10 seconds total
+
+        // Wait ~10 seconds before showing response
+        setTimeout(() => {
+          clearInterval(stepInterval);
+          console.log('⏰ [TIMEOUT] 10 seconds elapsed, showing Rio Tinto response');
+
+          // Create response message with hardcoded content
+          const rioTintoResponseText = `**Rio Tinto and the Rare Earths Market**
+No relevant information was found regarding Rio Tinto entering the rare earths market.
+No official announcements or data available on Rio Tinto's involvement in rare earths.
+Further monitoring of industry news and company releases is recommended for updates.
+
+## 🔗 External References
+
+**Rio Tinto's Strategic Position in Critical Minerals**
+
+• **Primary Focus:** Rio Tinto is not pursuing the rare earths market as a main strategy.
+• **Lithium Investment:** The company acquired Arcadium for $6.7 billion, securing access to South America's Lithium Triangle and brine-based lithium resources.
+• **Gallium Extraction:** Efforts are underway to develop gallium production at their Quebec operations, with a pilot plant targeting 3.5 tonnes per year and future potential expansion to 40 tonnes annually at full scale.
+
+**Emphasis on Lithium over Rare Earths**
+
+• **Market Focus:** While gallium (used in EVs and semiconductors) and lithium (for batteries) are both critical minerals, Rio Tinto's current strategy centers on lithium as its main entry into energy transition metals.
+• **Rare Earths Clarification:** There are no indications that Rio Tinto is centering operations or investments on traditional rare earth elements such as neodymium or dysprosium.`;
+
+          const responseId = Date.now() + 1;
+          const rioTintoResponse = {
+            id: responseId,
+            text: '',
+            sender: 'assistant',
+            showFollowUp: false,
+            showFeedback: true,
+            isStreaming: true,
+            externalReferences: [
+              {
+                type: 'link',
+                title: 'www.mining.com',
+                url: 'https://www.mining.com/rio-tinto-bets-big-on-lithium-triangles-brine-riches/'
+              },
+              {
+                type: 'link',
+                title: 'www.mining.com',
+                url: 'https://www.mining.com/rio-tinto-extracts-first-gallium-at-quebec-operations/'
+              },
+              {
+                type: 'link',
+                title: 'www.mining.com',
+                url: 'https://www.mining.com/web/argentina-approves-2-5b-rio-tinto-lithium-mining-project/'
+              }
+            ]
+          };
+
+          // Add response message and end loading
+          setMessages(prev => [...prev, rioTintoResponse]);
+          setIsLoading(false);
+          setIsTyping(true);
+
+          // Simulate typewriter effect
+          let currentText = '';
+          let charIndex = 0;
+          const typewriterSpeed = 10; // milliseconds per character
+
+          const typeNextChar = () => {
+            if (charIndex < rioTintoResponseText.length) {
+              currentText += rioTintoResponseText[charIndex];
+              charIndex++;
+
+              setMessages(prev => prev.map(msg =>
+                msg.id === responseId
+                  ? { ...msg, text: currentText }
+                  : msg
+              ));
+
+              setTimeout(typeNextChar, typewriterSpeed);
+            } else {
+              // Typing complete
+              setMessages(prev => prev.map(msg =>
+                msg.id === responseId
+                  ? { ...msg, isStreaming: false, showFollowUp: true }
+                  : msg
+              ));
+              setIsTyping(false);
+              setIsKomatsuQuery(false); // Reset after typewriter completes
+              setCurrentQueryType(null);
+
+              // Clear selected PDFs after response
+              storeDeselectPDF && storeSelectedPdfs.forEach(pdf => storeDeselectPDF(pdf.s3Key || pdf.id));
+
+              // Clear processing ref to allow same query again
+              processingQueryRef.current = null;
+            }
+          };
+
+          setTimeout(typeNextChar, 100); // Start typing after small delay
+        }, 10200); // Wait ~10 seconds before starting typewriter
+
+        console.log('✅ [RIO TINTO] Returning early, skipFinally already set');
         return; // Exit early, don't continue with normal flow
       }
 
@@ -1312,7 +1599,9 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
     } catch (error) {
       // Error handled in UI
     } finally {
-      setIsLoading(false);
+      if (!skipFinally) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -1706,9 +1995,65 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
                                 )}
                               </div>
                             )}
-                            
-                            <div 
-                              id={`feedback-${msg.id}`} 
+
+                            {/* View Sources Section for messages WITHOUT tables */}
+                            {(!msg.tableData || !tableVisibleByMessageId[msg.id]) && (msg.internalReferences || msg.externalReferences) && !msg.isStreaming && (
+                              <div className="mt-4">
+                                <button
+                                  onClick={() => {
+                                    setExpandedSourcesByMessageId(prev => ({
+                                      ...prev,
+                                      [msg.id]: !prev[msg.id]
+                                    }));
+                                  }}
+                                  className="w-full bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-3 flex items-center justify-between transition-colors"
+                                >
+                                  <span className="text-sm font-medium text-gray-700">View Sources</span>
+                                  {expandedSourcesByMessageId[msg.id] ? (
+                                    <ChevronUp className="w-4 h-4 text-gray-600" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                                  )}
+                                </button>
+
+                                {expandedSourcesByMessageId[msg.id] && (
+                                  <div className="mt-2 space-y-4 bg-white border border-gray-200 rounded-lg p-4">
+                                    {/* External References */}
+                                    {msg.externalReferences && msg.externalReferences.length > 0 && (
+                                      <div>
+                                        <h4 className="text-sm font-semibold text-gray-700 mb-2">External References</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                          {msg.externalReferences.map((ref, idx) => (
+                                            <a
+                                              key={idx}
+                                              href={ref.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors"
+                                            >
+                                              <img
+                                                src={`https://www.google.com/s2/favicons?domain=${new URL(ref.url).hostname}&sz=16`}
+                                                alt=""
+                                                className="w-4 h-4 flex-shrink-0"
+                                                onError={(e) => {
+                                                  e.target.onerror = null;
+                                                  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="16" height="16" fill="%23FB923C"/></svg>';
+                                                }}
+                                              />
+                                              <span className="text-sm text-gray-700">{ref.title}</span>
+                                              <Link2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div
+                              id={`feedback-${msg.id}`}
                               className="mt-4 flex items-center gap-2 flex-wrap"
                               style={{ opacity: '0', transition: 'opacity 0.3s ease' }}
                             >
@@ -1787,15 +2132,16 @@ Overall, the Komatsu PC 5500 delivers outstanding productivity, longevity, reduc
                   {/* Invisible element at the end to scroll to */}
                   <div ref={messagesEndRef} />
 
-                  {/* Loading steps indicator for Komatsu query */}
+                  {/* Loading steps indicator */}
                   {(() => {
                     const shouldShow = isLoading && isKomatsuQuery;
-                    console.log('🔍 [RENDER] LoadingSteps check:', { isLoading, isKomatsuQuery, shouldShow, currentStep });
+                    const loadingSteps = currentQueryType === 'komatsu' ? komatsuLoadingSteps : rioTintoLoadingSteps;
+                    console.log('🔍 [RENDER] LoadingSteps check:', { isLoading, isKomatsuQuery, shouldShow, currentStep, currentQueryType });
                     return shouldShow && (
                       <div className="flex justify-start w-full">
                         <div className="w-[95%] rounded-2xl px-8 py-6 bg-white border border-gray-200">
                           <h4 className="text-base font-medium text-gray-700 mb-5">Processing your request</h4>
-                          <LoadingSteps steps={komatsuLoadingSteps} currentStep={currentStep} />
+                          <LoadingSteps steps={loadingSteps} currentStep={currentStep} />
                         </div>
                       </div>
                     );
