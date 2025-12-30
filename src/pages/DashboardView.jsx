@@ -317,18 +317,18 @@ export default function DashboardView() {
 
             {
               month: "July 2025",
-              "East Region - Outlets": jul_customers_total,
-              "East Region - Invoices": jul_invoices_total
+              "West Region - Outlets": jul_customers_total,
+              "West Region - Invoices": jul_invoices_total
             },
             {
               month: "August 2025",
-              "East Region - Outlets": aug_customers_total,
-              "East Region - Invoices": aug_invoices_total
+              "West Region - Outlets": aug_customers_total,
+              "West Region - Invoices": aug_invoices_total
             },
             {
               month: "September 2025",
-              "East Region - Outlets": sep_customers_total,
-              "East Region - Invoices": sep_invoices_total
+              "West Region - Outlets": sep_customers_total,
+              "West Region - Invoices": sep_invoices_total
             }
           ];
 
@@ -404,13 +404,13 @@ export default function DashboardView() {
                   }}
                   series={[
                     {
-                      name: 'East Region',
-                      data: comboData.map(d => d["East Region - Outlets"]),
+                      name: 'West  Region',
+                      data: comboData.map(d => d["West Region - Outlets"]),
                       type: 'bar'
                     },
                     {
                       name: '',
-                      data: comboData.map(d => d["East Region - Invoices"]),
+                      data: comboData.map(d => d["West Region - Invoices"]),
                       type: 'line'
                     }
                   ]}
@@ -421,7 +421,7 @@ export default function DashboardView() {
               {/* Custom Horizontal Legend */}
               <div className="flex justify-center gap-8 mt-6 flex-wrap">
                 {[
-                  { name: 'East Region', color: '#3B82F6' }
+                  { name: 'West Region', color: '#3B82F6' }
                 ].map((item) => (
                   <div key={item.name} className="flex items-center gap-2">
                     <div
@@ -1165,7 +1165,7 @@ export default function DashboardView() {
             rows: [
               {
                 id: "east-region",
-                label: "East Region",
+                label: "West Region",
                 isParent: true,
                 data: {
                   "JUL-Sales": jul_sales_total,
