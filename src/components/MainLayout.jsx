@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { 
-  Home, 
-  MessageSquare, 
-  Users2, 
-  GraduationCap, 
-  LayoutDashboard, 
-  Bell, 
-  Settings, 
+import {
+  Home,
+  MessageSquare,
+  Users2,
+  GraduationCap,
+  LayoutDashboard,
+  Settings,
   HelpCircle,
   ChevronRight,
   ChevronLeft,
@@ -15,7 +14,6 @@ import {
   LineChart,
   PieChart,
   TrendingUp,
-  Mail,
   Trophy,
   FileText
 } from "lucide-react";
@@ -208,19 +206,11 @@ export function MainLayout({ children }) {
              isMiningSection ? "Good afternoon, Vraj" :
              "Good afternoon, Vraj"}
           </h1>
-          <div className="flex items-center gap-2">
-            <button className="p-2 text-[#3551F3] hover:bg-[#EEF2FF] rounded-lg relative">
-              <Bell className="w-5 h-5" />
-              <div className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-[10px] font-medium text-white">1</span>
-              </div>
-            </button>
-            <button className="p-2 text-[#3551F3] hover:bg-[#EEF2FF] rounded-lg">
-              <MessageSquare className="w-5 h-5" />
-            </button>
+          <div className="flex items-center gap-3">
+            <img src="/Motul_Logo.png" alt="Motul Logo" className="h-8 w-auto" />
             <div className="h-8 w-[1px] bg-gray-200 mx-2" />
             <button className="w-8 h-8 rounded-full bg-[#3551F3] text-white flex items-center justify-center font-medium">
-              {isMarketingSection ? "V" : 
+              {isMarketingSection ? "V" :
                isInsuranceSection ? "S" :
                isMiningSection ? "R" :
                "A"}
