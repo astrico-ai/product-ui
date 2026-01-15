@@ -207,6 +207,8 @@ export function MainLayout({ children }) {
              "Good afternoon, Vraj"}
           </h1>
           <div className="flex items-center gap-3">
+            <img src="/Motul_Logo.png" alt="Motul Logo" className="h-8 w-auto" />
+            <div className="h-8 w-[1px] bg-gray-200 mx-2" />
             <button className="w-8 h-8 rounded-full bg-[#3551F3] text-white flex items-center justify-center font-medium">
               {isMarketingSection ? "V" :
                isInsuranceSection ? "S" :
