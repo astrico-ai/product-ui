@@ -122,10 +122,13 @@ export function MainLayout({ children }) {
 
               // Special handling for VOC - open in new tab
               if (item.path === '/voc') {
+                const vocUrl = import.meta.env.PROD
+                  ? 'https://product-ui-voc-git-demo-ui-astrico-ais-projects.vercel.app'
+                  : 'http://localhost:5174';
                 return (
                   <a
                     key={item.path}
-                    href="http://localhost:5174"
+                    href={vocUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-gray-500 hover:bg-white hover:text-[#3551F3] hover:shadow-sm"
