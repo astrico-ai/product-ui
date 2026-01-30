@@ -15,7 +15,8 @@ import {
   PieChart,
   TrendingUp,
   Trophy,
-  FileText
+  FileText,
+  Radio
 } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -24,6 +25,7 @@ const mainNavItems = [
   { icon: Home, label: "Home", path: "/" },
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: MessageSquare, label: "Chat", path: "/chat" },
+  { icon: Radio, label: "Voice of Customer", path: "/voc" },
   // { icon: FileText, label: "PDF Manager", path: "/pdf-manager" },
   // { icon: GraduationCap, label: "Training", path: "/training" },
   // { icon: Users2, label: "Sources", path: "/sources" },
@@ -109,14 +111,33 @@ export function MainLayout({ children }) {
         <nav className="flex-1">
           <div className="px-3 space-y-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path || 
-                             (item.path !== '/' && location.pathname.startsWith(`${item.path}/`) && 
-                              !navItems.some(other => 
-                                other !== item && 
-                                other.path !== '/' && 
-                                other.path.startsWith(item.path + '/') && 
+              const isActive = location.pathname === item.path ||
+                             (item.path !== '/' && location.pathname.startsWith(`${item.path}/`) &&
+                              !navItems.some(other =>
+                                other !== item &&
+                                other.path !== '/' &&
+                                other.path.startsWith(item.path + '/') &&
                                 location.pathname.startsWith(other.path)
                               ));
+
+              // Special handling for VOC - open in new tab
+              if (item.path === '/voc') {
+                return (
+                  <a
+                    key={item.path}
+                    href="http://localhost:5174"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-gray-500 hover:bg-white hover:text-[#3551F3] hover:shadow-sm"
+                  >
+                    <item.icon className="w-5 h-5 shrink-0" />
+                    {!isCollapsed && (
+                      <span className="text-sm font-medium">{item.label}</span>
+                    )}
+                  </a>
+                );
+              }
+
               return (
                 <Link
                   key={item.path}

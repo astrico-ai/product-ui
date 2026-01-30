@@ -55,7 +55,7 @@ function App() {
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/chat/marketing" element={<MarketingChatPage />} />
         <Route path="/chat/insurance" element={<InsuranceChatPage />} />
-        
+
         {/* Marketing Routes */}
         <Route path="/marketing" element={<MarketingPage />} />
         <Route path="/marketing/sources" element={<MarketingSourcesPage />} />
