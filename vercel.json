@@ -3,14 +3,6 @@
   "installCommand": "npm install && cd server && npm install",
   "rewrites": [
     {
-      "source": "/voc",
-      "destination": "https://product-ui-voc-git-demo-ui-astrico-ais-projects.vercel.app"
-    },
-    {
-      "source": "/voc/:path*",
-      "destination": "https://product-ui-voc-git-demo-ui-astrico-ais-projects.vercel.app/:path*"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api/index.js"
     },

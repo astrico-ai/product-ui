@@ -123,7 +123,7 @@ export function MainLayout({ children }) {
               // Special handling for VOC - open in new tab
               if (item.path === '/voc') {
                 const vocUrl = import.meta.env.PROD
-                  ? '/voc'
+                  ? 'https://product-ui-voc.vercel.app'
                   : 'http://localhost:5174';
                 return (
                   <a
